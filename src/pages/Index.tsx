@@ -4,10 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, PieChart, Shield, TrendingDown, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -35,13 +39,15 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">SubSaver</h1>
-          <div className="flex gap-4">
+          <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
+          <div className="flex gap-4 items-center">
+            <LanguageSelector />
+            <ThemeToggle />
             <Button variant="ghost" onClick={() => navigate("/privacy")}>
               Privacy
             </Button>
             <Button onClick={() => navigate("/auth")}>
-              Get Started
+              {t("getStarted")}
             </Button>
           </div>
         </div>
@@ -50,18 +56,18 @@ const Index = () => {
       <main className="container mx-auto px-4">
         <section className="py-20 text-center">
           <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Stop Wasting Money on<br />Forgotten Subscriptions
+            {t("appName")}
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            SubSaver analyzes your bank statements to detect recurring payments and helps you cancel unused subscriptions. Save hundreds per year.
+            {t("tagline")}
           </p>
           <div className="flex gap-4 justify-center">
             <Button size="lg" onClick={() => navigate("/auth")}>
               <Upload className="mr-2 h-5 w-5" />
-              Upload CSV & Start Saving
+              {t("uploadCSV")}
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate("/pricing")}>
-              View Pricing
+              {t("viewPricing")}
             </Button>
           </div>
         </section>
@@ -206,7 +212,7 @@ const Index = () => {
 
       <footer className="border-t py-8 mt-16">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 SubSaver. All rights reserved.</p>
+          <p>&copy; 2025 {t("appName")}. All rights reserved.</p>
           <Button variant="link" onClick={() => navigate("/privacy")}>
             Privacy Policy
           </Button>

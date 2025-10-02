@@ -46,34 +46,48 @@ const Pricing = () => {
       description: "Perfect for getting started",
       features: [
         "1 CSV upload per month",
-        "Basic spending analysis",
-        "Subscription detection",
-        "Savings tips",
+        "How to Upload CSV guide",
+        "Multi-language support",
+        "Light/dark mode",
       ],
     },
     {
       name: "Pro",
-      price: "£15",
-      description: "For power users",
+      price: "£9.99",
+      description: "For regular users",
       features: [
         "Unlimited CSV uploads",
         "Detailed spending reports",
         "Priority support",
-        "Early access to bank connections",
-        "Export reports as PDF",
+        "Bank access",
+        "PDF exports",
+        "Monthly savings summary email",
+        "Basic CSV tips",
       ],
       popular: true,
+    },
+    {
+      name: "Premium",
+      price: "£15",
+      description: "For power users",
+      features: [
+        "All Pro features",
+        "Dashboard with recurrent profiles",
+        "Custom FinanceAI tip",
+        "Priority feature requests",
+      ],
     },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
+          <h1 className="text-2xl font-bold text-primary">Casher</h1>
         </div>
       </header>
 
@@ -85,7 +99,7 @@ const Pricing = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan) => (
             <Card
               key={plan.name}

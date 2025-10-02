@@ -5,17 +5,23 @@ import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, LogOut, Upload, PieChart as PieChartIcon, TrendingDown } from "lucide-react";
+import { Loader2, LogOut, Upload, PieChart as PieChartIcon, TrendingDown, Share2 } from "lucide-react";
 import CSVUpload from "@/components/CSVUpload";
 import SpendingChart from "@/components/SpendingChart";
 import SubscriptionsList from "@/components/SubscriptionsList";
+import SavingsGoals from "@/components/SavingsGoals";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -27,6 +33,16 @@ const Dashboard = () => {
       }
       
       setUser(session.user);
+      
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      
+      setIsAdmin(!!roleData);
       setLoading(false);
     };
 
@@ -48,6 +64,27 @@ const Dashboard = () => {
     navigate("/");
   };
 
+  const shareReferral = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const referralCode = `REF${session.user.id.slice(0, 8).toUpperCase()}`;
+    const link = `${window.location.origin}/?ref=${referralCode}`;
+    
+    try {
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: "Referral link copied!",
+        description: "Share it to earn rewards",
+      });
+    } catch {
+      toast({
+        title: "Referral link",
+        description: link,
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -60,14 +97,25 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">SubSaver</h1>
+          <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
           <div className="flex items-center gap-4">
+            <LanguageSelector />
+            <ThemeToggle />
+            <Button variant="outline" size="sm" onClick={shareReferral}>
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
+            </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => navigate("/admin")}>
+                Admin Panel
+              </Button>
+            )}
             <Button variant="outline" onClick={() => navigate("/pricing")}>
-              Upgrade to Pro
+              {t("upgradeToPro")}
             </Button>
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              {t("signOut")}
             </Button>
           </div>
         </div>
@@ -140,6 +188,8 @@ const Dashboard = () => {
           <SpendingChart />
           <SubscriptionsList />
         </div>
+
+        <SavingsGoals />
 
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardHeader>
