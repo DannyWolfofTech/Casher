@@ -24,35 +24,72 @@ serve(async (req) => {
     if (userError || !user) throw new Error("Unauthorized");
 
     const { csv } = await req.json();
-    
-    // Parse CSV
-    const lines = csv.split("\n").filter((line: string) => line.trim());
-    const headers = lines[0].toLowerCase().split(",");
-    
-    const transactions = [];
-    const subscriptionMap = new Map();
 
-    // Process transactions
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",");
-      const transaction: any = {};
-      
-      headers.forEach((header: string, index: number) => {
-        transaction[header.trim()] = values[index]?.trim() || "";
-      });
+ // Parse CSV with PapaParse (robust for headers/empty lines)
+ const Papa = await import('https://esm.sh/papaparse@5');
+ const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
+ const df = parsed.data as any[];  // Rows with 'Date', 'Description', 'Amount'
 
-      // Extract transaction data (flexible for different bank formats)
-      const date = transaction.date || transaction["transaction date"] || new Date().toISOString();
-      const description = transaction.description || transaction.memo || transaction.narrative || "";
-      const amount = parseFloat(transaction.amount || transaction["debit amount"] || transaction["credit amount"] || "0");
-      
-      if (!description || isNaN(amount)) continue;
+ if (df.length === 0) {
+   return new Response(JSON.stringify({ error: 'No valid transactions found' }), { 
+     headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+     status: 400 
+   });
+ }
 
-      // Categorize transaction
-      const category = categorizeTransaction(description);
-      
-      // Detect recurring subscriptions
-      const isSubscription = detectSubscription(description);
+ const transactions = [];
+ const subscriptionMap = new Map();
+
+ // Process transactions with per-row error handling
+ df.forEach((transaction: any, index: number) => {
+   try {
+     // Extract data (flexible for different bank formats)
+     const date = transaction.date || transaction['transaction date'] || new Date().toISOString();
+     const description = transaction.description || transaction.memo || transaction.narrative || '';
+     const rawAmount = transaction.amount || transaction['debit amount'] || transaction['credit amount'] || '0';
+     const amount = parseFloat(rawAmount.replace(/[^0-9.-]/g, '')) || 0;  // Clean numbers, handle negatives
+
+     if (!description || isNaN(amount)) return;  // Skip invalid rows, not whole file
+
+     // Parse date (UK format to ISO)
+     const dateMatch = date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+     const parsedDate = dateMatch ? new Date(`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`) : new Date(date);
+     const dateStr = parsedDate.toISOString().split('T')[0];
+
+     // Categorize and detect
+     const category = categorizeTransaction(description);
+     const isSubscription = detectSubscription(description);
+     const merchant = extractMerchant(description);
+
+     transactions.push({
+       user_id: user.id,
+       date: dateStr,
+       description,
+       amount: Math.abs(amount),
+       category,
+       is_recurring: isSubscription,
+       recurring_frequency: isSubscription ? 'monthly' : null,
+       merchant,
+     });
+
+     // Track subscriptions
+     if (isSubscription) {
+       if (!subscriptionMap.has(merchant)) {
+         subscriptionMap.set(merchant, {
+           service_name: merchant,
+           amount: Math.abs(amount),
+           frequency: 'monthly',
+           last_charged: dateStr,
+           estimated_annual_cost: Math.abs(amount) * 12,
+           cancellation_url: null,
+           status: 'active',
+         });
+       }
+     }
+   } catch (rowError) {
+     console.log(`Row ${index} error: ${rowError}`);  // Log bad rows, don't crash
+   }
+ });
       
       transactions.push({
         user_id: user.id,
