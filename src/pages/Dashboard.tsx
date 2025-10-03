@@ -103,11 +103,11 @@ const Dashboard = () => {
             <ThemeToggle />
             <Button variant="outline" size="sm" onClick={shareReferral}>
               <Share2 className="mr-2 h-4 w-4" />
-              Share
+              {t("share")}
             </Button>
             {isAdmin && (
               <Button variant="outline" onClick={() => navigate("/admin")}>
-                Admin Panel
+                {t("adminPanel")}
               </Button>
             )}
             <Button variant="outline" onClick={() => navigate("/pricing")}>

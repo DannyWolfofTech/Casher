@@ -94,7 +94,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">SubSaver</CardTitle>
+          <CardTitle className="text-2xl text-center">Casher</CardTitle>
           <CardDescription className="text-center">
             Track and manage your subscriptions
           </CardDescription>

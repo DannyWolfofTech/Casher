@@ -44,7 +44,7 @@ const Index = () => {
             <LanguageSelector />
             <ThemeToggle />
             <Button variant="ghost" onClick={() => navigate("/privacy")}>
-              Privacy
+              {t("privacy")}
             </Button>
             <Button onClick={() => navigate("/auth")}>
               {t("getStarted")}
@@ -77,14 +77,14 @@ const Index = () => {
             <Card>
               <CardHeader>
                 <Upload className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Easy Upload</CardTitle>
+                <CardTitle>{t("easyUpload")}</CardTitle>
                 <CardDescription>
-                  Simply export and upload your bank statement CSV
+                  {t("easyUploadDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Works with HSBC, NatWest, Barclays, and most UK banks
+                  {t("easyUploadDetails")}
                 </p>
               </CardContent>
             </Card>
@@ -92,14 +92,14 @@ const Index = () => {
             <Card>
               <CardHeader>
                 <PieChart className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Smart Analysis</CardTitle>
+                <CardTitle>{t("smartAnalysis")}</CardTitle>
                 <CardDescription>
-                  AI-powered categorization and subscription detection
+                  {t("smartAnalysisDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Automatically identifies recurring payments and subscription leaks
+                  {t("smartAnalysisDetails")}
                 </p>
               </CardContent>
             </Card>
@@ -107,14 +107,14 @@ const Index = () => {
             <Card>
               <CardHeader>
                 <TrendingDown className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Save Money</CardTitle>
+                <CardTitle>{t("saveMoney")}</CardTitle>
                 <CardDescription>
-                  One-click cancellation links and email templates
+                  {t("saveMoneyDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Get direct links to cancel subscriptions you don't use
+                  {t("saveMoneyDetails")}
                 </p>
               </CardContent>
             </Card>
@@ -122,42 +122,42 @@ const Index = () => {
         </section>
 
         <section className="py-16 text-center">
-          <h2 className="text-3xl font-bold mb-8">How It Works</h2>
+          <h2 className="text-3xl font-bold mb-8">{t("howItWorks")}</h2>
           <div className="grid md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             <div>
               <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 1
               </div>
-              <h3 className="font-semibold mb-2">Export CSV</h3>
+              <h3 className="font-semibold mb-2">{t("exportCSV")}</h3>
               <p className="text-sm text-muted-foreground">
-                Download your bank statement as CSV
+                {t("exportCSVDesc")}
               </p>
             </div>
             <div>
               <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 2
               </div>
-              <h3 className="font-semibold mb-2">Upload File</h3>
+              <h3 className="font-semibold mb-2">{t("uploadFile")}</h3>
               <p className="text-sm text-muted-foreground">
-                Drag and drop your CSV file
+                {t("uploadFileDesc")}
               </p>
             </div>
             <div>
               <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 3
               </div>
-              <h3 className="font-semibold mb-2">Review Analysis</h3>
+              <h3 className="font-semibold mb-2">{t("reviewAnalysis")}</h3>
               <p className="text-sm text-muted-foreground">
-                See your subscriptions and spending
+                {t("reviewAnalysisDesc")}
               </p>
             </div>
             <div>
               <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 4
               </div>
-              <h3 className="font-semibold mb-2">Cancel & Save</h3>
+              <h3 className="font-semibold mb-2">{t("cancelAndSave")}</h3>
               <p className="text-sm text-muted-foreground">
-                One-click cancellation links
+                {t("cancelAndSaveDesc")}
               </p>
             </div>
           </div>
@@ -167,9 +167,9 @@ const Index = () => {
           <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
             <CardHeader className="text-center">
               <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
-              <CardTitle className="text-2xl">Your Data is Safe</CardTitle>
+              <CardTitle className="text-2xl">{t("yourDataIsSafe")}</CardTitle>
               <CardDescription className="text-base">
-                We take your privacy seriously
+                {t("privacyDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -177,22 +177,22 @@ const Index = () => {
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold">GDPR Compliant</p>
-                    <p className="text-sm text-muted-foreground">Full compliance with data protection</p>
+                    <p className="font-semibold">{t("gdprCompliant")}</p>
+                    <p className="text-sm text-muted-foreground">{t("gdprDesc")}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold">Encrypted Storage</p>
-                    <p className="text-sm text-muted-foreground">Bank-level encryption</p>
+                    <p className="font-semibold">{t("encryptedStorage")}</p>
+                    <p className="text-sm text-muted-foreground">{t("encryptedStorageDesc")}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold">Auto-Deletion</p>
-                    <p className="text-sm text-muted-foreground">Raw data deleted after analysis</p>
+                    <p className="font-semibold">{t("autoDeletion")}</p>
+                    <p className="text-sm text-muted-foreground">{t("autoDeletionDesc")}</p>
                   </div>
                 </div>
               </div>
@@ -203,8 +203,7 @@ const Index = () => {
         <section className="py-16 text-center">
           <div className="bg-muted/50 rounded-lg p-8 max-w-3xl mx-auto">
             <p className="text-sm text-muted-foreground mb-4">
-              <strong>Disclaimer:</strong> SubSaver provides information and tools to help you manage subscriptions. 
-              This is not financial advice. Always review your financial decisions independently.
+              <strong>{t("disclaimer")}</strong> {t("disclaimerText")}
             </p>
           </div>
         </section>
@@ -212,9 +211,9 @@ const Index = () => {
 
       <footer className="border-t py-8 mt-16">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 {t("appName")}. All rights reserved.</p>
+          <p>&copy; 2025 {t("appName")}. {t("allRightsReserved")}.</p>
           <Button variant="link" onClick={() => navigate("/privacy")}>
-            Privacy Policy
+            {t("privacyPolicy")}
           </Button>
         </div>
       </footer>
