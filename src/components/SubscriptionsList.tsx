@@ -6,14 +6,18 @@ import { ExternalLink, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-const SubscriptionsList = () => {
+interface SubscriptionsListProps {
+  refreshKey?: number;
+}
+
+const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSubscriptions();
-  }, []);
+  }, [refreshKey]);
 
   const fetchSubscriptions = async () => {
     try {

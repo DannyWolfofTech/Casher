@@ -19,6 +19,10 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [monthlySpending, setMonthlySpending] = useState(0);
+  const [subscriptionCount, setSubscriptionCount] = useState(0);
+  const [potentialSavings, setPotentialSavings] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -58,6 +62,35 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [refreshKey]);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch transactions for monthly spending
+      const { data: transactions } = await supabase
+        .from('transactions')
+        .select('amount');
+      
+      const total = transactions?.reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0) || 0;
+      setMonthlySpending(total);
+
+      // Fetch subscriptions
+      const { data: subscriptions } = await supabase
+        .from('detected_subscriptions')
+        .select('amount, estimated_annual_cost')
+        .eq('status', 'active');
+      
+      setSubscriptionCount(subscriptions?.length || 0);
+      
+      const savings = subscriptions?.reduce((sum, s) => sum + (Number(s.estimated_annual_cost) || 0), 0) || 0;
+      setPotentialSavings(savings);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -129,8 +162,8 @@ const Dashboard = () => {
               <PieChartIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">£0.00</div>
-              <p className="text-xs text-muted-foreground">Upload CSV to see data</p>
+              <div className="text-2xl font-bold">£{monthlySpending.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground">{monthlySpending === 0 ? 'Upload CSV to see data' : 'This month'}</p>
             </CardContent>
           </Card>
 
@@ -140,7 +173,7 @@ const Dashboard = () => {
               <TrendingDown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{subscriptionCount}</div>
               <p className="text-xs text-muted-foreground">Detected subscriptions</p>
             </CardContent>
           </Card>
@@ -151,7 +184,7 @@ const Dashboard = () => {
               <TrendingDown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">£0.00</div>
+              <div className="text-2xl font-bold">£{potentialSavings.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">Per year</p>
             </CardContent>
           </Card>
@@ -181,12 +214,15 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         ) : (
-          <CSVUpload onUploadComplete={() => setShowUpload(false)} />
+          <CSVUpload onUploadComplete={() => {
+            setShowUpload(false);
+            setRefreshKey(prev => prev + 1);
+          }} />
         )}
 
         <div className="grid gap-6 md:grid-cols-2">
-          <SpendingChart />
-          <SubscriptionsList />
+          <SpendingChart refreshKey={refreshKey} />
+          <SubscriptionsList refreshKey={refreshKey} />
         </div>
 
         <SavingsGoals />

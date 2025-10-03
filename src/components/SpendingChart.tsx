@@ -6,13 +6,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-const SpendingChart = () => {
+interface SpendingChartProps {
+  refreshKey?: number;
+}
+
+const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchSpendingData();
-  }, []);
+  }, [refreshKey]);
 
   const fetchSpendingData = async () => {
     try {
