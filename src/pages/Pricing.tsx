@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check, ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Pricing = () => {
@@ -20,7 +20,7 @@ const Pricing = () => {
     checkUser();
   }, []);
 
-  const handleSubscribe = async (planName: string) => {
+  const handleSubscribe = async (planName: string, priceId: string) => {
     if (!user) {
       toast({
         title: "Please sign in",
@@ -32,10 +32,26 @@ const Pricing = () => {
     }
 
     setLoading(true);
-    toast({
-      title: "Coming soon!",
-      description: "Stripe integration will be set up shortly",
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { 
+          priceId,
+          tier: planName.toLowerCase()
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start checkout",
+        variant: "destructive",
+      });
+    }
     setLoading(false);
   };
 
@@ -43,6 +59,7 @@ const Pricing = () => {
     {
       name: "Free",
       price: "£0",
+      priceId: "",
       description: "Perfect for getting started",
       features: [
         "1 CSV upload per month",
@@ -54,6 +71,7 @@ const Pricing = () => {
     {
       name: "Pro",
       price: "£9.99",
+      priceId: "price_pro_monthly",
       description: "For regular users",
       features: [
         "Unlimited CSV uploads",
@@ -68,7 +86,8 @@ const Pricing = () => {
     },
     {
       name: "Premium",
-      price: "£15",
+      price: "£14.99",
+      priceId: "price_premium_monthly",
       description: "For power users",
       features: [
         "All Pro features",
@@ -132,9 +151,12 @@ const Pricing = () => {
                 <Button
                   className="w-full"
                   variant={plan.popular ? "default" : "outline"}
-                  onClick={() => handleSubscribe(plan.name)}
+                  onClick={() => handleSubscribe(plan.name, plan.priceId)}
                   disabled={loading || plan.name === "Free"}
                 >
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
                   {plan.name === "Free" ? "Current Plan" : "Subscribe"}
                 </Button>
               </CardFooter>
