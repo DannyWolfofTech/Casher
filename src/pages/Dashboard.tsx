@@ -23,6 +23,9 @@ const Dashboard = () => {
   const [monthlySpending, setMonthlySpending] = useState(0);
   const [subscriptionCount, setSubscriptionCount] = useState(0);
   const [potentialSavings, setPotentialSavings] = useState(0);
+  const [userTier, setUserTier] = useState<string>("free");
+  const [uploadsUsed, setUploadsUsed] = useState(0);
+  const [canUpload, setCanUpload] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -47,6 +50,40 @@ const Dashboard = () => {
         .maybeSingle();
       
       setIsAdmin(!!roleData);
+
+      // Fetch user profile for tier and upload limits
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("subscription_tier, monthly_uploads_used, uploads_reset_date")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      if (profileData) {
+        setUserTier(profileData.subscription_tier || "free");
+        setUploadsUsed(profileData.monthly_uploads_used || 0);
+
+        // Check if we need to reset monthly uploads
+        const resetDate = new Date(profileData.uploads_reset_date);
+        const now = new Date();
+        if (now.getMonth() !== resetDate.getMonth() || now.getFullYear() !== resetDate.getFullYear()) {
+          await supabase
+            .from("profiles")
+            .update({ 
+              monthly_uploads_used: 0,
+              uploads_reset_date: new Date().toISOString().split('T')[0]
+            })
+            .eq("user_id", session.user.id);
+          setUploadsUsed(0);
+        }
+
+        // Check upload limit
+        const uploadLimit = profileData.subscription_tier === "free" ? 1 : Infinity;
+        setCanUpload((profileData.monthly_uploads_used || 0) < uploadLimit);
+      }
+
+      // Check subscription status
+      await checkSubscription(session);
+      
       setLoading(false);
     };
 
@@ -57,11 +94,23 @@ const Dashboard = () => {
         navigate("/auth");
       } else {
         setUser(session.user);
+        checkSubscription(session);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const checkSubscription = async (session: any) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+      if (!error && data) {
+        setUserTier(data.tier || "free");
+      }
+    } catch (error) {
+      console.error("Error checking subscription:", error);
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -199,10 +248,40 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setShowUpload(true)} className="w-full" size="lg">
-                <Upload className="mr-2 h-5 w-5" />
-                Upload Bank Statement CSV
-              </Button>
+              {!canUpload && userTier === "free" ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <p className="text-sm font-medium">Upload limit reached</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Free tier allows 1 upload per month. Used: {uploadsUsed}/1
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => navigate("/pricing")} 
+                    className="w-full" 
+                    size="lg"
+                  >
+                    Upgrade to Pro for Unlimited Uploads
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Button 
+                    onClick={() => setShowUpload(true)} 
+                    className="w-full" 
+                    size="lg"
+                    disabled={!canUpload}
+                  >
+                    <Upload className="mr-2 h-5 w-5" />
+                    Upload Bank Statement CSV
+                  </Button>
+                  {userTier === "free" && (
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Uploads used: {uploadsUsed}/1 this month
+                    </p>
+                  )}
+                </>
+              )}
               <div className="mt-4 p-4 bg-muted rounded-lg">
                 <h3 className="font-semibold mb-2">How to export from your bank:</h3>
                 <ul className="space-y-1 text-sm text-muted-foreground">
@@ -214,8 +293,23 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         ) : (
-          <CSVUpload onUploadComplete={() => {
+          <CSVUpload onUploadComplete={async () => {
             setShowUpload(false);
+            
+            // Increment upload count
+            if (user) {
+              await supabase
+                .from("profiles")
+                .update({ 
+                  monthly_uploads_used: uploadsUsed + 1 
+                })
+                .eq("user_id", user.id);
+              
+              setUploadsUsed(prev => prev + 1);
+              const uploadLimit = userTier === "free" ? 1 : Infinity;
+              setCanUpload((uploadsUsed + 1) < uploadLimit);
+            }
+            
             setRefreshKey(prev => prev + 1);
           }} />
         )}

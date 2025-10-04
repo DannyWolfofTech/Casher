@@ -59,8 +59,12 @@ export type Database = {
           full_name: string | null
           id: string
           language: string | null
+          monthly_uploads_used: number | null
+          stripe_customer_id: string | null
+          subscription_tier: string | null
           theme: string | null
           updated_at: string
+          uploads_reset_date: string | null
           user_id: string
         }
         Insert: {
@@ -68,8 +72,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           language?: string | null
+          monthly_uploads_used?: number | null
+          stripe_customer_id?: string | null
+          subscription_tier?: string | null
           theme?: string | null
           updated_at?: string
+          uploads_reset_date?: string | null
           user_id: string
         }
         Update: {
@@ -77,8 +85,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           language?: string | null
+          monthly_uploads_used?: number | null
+          stripe_customer_id?: string | null
+          subscription_tier?: string | null
           theme?: string | null
           updated_at?: string
+          uploads_reset_date?: string | null
           user_id?: string
         }
         Relationships: []
