@@ -28,7 +28,7 @@ serve(async (req) => {
  // Parse CSV with PapaParse (robust for headers/empty lines)
  const Papa = await import('https://esm.sh/papaparse@5');
  const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
- const df = parsed.data as any[];  // Rows with 'Date', 'Description', 'Amount'
+ const df = parsed.data as any[];
 
  if (df.length === 0) {
    return new Response(JSON.stringify({ error: 'No valid transactions found' }), { 
@@ -37,8 +37,8 @@ serve(async (req) => {
    });
  }
 
- const transactions = [];
- const subscriptionMap = new Map();
+ const transactions: any[] = [];
+ const subscriptionMap = new Map<string, any>();
 
  // Process transactions with per-row error handling
  df.forEach((transaction: any, index: number) => {
@@ -90,34 +90,6 @@ serve(async (req) => {
      console.log(`Row ${index} error: ${rowError}`);  // Log bad rows, don't crash
    }
  });
-      
-      transactions.push({
-        user_id: user.id,
-        date: new Date(date).toISOString().split('T')[0],
-        description,
-        amount: Math.abs(amount),
-        category,
-        is_recurring: isSubscription,
-        recurring_frequency: isSubscription ? "monthly" : null,
-        merchant: extractMerchant(description),
-      });
-
-      // Track potential subscriptions
-      if (isSubscription) {
-        const merchant = extractMerchant(description);
-        if (!subscriptionMap.has(merchant)) {
-          subscriptionMap.set(merchant, {
-            service_name: merchant,
-            amount: Math.abs(amount),
-            frequency: "monthly",
-            last_charged: new Date(date).toISOString().split('T')[0],
-            estimated_annual_cost: Math.abs(amount) * 12,
-            cancellation_url: null,
-            status: "active",
-          });
-        }
-      }
-    }
 
     // Insert transactions
     const { error: transError } = await supabaseClient
