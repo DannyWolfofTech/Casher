@@ -37,33 +37,10 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending welcome email to:", email);
 
     const emailResponse = await resend.emails.send({
-      from: "Casher <onboarding@resend.dev>",
+      from: "hello@casher.app <onboarding@resend.dev>",
       to: [email],
-      subject: "Welcome to Casher Pro Tips!",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #2563eb;">Welcome to Casher Pro Tips!</h1>
-          <p>Thank you for subscribing to our weekly financial insights newsletter.</p>
-          <p>Every week, you'll receive:</p>
-          <ul>
-            <li>💡 Smart money-saving tips</li>
-            <li>📊 Subscription management strategies</li>
-            <li>🎯 Personalized financial insights</li>
-            <li>🚀 Early access to new features</li>
-          </ul>
-          <p>Get ready to take control of your finances with Casher!</p>
-          <p style="margin-top: 30px;">
-            <a href="${req.headers.get("origin") || "https://casher.app"}" 
-               style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-              Visit Casher Dashboard
-            </a>
-          </p>
-          <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            Best regards,<br>
-            The Casher Team
-          </p>
-        </div>
-      `,
+      subject: "Welcome to Casher!",
+      html: `<p>Pro tips incoming! Upload your first CSV to spot subs.</p>`,
     });
 
     console.log("Email sent successfully:", emailResponse);

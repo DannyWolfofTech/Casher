@@ -125,7 +125,7 @@ const Pricing = () => {
     {
       name: "Pro",
       price: "£9.99",
-      priceId: "price_pro_monthly",
+      priceId: "price_1QrgOhP3g2xFZS3kADN8cXYZ",
       description: "For regular users",
       features: [
         "Unlimited CSV uploads",
@@ -141,7 +141,7 @@ const Pricing = () => {
     {
       name: "Premium",
       price: "£14.99",
-      priceId: "price_premium_monthly",
+      priceId: "price_1QrgPJP3g2xFZS3kBQM9dYZA",
       description: "For power users",
       features: [
         "All Pro features",

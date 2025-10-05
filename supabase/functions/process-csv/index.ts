@@ -40,16 +40,16 @@ serve(async (req) => {
  const transactions: any[] = [];
  const subscriptionMap = new Map<string, any>();
 
- // Process transactions with per-row error handling
- df.forEach((transaction: any, index: number) => {
-   try {
-     // Extract data (flexible for different bank formats)
-     const date = transaction.date || transaction['transaction date'] || new Date().toISOString();
-     const description = transaction.description || transaction.memo || transaction.narrative || '';
-     const rawAmount = transaction.amount || transaction['debit amount'] || transaction['credit amount'] || '0';
-     const amount = parseFloat(rawAmount.replace(/[^0-9.-]/g, '')) || 0;  // Clean numbers, handle negatives
+  // Process transactions with per-row error handling
+  df.forEach((transaction: any, index: number) => {
+    try {
+      // Extract data (flexible for different bank formats - HSBC uses 'Transaction Description', 'Amount', 'Date')
+      const date = transaction.date || transaction.Date || transaction['transaction date'] || transaction['Transaction Date'] || new Date().toISOString();
+      const description = transaction.description || transaction.Description || transaction['Transaction Description'] || transaction.memo || transaction.Memo || transaction.narrative || transaction.Narrative || '';
+      const rawAmount = transaction.amount || transaction.Amount || transaction['debit amount'] || transaction['Debit Amount'] || transaction['credit amount'] || transaction['Credit Amount'] || '0';
+      const amount = parseFloat(String(rawAmount).replace(/[^0-9.-]/g, '')) || 0;  // Clean numbers, handle negatives
 
-     if (!description || isNaN(amount)) return;  // Skip invalid rows, not whole file
+      if (!description || isNaN(amount) || amount === 0) return;  // Skip invalid rows, not whole file
 
      // Parse date (UK format to ISO)
      const dateMatch = date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
@@ -135,9 +135,13 @@ serve(async (req) => {
 function categorizeTransaction(description: string): string {
   const lower = description.toLowerCase();
   
+  // Check for subscriptions first
+  if (lower.includes("netflix") || lower.includes("spotify") || lower.includes("disney") || 
+      lower.includes("prime") || lower.includes("youtube premium") || lower.includes("apple music") || 
+      lower.includes("hbo") || lower.includes("subscription")) return "Subscription";
+  
   if (lower.includes("rent") || lower.includes("mortgage")) return "Rent";
   if (lower.includes("grocery") || lower.includes("tesco") || lower.includes("sainsbury") || lower.includes("asda")) return "Groceries";
-  if (lower.includes("netflix") || lower.includes("spotify") || lower.includes("disney") || lower.includes("prime")) return "Entertainment";
   if (lower.includes("gym") || lower.includes("fitness")) return "Fitness";
   if (lower.includes("restaurant") || lower.includes("cafe") || lower.includes("takeaway")) return "Dining";
   if (lower.includes("transport") || lower.includes("uber") || lower.includes("train")) return "Transport";
