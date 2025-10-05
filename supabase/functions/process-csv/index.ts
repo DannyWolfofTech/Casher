@@ -26,8 +26,8 @@ serve(async (req) => {
     const { csv } = await req.json();
 
     // Parse CSV with PapaParse (Deno-compatible)
-    const Papa = await import('https://esm.sh/papaparse@5.4.1?target=deno');
-    const parsed = Papa.default.parse(csv, { header: true, skipEmptyLines: true });
+    const { default: Papa } = await import('https://esm.sh/papaparse@5.4.1');
+    const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
     const df = parsed.data as any[];
 
  if (df.length === 0) {
