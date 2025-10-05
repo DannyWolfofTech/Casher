@@ -14,6 +14,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OnboardingModal } from "@/components/OnboardingModal";
+import TransactionsTable from "@/components/TransactionsTable";
+import { useTranslation } from "react-i18next";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -30,7 +32,8 @@ const Dashboard = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t: tLegacy } = useLanguage();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -189,25 +192,25 @@ const Dashboard = () => {
       
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
+          <h1 className="text-2xl font-bold text-primary">{tLegacy("appName")}</h1>
           <div className="flex items-center gap-4">
             <LanguageSelector />
             <ThemeToggle />
             <Button variant="outline" size="sm" onClick={shareReferral}>
               <Share2 className="mr-2 h-4 w-4" />
-              {t("share")}
+              {tLegacy("share")}
             </Button>
             {isAdmin && (
               <Button variant="outline" onClick={() => navigate("/admin")}>
-                {t("adminPanel")}
+                {tLegacy("adminPanel")}
               </Button>
             )}
             <Button variant="outline" onClick={() => navigate("/pricing")}>
-              {t("upgradeToPro")}
+              {tLegacy("upgradeToPro")}
             </Button>
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              {t("signOut")}
+              {tLegacy("signOut")}
             </Button>
           </div>
         </div>
@@ -328,6 +331,8 @@ const Dashboard = () => {
           <SpendingChart refreshKey={refreshKey} />
           <SubscriptionsList refreshKey={refreshKey} />
         </div>
+
+        <TransactionsTable refreshKey={refreshKey} userTier={userTier} />
 
         <SavingsGoals />
 

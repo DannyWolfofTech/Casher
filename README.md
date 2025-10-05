@@ -1,5 +1,31 @@
 # Welcome to your Lovable project
 
+## Recent Updates (Latest Build)
+
+### ✅ Fixed Issues
+
+1. **Full Transaction Table** - Added responsive table showing all CSV transactions with pagination (50 rows/page), category badges, and export to CSV (Pro/Premium only)
+2. **Welcome Email** - Fixed Resend integration to send welcome email on every sign-in to natanaeltest@gmail.com 
+3. **Stripe Subscriptions** - Activated Subscribe buttons for Pro (£9.99/mo) and Premium (£14.99/mo) with test card 4242 4242 4242 4242
+4. **i18n Full Coverage** - Implemented react-i18next for complete translations (English/Romanian/Spanish) across dashboard, tables, and UI
+
+### 🧪 Testing
+
+- **CSV Upload**: Use HSBC format with columns "Transaction Description", "Amount", "Date" - Netflix/Spotify auto-categorized as "Subscription"
+- **Email**: Test with natanaeltest@gmail.com - welcome email sent via Resend on signup
+- **Stripe**: Use test card `4242 4242 4242 4242` for Pro/Premium checkout
+- **Languages**: Switch between EN/RO/ES - all UI elements translate
+
+### 🔧 Environment Variables Required
+
+Add these to `.env.local` for local development:
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
+RESEND_API_KEY=your_resend_key
+STRIPE_SECRET_KEY=sk_test_your_stripe_key
+```
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/ea77ebbb-78bd-46c4-a0c9-0ab73994a416

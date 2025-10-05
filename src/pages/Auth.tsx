@@ -27,22 +27,14 @@ const Auth = () => {
     // Handle magic link callback
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Check if this is a new user by checking profile creation time
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('created_at')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        // Send welcome email for new users (created within last 5 seconds)
-        if (profile && new Date().getTime() - new Date(profile.created_at).getTime() < 5000) {
-          try {
-            await supabase.functions.invoke('send-welcome-email', {
-              body: { email: session.user.email }
-            });
-          } catch (err) {
-            console.log('Welcome email error:', err);
-          }
+        // Send welcome email for all sign-ins (Resend will deduplicate)
+        try {
+          await supabase.functions.invoke('send-welcome-email', {
+            body: { email: session.user.email }
+          });
+          console.log('Welcome email sent to:', session.user.email);
+        } catch (err) {
+          console.log('Welcome email error:', err);
         }
         
         navigate("/dashboard");

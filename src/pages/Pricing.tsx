@@ -229,13 +229,13 @@ const Pricing = () => {
                     className="w-full"
                     size="lg"
                     variant={plan.popular ? "default" : "outline"}
-                    onClick={() => handleSubscribe(plan.name, plan.priceId)}
-                    disabled={loading || plan.name === "Free"}
+                    onClick={() => plan.name === "Free" ? navigate("/auth") : handleSubscribe(plan.name, plan.priceId)}
+                    disabled={loading && plan.name !== "Free"}
                   >
-                    {loading ? (
+                    {loading && plan.name !== "Free" ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {plan.name === "Free" ? "Start Free Trial" : "Upgrade Now"}
+                    {plan.name === "Free" ? "Get Started Free" : "Upgrade Now"}
                   </Button>
                 </CardFooter>
               </Card>
