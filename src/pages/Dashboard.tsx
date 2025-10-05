@@ -13,6 +13,7 @@ import SavingsGoals from "@/components/SavingsGoals";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { OnboardingModal } from "@/components/OnboardingModal";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -26,6 +27,7 @@ const Dashboard = () => {
   const [userTier, setUserTier] = useState<string>("free");
   const [uploadsUsed, setUploadsUsed] = useState(0);
   const [canUpload, setCanUpload] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -79,6 +81,12 @@ const Dashboard = () => {
         // Check upload limit
         const uploadLimit = profileData.subscription_tier === "free" ? 1 : Infinity;
         setCanUpload((profileData.monthly_uploads_used || 0) < uploadLimit);
+        
+        // Show onboarding for new users with no uploads
+        if ((profileData.monthly_uploads_used || 0) === 0 && !localStorage.getItem('onboarding_seen')) {
+          setShowOnboarding(true);
+          localStorage.setItem('onboarding_seen', 'true');
+        }
       }
 
       // Check subscription status
@@ -177,6 +185,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+      <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
