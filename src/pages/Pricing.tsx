@@ -117,7 +117,7 @@ const Pricing = () => {
         "Light/dark mode",
       ],
       limits: [
-        "No PDF exports",
+        "No CSV exports",
         "No advanced filters",
         "Limited dashboard access",
       ],
@@ -130,7 +130,7 @@ const Pricing = () => {
       features: [
         "Unlimited CSV uploads",
         "Advanced filters & search",
-        "PDF exports",
+        "CSV exports",
         "Detailed spending reports",
         "Priority email support",
         "Monthly savings summary",
@@ -283,7 +283,7 @@ const Pricing = () => {
                     <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">PDF Exports</td>
+                    <td className="p-4">CSV Exports</td>
                     <td className="text-center p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
                     <td className="text-center p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>

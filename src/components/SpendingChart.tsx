@@ -50,7 +50,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
     <Card>
       <CardHeader>
         <CardTitle>Spending by Category</CardTitle>
-        <CardDescription>Your monthly spending breakdown</CardDescription>
+        <CardDescription>Your overall spending breakdown</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (

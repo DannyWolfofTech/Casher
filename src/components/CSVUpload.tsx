@@ -34,9 +34,9 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
 
     setLoading(true);
 
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
         const text = e.target?.result as string;
         
         // Call edge function to process CSV
@@ -52,18 +52,27 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         });
 
         onUploadComplete();
-      };
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to process CSV",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      reader.readAsText(file);
-    } catch (error: any) {
+    reader.onerror = () => {
       toast({
         title: "Error",
-        description: error.message || "Failed to process CSV",
+        description: "Failed to read file",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
-    }
+    };
+
+    reader.readAsText(file);
   };
 
   return (
