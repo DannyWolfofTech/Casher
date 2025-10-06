@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface SubscriptionsListProps {
   refreshKey?: number;
@@ -14,6 +15,7 @@ const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchSubscriptions();
@@ -48,15 +50,15 @@ const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Detected Subscriptions</CardTitle>
-        <CardDescription>Recurring payments we found in your transactions</CardDescription>
+        <CardTitle>{t("detectedSubscriptions")}</CardTitle>
+        <CardDescription>{t("recurringPayments")}</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-center text-muted-foreground py-8">Loading...</div>
+          <div className="text-center text-muted-foreground py-8">{t("loading")}</div>
         ) : subscriptions.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
-            No subscriptions detected yet. Upload a CSV to find recurring payments.
+            {t("noSubscriptionsYet")}
           </div>
         ) : (
           <div className="space-y-4">
@@ -71,12 +73,12 @@ const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
                     <Badge variant="secondary">{sub.frequency}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    £{parseFloat(sub.amount).toFixed(2)} per {sub.frequency}
+                    £{parseFloat(sub.amount).toFixed(2)} {t("perFrequency", { frequency: sub.frequency })}
                   </p>
                   {sub.estimated_annual_cost && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                       <TrendingDown className="h-3 w-3" />
-                      Annual cost: £{parseFloat(sub.estimated_annual_cost).toFixed(2)}
+                      {t("annualCost", { amount: parseFloat(sub.estimated_annual_cost).toFixed(2) })}
                     </p>
                   )}
                 </div>
@@ -86,7 +88,7 @@ const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
                   onClick={() => handleCancel(sub.service_name, sub.cancellation_url)}
                 >
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  Cancel
+                  {t("cancelSubscription")}
                 </Button>
               </div>
             ))}

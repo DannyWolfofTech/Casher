@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, FileText, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 
 interface CSVUploadProps {
   onUploadComplete: () => void;
@@ -14,6 +15,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -47,15 +49,14 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         if (error) throw error;
 
         toast({
-          title: "Success!",
-          description: `Processed ${data.transactionsCount} transactions and detected ${data.subscriptionsCount} subscriptions.`,
+          title: t("successProcessed", { transactions: data.transactionsCount, subscriptions: data.subscriptionsCount }),
         });
 
         onUploadComplete();
       } catch (error: any) {
         toast({
           title: "Error",
-          description: error.message || "Failed to process CSV",
+          description: error.message || t("errorProcessing"),
           variant: "destructive",
         });
       } finally {
@@ -66,7 +67,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
     reader.onerror = () => {
       toast({
         title: "Error",
-        description: "Failed to read file",
+        description: t("errorReading"),
         variant: "destructive",
       });
       setLoading(false);
@@ -78,9 +79,9 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Upload Bank Statement</CardTitle>
+        <CardTitle>{t("uploadBankStatement")}</CardTitle>
         <CardDescription>
-          Upload a CSV file from your bank to analyze transactions
+          {t("uploadBankStatementDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -113,11 +114,11 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
             <>
               <p className="text-lg mb-2">
                 {isDragActive
-                  ? "Drop the CSV file here"
-                  : "Drag & drop your CSV file here, or click to select"}
+                  ? t("dropFileHere")
+                  : t("dragDropPrompt")}
               </p>
               <p className="text-sm text-muted-foreground">
-                Supports CSV files from HSBC, NatWest, Barclays, and more
+                {t("supportsFormat")}
               </p>
             </>
           )}
@@ -125,7 +126,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
 
         {file && (
           <Button onClick={handleUpload} disabled={loading} className="w-full">
-            {loading ? "Processing..." : "Analyze Transactions"}
+            {loading ? t("processing") : t("analyzeTransactions")}
           </Button>
         )}
       </CardContent>

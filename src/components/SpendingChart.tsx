@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -13,6 +14,7 @@ interface SpendingChartProps {
 const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchSpendingData();
@@ -49,17 +51,17 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Spending by Category</CardTitle>
-        <CardDescription>Your overall spending breakdown</CardDescription>
+        <CardTitle>{t("spendingByCategory")}</CardTitle>
+        <CardDescription>{t("overallSpendingBreakdown")}</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-            Loading...
+            {t("loading")}
           </div>
         ) : data.length === 0 ? (
           <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-            No data available. Upload a CSV to see your spending.
+            {t("noDataAvailable")}
           </div>
         ) : (
           <ChartContainer

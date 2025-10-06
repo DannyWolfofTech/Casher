@@ -18,18 +18,120 @@ const resources = {
       detectedSubscriptions: "Detected Subscriptions",
       allTransactions: "All Transactions",
       transactionsDescription: "Complete list of your parsed transactions",
+      thisMonth: "This month",
+      perYear: "Per year",
+      uploadCsvToSeeData: "Upload CSV to see data",
+      uploadLimitReached: "Upload limit reached",
+      uploadLimitMessage: "Free tier allows 1 upload per month. Used: {count}/1",
+      upgradeForUnlimited: "Upgrade to Pro for Unlimited Uploads",
+      uploadsUsed: "Uploads used: {count}/1 this month",
+      howToExport: "How to export from your bank:",
       
-      // Table headers
-      date: "Date",
-      description: "Description",
-      amount: "Amount",
-      category: "Category",
-      export: "Export",
+      // Spending Chart
+      spendingByCategory: "Spending by Category",
+      overallSpendingBreakdown: "Your overall spending breakdown",
+      loading: "Loading...",
+      noDataAvailable: "No data available. Upload a CSV to see your spending.",
       
-      // Upload
-      getStarted: "Get Started",
-      uploadCSV: "Upload Bank Statement CSV",
-      uploadDescription: "Upload your bank statement CSV to analyze your spending and detect subscriptions",
+      // Subscriptions
+      recurringPayments: "Recurring payments we found in your transactions",
+      noSubscriptionsYet: "No subscriptions detected yet. Upload a CSV to find recurring payments.",
+      perFrequency: "per {frequency}",
+      annualCost: "Annual cost: £{amount}",
+      cancelSubscription: "Cancel",
+      
+      // CSV Upload
+      uploadBankStatement: "Upload Bank Statement",
+      uploadBankStatementDesc: "Upload a CSV file from your bank to analyze transactions",
+      dropFileHere: "Drop the CSV file here",
+      dragDropPrompt: "Drag & drop your CSV file here, or click to select",
+      supportsFormat: "Supports CSV files from HSBC, NatWest, Barclays, and more",
+      analyzeTransactions: "Analyze Transactions",
+      processing: "Processing...",
+      successProcessed: "Processed {transactions} transactions and detected {subscriptions} subscriptions.",
+      errorProcessing: "Failed to process CSV",
+      errorReading: "Failed to read file",
+      
+      // Pricing
+      chooseYourPlan: "Choose Your Plan",
+      startSavingToday: "Start saving money on unused subscriptions today",
+      featureComparison: "Feature Comparison",
+      mostPopular: "Most Popular",
+      getStartedFree: "Get Started Free",
+      upgradeNow: "Upgrade Now",
+      pleaseSignIn: "Please sign in",
+      needSignInToSubscribe: "You need to be signed in to subscribe",
+      errorCheckout: "Failed to start checkout",
+      getWeeklyProTips: "Get Weekly Pro Tips",
+      subscribeForTips: "Subscribe to receive expert financial advice and money-saving strategies",
+      enterYourEmail: "Enter your email",
+      subscribe: "Subscribe",
+      allPlansInclude: "All plans include GDPR-compliant data handling & multi-language support",
+      cancelAnytime: "Cancel anytime, no questions asked • 30-day money-back guarantee",
+      
+      // Plans
+      planFree: "Free",
+      planPro: "Pro",
+      planPremium: "Premium",
+      planFreeDesc: "Perfect for getting started",
+      planProDesc: "For regular users",
+      planPremiumDesc: "For power users",
+      
+      // Features
+      csvUploadsPerMonth: "1 CSV upload per month",
+      unlimitedCsvUploads: "Unlimited CSV uploads",
+      basicCategorization: "Basic transaction categorization",
+      viewInsights: "View insights & spot subscriptions",
+      multiLanguage: "Multi-language support",
+      lightDarkMode: "Light/dark mode",
+      advancedFilters: "Advanced filters & search",
+      csvExports: "CSV exports",
+      detailedReports: "Detailed spending reports",
+      priorityEmailSupport: "Priority email support",
+      monthlySummary: "Monthly savings summary",
+      allProFeatures: "All Pro features",
+      aiInsights: "AI-powered insights",
+      customRecommendations: "Custom financial recommendations",
+      priorityChatSupport: "Priority chat support",
+      earlyAccess: "Early access to features",
+      quarterlyReview: "Quarterly financial review",
+      
+      // Limitations
+      limitations: "Limitations:",
+      noCsvExports: "No CSV exports",
+      noAdvancedFilters: "No advanced filters",
+      limitedDashboard: "Limited dashboard access",
+      
+      // Comparison table
+      feature: "Feature",
+      transactionCategorization: "Transaction Categorization",
+      subscriptionDetection: "Subscription Detection",
+      aiPoweredInsights: "AI-Powered Insights",
+      support: "Support",
+      community: "Community",
+      email: "Email",
+      priorityChat: "Priority Chat",
+      
+      // Savings Goals
+      savingsGoals: "Savings Goals",
+      trackProgress: "Track your progress towards financial goals",
+      noGoalsYet: "No savings goals yet. Add one to start tracking!",
+      addGoal: "Add Goal",
+      
+      // Coming Soon
+      bankConnect: "Bank Connect (Coming Soon)",
+      bankConnectDesc: "Connect your bank directly for automatic transaction tracking",
+      bankConnectPrompt: "Join the waitlist to get early access to automatic bank connections via Moneyhub API",
+      joinWaitlist: "Join Waitlist",
+      
+      // Table
+      upgradeToProExport: "Upgrade to Pro",
+      exportFeatureDesc: "Export feature is available on Pro and Premium plans",
+      exportSuccessful: "Export successful",
+      exportedTransactions: "Your transactions have been exported",
+      pageOf: "Page {current} of {total}",
+      other: "Other",
+      uncategorized: "Uncategorized",
       
       // Common
       back: "Back",
@@ -54,18 +156,120 @@ const resources = {
       detectedSubscriptions: "Abonamente detectate",
       allTransactions: "Toate tranzacțiile",
       transactionsDescription: "Lista completă a tranzacțiilor tale analizate",
+      thisMonth: "Luna aceasta",
+      perYear: "Pe an",
+      uploadCsvToSeeData: "Încarcă CSV pentru date",
+      uploadLimitReached: "Limită încărcare atinsă",
+      uploadLimitMessage: "Planul gratuit permite 1 încărcare pe lună. Folosit: {count}/1",
+      upgradeForUnlimited: "Actualizează la Pro pentru încărcări nelimitate",
+      uploadsUsed: "Încărcări folosite: {count}/1 luna aceasta",
+      howToExport: "Cum să exporți din banca ta:",
       
-      // Table headers
-      date: "Data",
-      description: "Descriere",
-      amount: "Sumă",
-      category: "Categorie",
-      export: "Exportă",
+      // Spending Chart
+      spendingByCategory: "Cheltuieli pe categorie",
+      overallSpendingBreakdown: "Defalcarea totală a cheltuielilor",
+      loading: "Se încarcă...",
+      noDataAvailable: "Nicio dată disponibilă. Încarcă un CSV pentru a vedea cheltuielile.",
       
-      // Upload
-      getStarted: "Începe acum",
-      uploadCSV: "Încarcă extras de cont CSV",
-      uploadDescription: "Încarcă extrasul tău bancar CSV pentru a analiza cheltuielile și detecta abonamentele",
+      // Subscriptions
+      recurringPayments: "Plăți recurente găsite în tranzacțiile tale",
+      noSubscriptionsYet: "Niciun abonament detectat încă. Încarcă un CSV pentru a găsi plăți recurente.",
+      perFrequency: "pe {frequency}",
+      annualCost: "Cost anual: £{amount}",
+      cancelSubscription: "Anulează",
+      
+      // CSV Upload
+      uploadBankStatement: "Încarcă extras bancar",
+      uploadBankStatementDesc: "Încarcă un fișier CSV de la banca ta pentru a analiza tranzacțiile",
+      dropFileHere: "Eliberează fișierul CSV aici",
+      dragDropPrompt: "Trage și eliberează fișierul CSV aici sau apasă pentru a selecta",
+      supportsFormat: "Suportă fișiere CSV de la HSBC, NatWest, Barclays și altele",
+      analyzeTransactions: "Analizează tranzacții",
+      processing: "Se procesează...",
+      successProcessed: "Procesate {transactions} tranzacții și detectate {subscriptions} abonamente.",
+      errorProcessing: "Eșec procesare CSV",
+      errorReading: "Eșec citire fișier",
+      
+      // Pricing
+      chooseYourPlan: "Alege planul tău",
+      startSavingToday: "Începe să economisești bani de la abonamente nefolosite astăzi",
+      featureComparison: "Comparație funcționalități",
+      mostPopular: "Cel mai popular",
+      getStartedFree: "Începe gratuit",
+      upgradeNow: "Actualizează acum",
+      pleaseSignIn: "Te rog autentifică-te",
+      needSignInToSubscribe: "Trebuie să fii autentificat pentru abonament",
+      errorCheckout: "Eșec la inițializare plată",
+      getWeeklyProTips: "Primește sfaturi săptămânale",
+      subscribeForTips: "Abonează-te pentru sfaturi financiare și strategii de economisire",
+      enterYourEmail: "Introdu adresa ta de email",
+      subscribe: "Abonează-te",
+      allPlansInclude: "Toate planurile includ gestionare date conformă GDPR și suport multilingv",
+      cancelAnytime: "Anulează oricând, fără întrebări • Garanție rambursare 30 zile",
+      
+      // Plans
+      planFree: "Gratuit",
+      planPro: "Pro",
+      planPremium: "Premium",
+      planFreeDesc: "Perfect pentru început",
+      planProDesc: "Pentru utilizatori regulați",
+      planPremiumDesc: "Pentru utilizatori avansați",
+      
+      // Features
+      csvUploadsPerMonth: "1 încărcare CSV pe lună",
+      unlimitedCsvUploads: "Încărcări CSV nelimitate",
+      basicCategorization: "Categorizare de bază a tranzacțiilor",
+      viewInsights: "Vezi analize și detectează abonamente",
+      multiLanguage: "Suport multilingv",
+      lightDarkMode: "Mod luminos/întunecat",
+      advancedFilters: "Filtre și căutare avansate",
+      csvExports: "Exporturi CSV",
+      detailedReports: "Rapoarte detaliate de cheltuieli",
+      priorityEmailSupport: "Suport email prioritar",
+      monthlySummary: "Rezumat lunar economii",
+      allProFeatures: "Toate funcționalitățile Pro",
+      aiInsights: "Analize cu inteligență artificială",
+      customRecommendations: "Recomandări financiare personalizate",
+      priorityChatSupport: "Suport chat prioritar",
+      earlyAccess: "Acces timpuriu la funcționalități",
+      quarterlyReview: "Revizuire financiară trimestrială",
+      
+      // Limitations
+      limitations: "Limitări:",
+      noCsvExports: "Fără exporturi CSV",
+      noAdvancedFilters: "Fără filtre avansate",
+      limitedDashboard: "Acces limitat la panou",
+      
+      // Comparison table
+      feature: "Funcționalitate",
+      transactionCategorization: "Categorizare tranzacții",
+      subscriptionDetection: "Detectare abonamente",
+      aiPoweredInsights: "Analize cu AI",
+      support: "Suport",
+      community: "Comunitate",
+      email: "Email",
+      priorityChat: "Chat prioritar",
+      
+      // Savings Goals
+      savingsGoals: "Obiective de economisire",
+      trackProgress: "Urmărește progresul către obiectivele financiare",
+      noGoalsYet: "Niciun obiectiv încă. Adaugă unul pentru a începe urmărirea!",
+      addGoal: "Adaugă obiectiv",
+      
+      // Coming Soon
+      bankConnect: "Conectare bancă (În curând)",
+      bankConnectDesc: "Conectează-ți banca direct pentru urmărire automată a tranzacțiilor",
+      bankConnectPrompt: "Alătură-te listei de așteptare pentru acces timpuriu la conexiuni bancare automate",
+      joinWaitlist: "Alătură-te listei",
+      
+      // Table
+      upgradeToProExport: "Actualizează la Pro",
+      exportFeatureDesc: "Funcția de export este disponibilă pentru planurile Pro și Premium",
+      exportSuccessful: "Export reușit",
+      exportedTransactions: "Tranzacțiile tale au fost exportate",
+      pageOf: "Pagina {current} din {total}",
+      other: "Altele",
+      uncategorized: "Necategorizat",
       
       // Common
       back: "Înapoi",
@@ -90,18 +294,120 @@ const resources = {
       detectedSubscriptions: "Suscripciones detectadas",
       allTransactions: "Todas las transacciones",
       transactionsDescription: "Lista completa de tus transacciones analizadas",
+      thisMonth: "Este mes",
+      perYear: "Por año",
+      uploadCsvToSeeData: "Sube CSV para ver datos",
+      uploadLimitReached: "Límite de subidas alcanzado",
+      uploadLimitMessage: "Plan gratuito permite 1 subida por mes. Usado: {count}/1",
+      upgradeForUnlimited: "Actualiza a Pro para subidas ilimitadas",
+      uploadsUsed: "Subidas usadas: {count}/1 este mes",
+      howToExport: "Cómo exportar desde tu banco:",
       
-      // Table headers
-      date: "Fecha",
-      description: "Descripción",
-      amount: "Monto",
-      category: "Categoría",
-      export: "Exportar",
+      // Spending Chart
+      spendingByCategory: "Gastos por categoría",
+      overallSpendingBreakdown: "Desglose total de gastos",
+      loading: "Cargando...",
+      noDataAvailable: "No hay datos disponibles. Sube un CSV para ver tus gastos.",
       
-      // Upload
-      getStarted: "Empezar",
-      uploadCSV: "Subir extracto bancario CSV",
-      uploadDescription: "Sube tu extracto bancario CSV para analizar tus gastos y detectar suscripciones",
+      // Subscriptions
+      recurringPayments: "Pagos recurrentes encontrados en tus transacciones",
+      noSubscriptionsYet: "No se detectaron suscripciones todavía. Sube un CSV para encontrar pagos recurrentes.",
+      perFrequency: "por {frequency}",
+      annualCost: "Costo anual: £{amount}",
+      cancelSubscription: "Cancelar",
+      
+      // CSV Upload
+      uploadBankStatement: "Subir extracto bancario",
+      uploadBankStatementDesc: "Sube un archivo CSV de tu banco para analizar transacciones",
+      dropFileHere: "Suelta el archivo CSV aquí",
+      dragDropPrompt: "Arrastra y suelta tu archivo CSV aquí o haz clic para seleccionar",
+      supportsFormat: "Soporta archivos CSV de HSBC, NatWest, Barclays y más",
+      analyzeTransactions: "Analizar transacciones",
+      processing: "Procesando...",
+      successProcessed: "Procesadas {transactions} transacciones y detectadas {subscriptions} suscripciones.",
+      errorProcessing: "Error al procesar CSV",
+      errorReading: "Error al leer archivo",
+      
+      // Pricing
+      chooseYourPlan: "Elige tu plan",
+      startSavingToday: "Comienza a ahorrar dinero en suscripciones no utilizadas hoy",
+      featureComparison: "Comparación de características",
+      mostPopular: "Más popular",
+      getStartedFree: "Comenzar gratis",
+      upgradeNow: "Actualizar ahora",
+      pleaseSignIn: "Por favor inicia sesión",
+      needSignInToSubscribe: "Necesitas iniciar sesión para suscribirte",
+      errorCheckout: "Error al iniciar pago",
+      getWeeklyProTips: "Recibe consejos semanales",
+      subscribeForTips: "Suscríbete para recibir consejos financieros y estrategias de ahorro",
+      enterYourEmail: "Ingresa tu correo electrónico",
+      subscribe: "Suscribirse",
+      allPlansInclude: "Todos los planes incluyen manejo de datos conforme a GDPR y soporte multiidioma",
+      cancelAnytime: "Cancela en cualquier momento, sin preguntas • Garantía de devolución de 30 días",
+      
+      // Plans
+      planFree: "Gratis",
+      planPro: "Pro",
+      planPremium: "Premium",
+      planFreeDesc: "Perfecto para comenzar",
+      planProDesc: "Para usuarios regulares",
+      planPremiumDesc: "Para usuarios avanzados",
+      
+      // Features
+      csvUploadsPerMonth: "1 subida CSV por mes",
+      unlimitedCsvUploads: "Subidas CSV ilimitadas",
+      basicCategorization: "Categorización básica de transacciones",
+      viewInsights: "Ver análisis y detectar suscripciones",
+      multiLanguage: "Soporte multiidioma",
+      lightDarkMode: "Modo claro/oscuro",
+      advancedFilters: "Filtros y búsqueda avanzados",
+      csvExports: "Exportaciones CSV",
+      detailedReports: "Informes detallados de gastos",
+      priorityEmailSupport: "Soporte por email prioritario",
+      monthlySummary: "Resumen mensual de ahorros",
+      allProFeatures: "Todas las características Pro",
+      aiInsights: "Análisis con inteligencia artificial",
+      customRecommendations: "Recomendaciones financieras personalizadas",
+      priorityChatSupport: "Soporte por chat prioritario",
+      earlyAccess: "Acceso temprano a características",
+      quarterlyReview: "Revisión financiera trimestral",
+      
+      // Limitations
+      limitations: "Limitaciones:",
+      noCsvExports: "Sin exportaciones CSV",
+      noAdvancedFilters: "Sin filtros avanzados",
+      limitedDashboard: "Acceso limitado al panel",
+      
+      // Comparison table
+      feature: "Característica",
+      transactionCategorization: "Categorización de transacciones",
+      subscriptionDetection: "Detección de suscripciones",
+      aiPoweredInsights: "Análisis con IA",
+      support: "Soporte",
+      community: "Comunidad",
+      email: "Email",
+      priorityChat: "Chat prioritario",
+      
+      // Savings Goals
+      savingsGoals: "Objetivos de ahorro",
+      trackProgress: "Rastrea tu progreso hacia objetivos financieros",
+      noGoalsYet: "Aún no hay objetivos. ¡Agrega uno para comenzar a rastrear!",
+      addGoal: "Agregar objetivo",
+      
+      // Coming Soon
+      bankConnect: "Conexión bancaria (Próximamente)",
+      bankConnectDesc: "Conecta tu banco directamente para seguimiento automático de transacciones",
+      bankConnectPrompt: "Únete a la lista de espera para acceso temprano a conexiones bancarias automáticas",
+      joinWaitlist: "Unirse a lista",
+      
+      // Table
+      upgradeToProExport: "Actualizar a Pro",
+      exportFeatureDesc: "La función de exportación está disponible en planes Pro y Premium",
+      exportSuccessful: "Exportación exitosa",
+      exportedTransactions: "Tus transacciones han sido exportadas",
+      pageOf: "Página {current} de {total}",
+      other: "Otros",
+      uncategorized: "Sin categorizar",
       
       // Common
       back: "Atrás",

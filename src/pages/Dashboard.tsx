@@ -32,7 +32,6 @@ const Dashboard = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t: tLegacy } = useLanguage();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -192,25 +191,25 @@ const Dashboard = () => {
       
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">{tLegacy("appName")}</h1>
+          <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
           <div className="flex items-center gap-4">
             <LanguageSelector />
             <ThemeToggle />
             <Button variant="outline" size="sm" onClick={shareReferral}>
               <Share2 className="mr-2 h-4 w-4" />
-              {tLegacy("share")}
+              {t("share")}
             </Button>
             {isAdmin && (
               <Button variant="outline" onClick={() => navigate("/admin")}>
-                {tLegacy("adminPanel")}
+                {t("adminPanel")}
               </Button>
             )}
             <Button variant="outline" onClick={() => navigate("/pricing")}>
-              {tLegacy("upgradeToPro")}
+              {t("upgradeToPro")}
             </Button>
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              {tLegacy("signOut")}
+              {t("signOut")}
             </Button>
           </div>
         </div>
@@ -220,34 +219,34 @@ const Dashboard = () => {
         <div className="grid gap-6 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Monthly Spending</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("monthlySpending")}</CardTitle>
               <PieChartIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">£{monthlySpending.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">{monthlySpending === 0 ? 'Upload CSV to see data' : 'This month'}</p>
+              <p className="text-xs text-muted-foreground">{monthlySpending === 0 ? t("uploadCsvToSeeData") : t("thisMonth")}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Subscription Leaks</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("subscriptionLeaks")}</CardTitle>
               <TrendingDown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{subscriptionCount}</div>
-              <p className="text-xs text-muted-foreground">Detected subscriptions</p>
+              <p className="text-xs text-muted-foreground">{t("detectedSubscriptions")}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Potential Savings</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("potentialSavings")}</CardTitle>
               <TrendingDown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">£{potentialSavings.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Per year</p>
+              <p className="text-xs text-muted-foreground">{t("perYear")}</p>
             </CardContent>
           </Card>
         </div>
@@ -255,18 +254,18 @@ const Dashboard = () => {
         {!showUpload ? (
           <Card>
             <CardHeader>
-              <CardTitle>Get Started</CardTitle>
+              <CardTitle>{t("getStarted")}</CardTitle>
               <CardDescription>
-                Upload your bank statement CSV to analyze your spending and detect subscriptions
+                {t("uploadDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {!canUpload && userTier === "free" ? (
                 <div className="space-y-4">
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                    <p className="text-sm font-medium">Upload limit reached</p>
+                    <p className="text-sm font-medium">{t("uploadLimitReached")}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Free tier allows 1 upload per month. Used: {uploadsUsed}/1
+                      {t("uploadLimitMessage", { count: uploadsUsed })}
                     </p>
                   </div>
                   <Button 
@@ -274,7 +273,7 @@ const Dashboard = () => {
                     className="w-full" 
                     size="lg"
                   >
-                    Upgrade to Pro for Unlimited Uploads
+                    {t("upgradeForUnlimited")}
                   </Button>
                 </div>
               ) : (
@@ -286,17 +285,17 @@ const Dashboard = () => {
                     disabled={!canUpload}
                   >
                     <Upload className="mr-2 h-5 w-5" />
-                    Upload Bank Statement CSV
+                    {t("uploadCSV")}
                   </Button>
                   {userTier === "free" && (
                     <p className="text-xs text-muted-foreground mt-2 text-center">
-                      Uploads used: {uploadsUsed}/1 this month
+                      {t("uploadsUsed", { count: uploadsUsed })}
                     </p>
                   )}
                 </>
               )}
               <div className="mt-4 p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold mb-2">How to export from your bank:</h3>
+                <h3 className="font-semibold mb-2">{t("howToExport")}</h3>
                 <ul className="space-y-1 text-sm text-muted-foreground">
                   <li>• HSBC: Log in → Statements → Download as CSV</li>
                   <li>• NatWest: Log in → Accounts → Export transactions</li>
@@ -338,16 +337,16 @@ const Dashboard = () => {
 
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardHeader>
-            <CardTitle>Bank Connect (Coming Soon)</CardTitle>
+            <CardTitle>{t("bankConnect")}</CardTitle>
             <CardDescription>
-              Connect your bank directly for automatic transaction tracking
+              {t("bankConnectDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Join the waitlist to get early access to automatic bank connections via Moneyhub API
+              {t("bankConnectPrompt")}
             </p>
-            <Button variant="outline">Join Waitlist</Button>
+            <Button variant="outline">{t("joinWaitlist")}</Button>
           </CardContent>
         </Card>
       </main>

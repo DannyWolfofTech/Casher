@@ -55,8 +55,8 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
   const handleExport = () => {
     if (userTier === 'free') {
       toast({
-        title: "Upgrade to Pro",
-        description: "Export feature is available on Pro and Premium plans",
+        title: t("upgradeToProExport"),
+        description: t("exportFeatureDesc"),
         variant: "destructive",
       });
       return;
@@ -86,8 +86,8 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
     window.URL.revokeObjectURL(url);
 
     toast({
-      title: "Export successful",
-      description: "Your transactions have been exported",
+      title: t("exportSuccessful"),
+      description: t("exportedTransactions"),
     });
   };
 
@@ -143,7 +143,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
                         ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                         : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
                     }`}>
-                      {transaction.category || 'Other'}
+                      {transaction.category || t("other")}
                     </span>
                   </TableCell>
                 </TableRow>
@@ -155,7 +155,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-muted-foreground">
-              Page {currentPage} of {totalPages}
+              {t("pageOf", { current: currentPage, total: totalPages })}
             </p>
             <div className="flex gap-2">
               <Button
