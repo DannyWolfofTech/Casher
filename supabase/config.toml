@@ -2,3 +2,12 @@ project_id = "ewnjmvxildwmbdmosasz"
 
 [functions.process-csv]
 verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.send-welcome-email]
+verify_jwt = false
+
+[functions.check-subscription]
+verify_jwt = true

@@ -37,10 +37,26 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending welcome email to:", email);
 
     const emailResponse = await resend.emails.send({
-      from: "hello@casher.app <onboarding@resend.dev>",
+      from: "Casher <onboarding@resend.dev>",
       to: [email],
       subject: "Welcome to Casher!",
-      html: `<p>Pro tips incoming! Upload your first CSV to spot subs.</p>`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #22c55e;">Welcome to Casher! 💰</h1>
+          <p>Pro tips incoming! Upload your first CSV to spot subscriptions and start saving.</p>
+          <p><strong>Here's how to get started:</strong></p>
+          <ol>
+            <li>Export your bank statement as CSV (works with HSBC, NatWest, Barclays)</li>
+            <li>Upload it to your dashboard</li>
+            <li>We'll automatically detect recurring subscriptions</li>
+            <li>See how much you can save annually!</li>
+          </ol>
+          <p>Need help? Just reply to this email.</p>
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            Best regards,<br>The Casher Team
+          </p>
+        </div>
+      `,
     });
 
     console.log("Email sent successfully:", emailResponse);
