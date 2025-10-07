@@ -7,6 +7,7 @@ import { Label } from "./ui/label";
 import { Progress } from "./ui/progress";
 import { Plus, Target, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ export default function SavingsGoals() {
   const [targetAmount, setTargetAmount] = useState("");
   const [deadline, setDeadline] = useState("");
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchGoals();
@@ -62,14 +64,14 @@ export default function SavingsGoals() {
 
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to create savings goal",
+        title: t("error"),
+        description: t("failedToCreateGoal"),
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Success",
-        description: "Savings goal created!",
+        title: t("success"),
+        description: t("goalCreated"),
       });
       setOpen(false);
       setTitle("");
@@ -84,14 +86,14 @@ export default function SavingsGoals() {
 
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete goal",
+        title: t("error"),
+        description: t("failedToDeleteGoal"),
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Success",
-        description: "Goal deleted",
+        title: t("success"),
+        description: t("goalDeleted"),
       });
       fetchGoals();
     }
@@ -104,34 +106,34 @@ export default function SavingsGoals() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5" />
-              Savings Goals
+              {t("savingsGoals")}
             </CardTitle>
-            <CardDescription>Track your financial goals</CardDescription>
+            <CardDescription>{t("trackFinancialGoals")}</CardDescription>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Goal
+                {t("addGoal")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create Savings Goal</DialogTitle>
-                <DialogDescription>Set a new financial target to work towards</DialogDescription>
+                <DialogTitle>{t("createGoal")}</DialogTitle>
+                <DialogDescription>{t("setFinancialTarget")}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="title">Goal Title</Label>
+                  <Label htmlFor="title">{t("goalTitle")}</Label>
                   <Input
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g., Emergency Fund"
+                    placeholder={t("goalTitlePlaceholder")}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="amount">Target Amount (£)</Label>
+                  <Label htmlFor="amount">{t("targetAmount")}</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -141,7 +143,7 @@ export default function SavingsGoals() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="deadline">Deadline (Optional)</Label>
+                  <Label htmlFor="deadline">{t("deadlineOptional")}</Label>
                   <Input
                     id="deadline"
                     type="date"
@@ -150,7 +152,7 @@ export default function SavingsGoals() {
                   />
                 </div>
                 <Button onClick={createGoal} className="w-full">
-                  Create Goal
+                  {t("createGoal")}
                 </Button>
               </div>
             </DialogContent>
@@ -160,7 +162,7 @@ export default function SavingsGoals() {
       <CardContent>
         {goals.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            No savings goals yet. Create one to get started!
+            {t("noGoalsYet")}
           </p>
         ) : (
           <div className="space-y-4">
@@ -185,8 +187,8 @@ export default function SavingsGoals() {
                   </div>
                   <Progress value={progress} className="mb-2" />
                   <p className="text-xs text-muted-foreground">
-                    {progress.toFixed(0)}% complete
-                    {goal.deadline && ` • Due: ${new Date(goal.deadline).toLocaleDateString()}`}
+                    {progress.toFixed(0)}% {t("complete")}
+                    {goal.deadline && ` • ${t("due")}: ${new Date(goal.deadline).toLocaleDateString()}`}
                   </p>
                 </div>
               );

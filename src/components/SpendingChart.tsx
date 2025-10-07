@@ -35,10 +35,13 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
         categoryTotals[category] = (categoryTotals[category] || 0) + Math.abs(parseFloat(t.amount));
       });
 
-      const chartData = Object.entries(categoryTotals).map(([name, value]) => ({
-        name,
-        value: parseFloat(value.toFixed(2)),
-      }));
+      // Filter out categories with £0 spending and format data
+      const chartData = Object.entries(categoryTotals)
+        .filter(([_, value]) => value > 0)
+        .map(([name, value]) => ({
+          name,
+          value: parseFloat(value.toFixed(2)),
+        }));
 
       setData(chartData);
     } catch (error) {
@@ -74,8 +77,8 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
                   data={data}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  labelLine={true}
+                  label={({ name, value, percent }) => `${name}: £${value.toFixed(2)} (${(percent * 100).toFixed(0)}%)`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
