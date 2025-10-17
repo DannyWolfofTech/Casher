@@ -11,8 +11,13 @@ interface SpendingChartProps {
   refreshKey?: number;
 }
 
+interface CategoryData {
+  name: string;
+  value: number;
+}
+
 const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<CategoryData[]>([]);
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
@@ -28,11 +33,18 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
 
       if (error) throw error;
 
+      type TransactionRow = { category: string | null; amount: number | string };
+      const transactionsData = (transactions ?? []) as TransactionRow[];
+
       // Group by category and sum amounts
-      const categoryTotals: { [key: string]: number } = {};
-      transactions?.forEach((t: any) => {
-        const category = t.category || 'Other';
-        categoryTotals[category] = (categoryTotals[category] || 0) + Math.abs(parseFloat(t.amount));
+      const categoryTotals: Record<string, number> = {};
+      transactionsData.forEach((transaction) => {
+        const category = transaction.category || 'Other';
+        const amount = Number(transaction.amount);
+
+        if (amount < 0) {
+          categoryTotals[category] = (categoryTotals[category] || 0) + Math.abs(amount);
+        }
       });
 
       // Filter out categories with £0 spending and format data

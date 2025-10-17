@@ -1,43 +1,14 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.190.0/testing/asserts.ts";
+import {
+  categorizeTransaction,
+  detectSubscription,
+  extractMerchant,
+  parseAmount,
+  mapRowToTransaction,
+  RowProcessingResult,
+} from "./utils.ts";
 
-// Helper functions extracted for testing
-function categorizeTransaction(description: string): string {
-  const lower = description.toLowerCase();
-  
-  // Check for subscriptions first
-  if (lower.includes("netflix") || lower.includes("spotify") || lower.includes("disney") || 
-      lower.includes("prime") || lower.includes("youtube premium") || lower.includes("apple music") || 
-      lower.includes("hbo") || lower.includes("subscription")) return "Subscription";
-  
-  if (lower.includes("rent") || lower.includes("mortgage")) return "Rent";
-  if (lower.includes("grocery") || lower.includes("tesco") || lower.includes("sainsbury") || lower.includes("asda")) return "Groceries";
-  if (lower.includes("gym") || lower.includes("fitness")) return "Fitness";
-  if (lower.includes("restaurant") || lower.includes("cafe") || lower.includes("takeaway")) return "Dining";
-  if (lower.includes("transport") || lower.includes("uber") || lower.includes("train")) return "Transport";
-  
-  return "Other";
-}
-
-function detectSubscription(description: string): boolean {
-  const subscriptionKeywords = [
-    "netflix", "spotify", "amazon prime", "disney", "apple music",
-    "youtube premium", "hbo", "gym", "fitness", "subscription",
-    "monthly", "annual", "membership"
-  ];
-  
-  const lower = description.toLowerCase();
-  return subscriptionKeywords.some(keyword => lower.includes(keyword));
-}
-
-function extractMerchant(description: string): string {
-  // Remove common transaction codes and extract merchant name
-  const cleaned = description
-    .replace(/\d{2}\/\d{2}\/\d{2,4}/g, "")
-    .replace(/[A-Z]{2,3}\s\d+/g, "")
-    .trim();
-  
-  return cleaned.substring(0, 50);
-}
+const TEST_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 // Tests for categorizeTransaction
 Deno.test("categorizeTransaction - detects Netflix subscription", () => {
@@ -167,4 +138,110 @@ Deno.test("extractMerchant - handles empty string", () => {
 Deno.test("extractMerchant - trims whitespace", () => {
   const result = extractMerchant("   HSBC BANK   ");
   assertEquals(result, "HSBC BANK");
+});
+
+// Tests for parseAmount
+Deno.test("parseAmount - handles common en-GB and HSBC formats", () => {
+  const cases: Array<[unknown, number | null]> = [
+    ["-9.99", -9.99],
+    ["£165.45", 165.45],
+    ["£165,45", 165.45],
+    ["1,234.56", 1234.56],
+    ["1.234,56", 1234.56],
+    ["(123.45)", -123.45],
+    ["123-", -123],
+    [123.45, 123.45],
+    ["DR 45.00", -45],
+    ["CR 99.99", 99.99],
+    ["", null],
+    ["invalid", null],
+  ];
+
+  for (const [input, expected] of cases) {
+    const result = parseAmount(input);
+
+    if (expected === null) {
+      assertEquals(result, null);
+    } else {
+      const roundedResult = Number(result!.toFixed(5));
+      const roundedExpected = Number(expected.toFixed(5));
+      assertEquals(roundedResult, roundedExpected);
+    }
+  }
+});
+
+// Tests for mapRowToTransaction with HSBC-like data
+Deno.test("mapRowToTransaction - handles HSBC CSV rows with accurate totals", () => {
+  const rows = [
+    { "Transaction Description": "Netflix", Amount: "-9.99", Date: "15/01/2025" },
+    { "Transaction Description": "Salary", Amount: "2,000.00", Date: "2025-01-31" },
+    { "Transaction Description": "Groceries Tesco", Amount: "-96,50", Date: "01/02/2025" },
+    { "Transaction Description": "Gym Membership", Amount: "-35.00", Date: "02/02/2025" },
+  ];
+
+  const processed = rows
+    .map((row) => mapRowToTransaction(row, TEST_USER_ID))
+    .filter((result): result is RowProcessingResult => result !== null);
+
+  assertEquals(processed.length, 4);
+
+  const netflix = processed[0].transaction;
+  assertEquals(netflix.amount, -9.99);
+  assertEquals(netflix.date, "2025-01-15");
+  assertEquals(netflix.is_recurring, true);
+  assertEquals(processed[0].subscriptionAmount, 9.99);
+
+  const salary = processed[1].transaction;
+  assertEquals(salary.amount, 2000);
+  assertEquals(salary.date, "2025-01-31");
+
+  const groceries = processed[2].transaction;
+  assertEquals(Number(groceries.amount.toFixed(2)), -96.5);
+  assertEquals(groceries.category, "Groceries");
+
+  const gym = processed[3].transaction;
+  assertEquals(gym.amount, -35);
+  assertEquals(gym.is_recurring, true);
+
+  const netTotal = processed.reduce((sum, item) => sum + item.transaction.amount, 0);
+  assertEquals(Number(netTotal.toFixed(2)), 1858.51);
+});
+
+Deno.test("mapRowToTransaction - handles separate debit and credit columns", () => {
+  const debitRow = {
+    "Transaction Description": "HSBC Debit",
+    "Debit Amount": "45.00",
+    Date: "10/02/2025",
+  };
+
+  const creditRow = {
+    "Transaction Description": "HSBC Credit",
+    "Credit Amount": "99.50",
+    Date: "11/02/2025",
+  };
+
+  const debitResult = mapRowToTransaction(debitRow, TEST_USER_ID);
+  const creditResult = mapRowToTransaction(creditRow, TEST_USER_ID);
+
+  assertEquals(debitResult!.transaction.amount, -45);
+  assertEquals(creditResult!.transaction.amount, 99.5);
+});
+
+Deno.test("mapRowToTransaction - returns null for zero or missing amounts", () => {
+  const zeroAmountRow = {
+    "Transaction Description": "Zero Amount",
+    Amount: "0.00",
+    Date: "10/01/2025",
+  };
+
+  const missingAmountRow = {
+    "Transaction Description": "Missing Amount",
+    Date: "11/01/2025",
+  };
+
+  const zeroResult = mapRowToTransaction(zeroAmountRow, TEST_USER_ID);
+  const missingResult = mapRowToTransaction(missingAmountRow, TEST_USER_ID);
+
+  assertEquals(zeroResult, null);
+  assertEquals(missingResult, null);
 });

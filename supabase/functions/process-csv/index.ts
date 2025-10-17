@@ -1,9 +1,24 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import {
+  mapRowToTransaction,
+  type ProcessedTransactionRecord,
+  type RawTransactionRow,
+} from "./utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+type SubscriptionInsert = {
+  service_name: string;
+  amount: number;
+  frequency: "monthly";
+  last_charged: string;
+  estimated_annual_cost: number;
+  cancellation_url: string | null;
+  status: "active";
 };
 
 serve(async (req) => {
@@ -28,87 +43,73 @@ serve(async (req) => {
     // Parse CSV with PapaParse (Deno-compatible)
     const { default: Papa } = await import('https://esm.sh/papaparse@5.4.1');
     const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
-    const df = parsed.data as any[];
+    const df = parsed.data as RawTransactionRow[];
 
- if (df.length === 0) {
-   return new Response(JSON.stringify({ error: 'No valid transactions found' }), { 
-     headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-     status: 400 
-   });
- }
+    if (df.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No valid transactions found" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        },
+      );
+    }
 
- const transactions: any[] = [];
- const subscriptionMap = new Map<string, any>();
+    const transactions: ProcessedTransactionRecord[] = [];
+    const subscriptionMap = new Map<string, SubscriptionInsert>();
 
-  // Process transactions with per-row error handling
-  df.forEach((transaction: any, index: number) => {
-    try {
-      // Extract data (flexible for different bank formats - HSBC uses 'Transaction Description', 'Amount', 'Date')
-      const date = transaction.date || transaction.Date || transaction['transaction date'] || transaction['Transaction Date'] || new Date().toISOString();
-      const description = transaction.description || transaction.Description || transaction['Transaction Description'] || transaction.memo || transaction.Memo || transaction.narrative || transaction.Narrative || '';
-      const rawAmount = transaction.amount || transaction.Amount || transaction['debit amount'] || transaction['Debit Amount'] || transaction['credit amount'] || transaction['Credit Amount'] || '0';
-      const amount = parseFloat(String(rawAmount).replace(/[^0-9.-]/g, '')) || 0;  // Clean numbers, handle negatives
+    // Process transactions with per-row error handling
+    df.forEach((row, index) => {
+      try {
+        const result = mapRowToTransaction(row, user.id);
 
-      if (!description || isNaN(amount) || amount === 0) return;  // Skip invalid rows, not whole file
+        if (result === null) {
+          return; // Skip invalid rows, not whole file
+        }
 
-     // Parse date (UK format to ISO)
-     const dateMatch = date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-     const parsedDate = dateMatch ? new Date(`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`) : new Date(date);
-     const dateStr = parsedDate.toISOString().split('T')[0];
+        const { transaction, merchant, subscriptionAmount } = result;
 
-     // Categorize and detect
-     const category = categorizeTransaction(description);
-     const isSubscription = detectSubscription(description);
-     const merchant = extractMerchant(description);
+        transactions.push(transaction);
 
-     transactions.push({
-       user_id: user.id,
-       date: dateStr,
-       description,
-       amount: Math.abs(amount),
-       category,
-       is_recurring: isSubscription,
-       recurring_frequency: isSubscription ? 'monthly' : null,
-       merchant,
-     });
-
-     // Track subscriptions
-     if (isSubscription) {
-       if (!subscriptionMap.has(merchant)) {
-         subscriptionMap.set(merchant, {
-           service_name: merchant,
-           amount: Math.abs(amount),
-           frequency: 'monthly',
-           last_charged: dateStr,
-           estimated_annual_cost: Math.abs(amount) * 12,
-           cancellation_url: null,
-           status: 'active',
-         });
-       }
-     }
-   } catch (rowError) {
-     console.log(`Row ${index} error: ${rowError}`);  // Log bad rows, don't crash
-   }
- });
+        // Track subscriptions
+        if (transaction.is_recurring && !subscriptionMap.has(merchant)) {
+          subscriptionMap.set(merchant, {
+            service_name: merchant,
+            amount: subscriptionAmount,
+            frequency: "monthly",
+            last_charged: transaction.date,
+            estimated_annual_cost: subscriptionAmount * 12,
+            cancellation_url: null,
+            status: "active",
+          });
+        }
+      } catch (rowError) {
+        console.log(`Row ${index} error: ${rowError}`); // Log bad rows, don't crash
+      }
+    });
 
     // Insert transactions
-    const { error: transError } = await supabaseClient
-      .from("transactions")
-      .insert(transactions);
+    if (transactions.length > 0) {
+      const { error: transError } = await supabaseClient
+        .from("transactions")
+        .insert(transactions);
 
-    if (transError) throw transError;
+      if (transError) throw transError;
+    }
 
     // Insert detected subscriptions
-    const subscriptions = Array.from(subscriptionMap.values()).map(sub => ({
+    const subscriptions = Array.from(subscriptionMap.values()).map((sub) => ({
       ...sub,
       user_id: user.id,
     }));
 
-    const { error: subError } = await supabaseClient
-      .from("detected_subscriptions")
-      .insert(subscriptions);
+    if (subscriptions.length > 0) {
+      const { error: subError } = await supabaseClient
+        .from("detected_subscriptions")
+        .insert(subscriptions);
 
-    if (subError) throw subError;
+      if (subError) throw subError;
+    }
 
     return new Response(
       JSON.stringify({
@@ -118,54 +119,17 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      }
+      },
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
-      }
+      },
     );
   }
 });
-
-function categorizeTransaction(description: string): string {
-  const lower = description.toLowerCase();
-  
-  // Check for subscriptions first
-  if (lower.includes("netflix") || lower.includes("spotify") || lower.includes("disney") || 
-      lower.includes("prime") || lower.includes("youtube premium") || lower.includes("apple music") || 
-      lower.includes("hbo") || lower.includes("subscription")) return "Subscription";
-  
-  if (lower.includes("rent") || lower.includes("mortgage")) return "Rent";
-  if (lower.includes("grocery") || lower.includes("tesco") || lower.includes("sainsbury") || lower.includes("asda")) return "Groceries";
-  if (lower.includes("gym") || lower.includes("fitness")) return "Fitness";
-  if (lower.includes("restaurant") || lower.includes("cafe") || lower.includes("takeaway")) return "Dining";
-  if (lower.includes("transport") || lower.includes("uber") || lower.includes("train")) return "Transport";
-  
-  return "Other";
-}
-
-function detectSubscription(description: string): boolean {
-  const subscriptionKeywords = [
-    "netflix", "spotify", "amazon prime", "disney", "apple music",
-    "youtube premium", "hbo", "gym", "fitness", "subscription",
-    "monthly", "annual", "membership"
-  ];
-  
-  const lower = description.toLowerCase();
-  return subscriptionKeywords.some(keyword => lower.includes(keyword));
-}
-
-function extractMerchant(description: string): string {
-  // Remove common transaction codes and extract merchant name
-  const cleaned = description
-    .replace(/\d{2}\/\d{2}\/\d{2,4}/g, "")
-    .replace(/[A-Z]{2,3}\s\d+/g, "")
-    .trim();
-  
-  return cleaned.substring(0, 50);
-}
