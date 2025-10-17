@@ -17,6 +17,9 @@ import { OnboardingModal } from "@/components/OnboardingModal";
 import TransactionsTable from "@/components/TransactionsTable";
 import { useTranslation } from "react-i18next";
 
+type TransactionAmountRow = { amount: number | string };
+type SubscriptionRow = { estimated_annual_cost: number | string };
+
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +95,7 @@ const Dashboard = () => {
       }
 
       // Check subscription status
-      await checkSubscription(session);
+      await checkSubscription();
       
       setLoading(false);
     };
@@ -104,14 +107,14 @@ const Dashboard = () => {
         navigate("/auth");
       } else {
         setUser(session.user);
-        checkSubscription(session);
+        checkSubscription();
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const checkSubscription = async (session: any) => {
+  const checkSubscription = async () => {
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (!error && data) {
@@ -128,12 +131,17 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch transactions for monthly spending
+      // Fetch transactions for monthly spending (only negative amounts = outflows)
       const { data: transactions } = await supabase
         .from('transactions')
         .select('amount');
       
-      const total = transactions?.reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0) || 0;
+      const transactionsData = (transactions ?? []) as TransactionAmountRow[];
+      const total = transactionsData.reduce((sum, t) => {
+        const amount = Number(t.amount);
+        // Only count negative amounts (outflows/expenses)
+        return sum + (amount < 0 ? Math.abs(amount) : 0);
+      }, 0);
       setMonthlySpending(total);
 
       // Fetch subscriptions
@@ -142,9 +150,10 @@ const Dashboard = () => {
         .select('amount, estimated_annual_cost')
         .eq('status', 'active');
       
-      setSubscriptionCount(subscriptions?.length || 0);
+      const subscriptionsData = (subscriptions ?? []) as SubscriptionRow[];
+      setSubscriptionCount(subscriptionsData.length);
       
-      const savings = subscriptions?.reduce((sum, s) => sum + (Number(s.estimated_annual_cost) || 0), 0) || 0;
+      const savings = subscriptionsData.reduce((sum, s) => sum + (Number(s.estimated_annual_cost) || 0), 0);
       setPotentialSavings(savings);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
