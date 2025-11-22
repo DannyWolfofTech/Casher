@@ -122,11 +122,12 @@ const Auth = () => {
     }
   };
 
-  const handleTestMode = () => {
+  const handleTestMode = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     console.log('Entering test mode');
-    localStorage.setItem('test_mode', 'true');
-    localStorage.setItem('test_user', JSON.stringify({ id: 'test-user', email: 'test@demo.com' }));
-    navigate("/dashboard");
+    localStorage.setItem('casher_test_mode', 'true');
+    localStorage.setItem('casher_test_user', '{"id":"test-123","email":"demo@test.com"}');
+    window.location.href = '/dashboard';
   };
 
   return (

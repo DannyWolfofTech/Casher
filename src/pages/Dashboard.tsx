@@ -36,11 +36,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     const checkUser = async () => {
-      // Check for test mode
-      const testMode = localStorage.getItem('test_mode');
-      if (testMode === 'true') {
+      const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
+      if (isTestMode) {
         console.log('Test mode detected, loading test data');
-        const testUser = JSON.parse(localStorage.getItem('test_user') || '{"id":"test-user","email":"test@demo.com"}');
+        const testUser = JSON.parse(localStorage.getItem('casher_test_user') || '{"id":"test-123","email":"demo@test.com"}');
         setUser(testUser as User);
         setUserTier('pro');
         setCanUpload(true);
@@ -119,6 +118,11 @@ const Dashboard = () => {
 
     checkUser();
 
+    const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
+    if (isTestMode) {
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         navigate("/auth");
@@ -150,8 +154,8 @@ const Dashboard = () => {
     if (!user) return;
     
     // Test mode: load from localStorage
-    const testMode = localStorage.getItem('test_mode');
-    if (testMode === 'true') {
+    const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
+    if (isTestMode) {
       const testTransactions = JSON.parse(localStorage.getItem('test_transactions') || '[]');
       const testSubscriptions = JSON.parse(localStorage.getItem('test_subscriptions') || '[]');
       
@@ -191,14 +195,14 @@ const Dashboard = () => {
   };
 
   const handleSignOut = async () => {
-    const testMode = localStorage.getItem('test_mode');
-    if (testMode === 'true') {
+    const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
+    if (isTestMode) {
       console.log('Exiting test mode');
-      localStorage.removeItem('test_mode');
-      localStorage.removeItem('test_user');
+      localStorage.removeItem('casher_test_mode');
+      localStorage.removeItem('casher_test_user');
       localStorage.removeItem('test_transactions');
       localStorage.removeItem('test_subscriptions');
-      navigate("/auth");
+      window.location.href = '/';
       return;
     }
     await supabase.auth.signOut();
@@ -242,9 +246,9 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
-            {localStorage.getItem('test_mode') === 'true' && (
+            {localStorage.getItem('casher_test_mode') === 'true' && (
               <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-xs font-medium text-yellow-700 dark:text-yellow-400">
-                Test Mode - Data not saved permanently
+                🧪 Test Mode - Data stored locally
               </span>
             )}
           </div>
@@ -265,7 +269,7 @@ const Dashboard = () => {
             </Button>
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              {localStorage.getItem('test_mode') === 'true' ? 'Exit Test Mode' : t("signOut")}
+              {localStorage.getItem('casher_test_mode') === 'true' ? 'Exit Test Mode' : t("signOut")}
             </Button>
           </div>
         </div>
