@@ -91,15 +91,24 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         const text = e.target?.result as string;
         
         // Check for test mode
-        const testMode = localStorage.getItem('casher_test_mode');
+        const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
+        console.log('Test mode check:', isTestMode);
         
-        if (testMode === 'true') {
+        if (isTestMode) {
           // Parse CSV locally in test mode
           const { transactions, subscriptions } = parseCSVLocally(text);
+          console.log('Parsed data:', transactions.length, 'transactions,', subscriptions.length, 'subscriptions');
           
           // Store in localStorage
           localStorage.setItem('test_transactions', JSON.stringify(transactions));
           localStorage.setItem('test_subscriptions', JSON.stringify(subscriptions));
+          console.log('Saved to localStorage:', transactions.length, 'transactions');
+          
+          // Verify data was saved
+          const savedTransactions = localStorage.getItem('test_transactions');
+          const savedSubscriptions = localStorage.getItem('test_subscriptions');
+          console.log('Verification - transactions saved:', savedTransactions !== null);
+          console.log('Verification - subscriptions saved:', savedSubscriptions !== null);
 
           toast({
             title: t("successProcessed", { 
@@ -107,6 +116,9 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
               subscriptions: subscriptions.length 
             }),
           });
+
+          // Dispatch event to refresh dashboard
+          window.dispatchEvent(new Event('test-data-updated'));
 
           onUploadComplete();
         } else {
