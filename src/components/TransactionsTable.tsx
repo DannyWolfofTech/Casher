@@ -47,25 +47,48 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
 
   const fetchTransactions = async () => {
     try {
-      const from = (currentPage - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
+      // Check for test mode
+      const testMode = localStorage.getItem('test_mode');
+      
+      if (testMode === 'true') {
+        let testTransactions = JSON.parse(localStorage.getItem('test_transactions') || '[]');
+        
+        // Apply search filter if query exists
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase();
+          testTransactions = testTransactions.filter((t: any) => 
+            t.description.toLowerCase().includes(query)
+          );
+        }
+        
+        // Apply pagination
+        const from = (currentPage - 1) * itemsPerPage;
+        const to = from + itemsPerPage;
+        const paginated = testTransactions.slice(from, to);
+        
+        setTransactions(paginated);
+        setTotalPages(Math.ceil(testTransactions.length / itemsPerPage));
+      } else {
+        const from = (currentPage - 1) * itemsPerPage;
+        const to = from + itemsPerPage - 1;
 
-      let query = supabase
-        .from('transactions')
-        .select('*', { count: 'exact' })
-        .order('date', { ascending: false });
+        let query = supabase
+          .from('transactions')
+          .select('*', { count: 'exact' })
+          .order('date', { ascending: false });
 
-      // Apply search filter if query exists
-      if (searchQuery.trim()) {
-        query = query.or(`description.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
+        // Apply search filter if query exists
+        if (searchQuery.trim()) {
+          query = query.or(`description.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
+        }
+
+        const { data, error, count } = await query.range(from, to);
+
+        if (error) throw error;
+
+        setTransactions(data || []);
+        setTotalPages(Math.ceil((count || 0) / itemsPerPage));
       }
-
-      const { data, error, count } = await query.range(from, to);
-
-      if (error) throw error;
-
-      setTransactions(data || []);
-      setTotalPages(Math.ceil((count || 0) / itemsPerPage));
     } catch (error) {
       console.error('Error fetching transactions:', error);
     }

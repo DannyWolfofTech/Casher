@@ -31,6 +31,55 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
     maxFiles: 1,
   });
 
+  const parseCSVLocally = (csvText: string) => {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    const transactions = [];
+    const subscriptions = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(/(\d{2}\/\d{2}\/\d{4}),([^,]+),([-\d.]+)/);
+      
+      if (match) {
+        const [, date, description, amount] = match;
+        const cleanAmount = parseFloat(amount);
+        
+        if (!isNaN(cleanAmount)) {
+          transactions.push({
+            id: `test-${i}`,
+            date,
+            description: description.trim(),
+            amount: cleanAmount,
+            merchant: description.trim().substring(0, 50),
+            category: 'Other'
+          });
+
+          // Simple subscription detection
+          const subKeywords = ['netflix', 'spotify', 'prime', 'subscription', 'monthly'];
+          const isSubscription = subKeywords.some(keyword => 
+            description.toLowerCase().includes(keyword)
+          );
+
+          if (isSubscription && cleanAmount < 0) {
+            subscriptions.push({
+              id: `sub-${subscriptions.length}`,
+              service_name: description.trim().substring(0, 50),
+              amount: Math.abs(cleanAmount),
+              frequency: 'monthly',
+              estimated_annual_cost: Math.abs(cleanAmount) * 12,
+              status: 'active'
+            });
+            
+            // Update transaction category
+            transactions[transactions.length - 1].category = 'Subscription';
+          }
+        }
+      }
+    }
+
+    return { transactions, subscriptions };
+  };
+
   const handleUpload = async () => {
     if (!file) return;
 
@@ -41,18 +90,42 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
       try {
         const text = e.target?.result as string;
         
-        // Call edge function to process CSV
-        const { data, error } = await supabase.functions.invoke('process-csv', {
-          body: { csv: text }
-        });
+        // Check for test mode
+        const testMode = localStorage.getItem('test_mode');
+        
+        if (testMode === 'true') {
+          // Parse CSV locally in test mode
+          const { transactions, subscriptions } = parseCSVLocally(text);
+          
+          // Store in localStorage
+          localStorage.setItem('test_transactions', JSON.stringify(transactions));
+          localStorage.setItem('test_subscriptions', JSON.stringify(subscriptions));
 
-        if (error) throw error;
+          toast({
+            title: t("successProcessed", { 
+              transactions: transactions.length, 
+              subscriptions: subscriptions.length 
+            }),
+          });
 
-        toast({
-          title: t("successProcessed", { transactions: data.transactionsCount, subscriptions: data.subscriptionsCount }),
-        });
+          onUploadComplete();
+        } else {
+          // Call edge function to process CSV
+          const { data, error } = await supabase.functions.invoke('process-csv', {
+            body: { csv: text }
+          });
 
-        onUploadComplete();
+          if (error) throw error;
+
+          toast({
+            title: t("successProcessed", { 
+              transactions: data.transactionsCount, 
+              subscriptions: data.subscriptionsCount 
+            }),
+          });
+
+          onUploadComplete();
+        }
       } catch (error: any) {
         toast({
           title: "Error",

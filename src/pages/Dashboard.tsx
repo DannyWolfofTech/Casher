@@ -36,6 +36,16 @@ const Dashboard = () => {
 
   useEffect(() => {
     const checkUser = async () => {
+      // Check for test mode
+      const testMode = localStorage.getItem('test_mode');
+      if (testMode === 'true') {
+        setUser({ id: 'test-user' } as User);
+        setUserTier('pro');
+        setCanUpload(true);
+        setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -127,19 +137,38 @@ const Dashboard = () => {
   }, [refreshKey]);
 
   const fetchDashboardData = async () => {
+    if (!user) return;
+    
+    // Test mode: load from localStorage
+    const testMode = localStorage.getItem('test_mode');
+    if (testMode === 'true') {
+      const testTransactions = JSON.parse(localStorage.getItem('test_transactions') || '[]');
+      const testSubscriptions = JSON.parse(localStorage.getItem('test_subscriptions') || '[]');
+      
+      const total = testTransactions.reduce((sum: number, t: any) => sum + Math.abs(Number(t.amount)), 0);
+      setMonthlySpending(total);
+      setSubscriptionCount(testSubscriptions.length);
+      
+      const savings = testSubscriptions.reduce((sum: number, s: any) => sum + (Number(s.estimated_annual_cost) || 0), 0);
+      setPotentialSavings(savings);
+      return;
+    }
+    
     try {
-      // Fetch transactions for monthly spending
+      // Fetch transactions for monthly spending (filtered by user)
       const { data: transactions } = await supabase
         .from('transactions')
-        .select('amount');
+        .select('amount')
+        .eq('user_id', user.id);
       
       const total = transactions?.reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0) || 0;
       setMonthlySpending(total);
 
-      // Fetch subscriptions
+      // Fetch subscriptions (filtered by user)
       const { data: subscriptions } = await supabase
         .from('detected_subscriptions')
         .select('amount, estimated_annual_cost')
+        .eq('user_id', user.id)
         .eq('status', 'active');
       
       setSubscriptionCount(subscriptions?.length || 0);
@@ -152,6 +181,14 @@ const Dashboard = () => {
   };
 
   const handleSignOut = async () => {
+    const testMode = localStorage.getItem('test_mode');
+    if (testMode === 'true') {
+      localStorage.removeItem('test_mode');
+      localStorage.removeItem('test_transactions');
+      localStorage.removeItem('test_subscriptions');
+      navigate("/");
+      return;
+    }
     await supabase.auth.signOut();
     navigate("/");
   };

@@ -22,15 +22,24 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
 
   const fetchSpendingData = async () => {
     try {
-      const { data: transactions, error } = await supabase
-        .from('transactions')
-        .select('category, amount');
+      // Check for test mode
+      const testMode = localStorage.getItem('test_mode');
+      let transactions: any[] = [];
 
-      if (error) throw error;
+      if (testMode === 'true') {
+        transactions = JSON.parse(localStorage.getItem('test_transactions') || '[]');
+      } else {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('category, amount');
+
+        if (error) throw error;
+        transactions = data || [];
+      }
 
       // Group by category and sum amounts
       const categoryTotals: { [key: string]: number } = {};
-      transactions?.forEach((t: any) => {
+      transactions.forEach((t: any) => {
         const category = t.category || 'Other';
         categoryTotals[category] = (categoryTotals[category] || 0) + Math.abs(parseFloat(t.amount));
       });
