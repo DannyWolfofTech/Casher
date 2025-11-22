@@ -91,7 +91,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         const text = e.target?.result as string;
         
         // Check for test mode
-        const testMode = localStorage.getItem('test_mode');
+        const testMode = localStorage.getItem('casher_test_mode');
         
         if (testMode === 'true') {
           // Parse CSV locally in test mode

@@ -345,7 +345,7 @@ const Dashboard = () => {
                     disabled={!canUpload}
                   >
                     <Upload className="mr-2 h-5 w-5" />
-                    {t("uploadCSV")}
+                    Upload CSV
                   </Button>
                   {userTier === "free" && (
                     <p className="text-xs text-muted-foreground mt-2 text-center">
