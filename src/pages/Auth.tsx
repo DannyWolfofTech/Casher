@@ -92,6 +92,11 @@ const Auth = () => {
     }
   };
 
+  const handleTestMode = () => {
+    localStorage.setItem('test_mode', 'true');
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
       <Card className="w-full max-w-md">
@@ -176,6 +181,23 @@ const Auth = () => {
               />
             </svg>
             Sign in with Google
+          </Button>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">For Testing</span>
+            </div>
+          </div>
+
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={handleTestMode}
+          >
+            Skip Login (Test Mode)
           </Button>
         </CardContent>
       </Card>

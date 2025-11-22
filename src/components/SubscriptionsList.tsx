@@ -23,14 +23,22 @@ const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
 
   const fetchSubscriptions = async () => {
     try {
-      const { data, error } = await supabase
-        .from('detected_subscriptions')
-        .select('*')
-        .eq('status', 'active')
-        .order('amount', { ascending: false });
+      // Check for test mode
+      const testMode = localStorage.getItem('test_mode');
+      
+      if (testMode === 'true') {
+        const testSubscriptions = JSON.parse(localStorage.getItem('test_subscriptions') || '[]');
+        setSubscriptions(testSubscriptions);
+      } else {
+        const { data, error } = await supabase
+          .from('detected_subscriptions')
+          .select('*')
+          .eq('status', 'active')
+          .order('amount', { ascending: false });
 
-      if (error) throw error;
-      setSubscriptions(data || []);
+        if (error) throw error;
+        setSubscriptions(data || []);
+      }
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
     } finally {
