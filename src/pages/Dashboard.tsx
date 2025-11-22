@@ -291,9 +291,9 @@ const Dashboard = () => {
         {!showUpload ? (
           <Card>
             <CardHeader>
-              <CardTitle>{t("getStarted")}</CardTitle>
+              <CardTitle>Get Started</CardTitle>
               <CardDescription>
-                {t("uploadDescription")}
+                Upload your bank statement CSV to discover hidden subscription costs and start saving money
               </CardDescription>
             </CardHeader>
             <CardContent>

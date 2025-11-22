@@ -49,8 +49,30 @@ const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
   const handleCancel = (serviceName: string, cancellationUrl: string | null) => {
     if (cancellationUrl) {
       window.open(cancellationUrl, '_blank');
+      return;
+    }
+
+    // Map of common services to their cancellation URLs
+    const cancellationUrls: { [key: string]: string } = {
+      'netflix': 'https://www.netflix.com/cancelplan',
+      'spotify': 'https://www.spotify.com/account/subscription/',
+      'amazon prime': 'https://www.amazon.co.uk/gp/primecentral/cancel',
+      'amazon': 'https://www.amazon.co.uk/gp/primecentral/cancel',
+      'prime': 'https://www.amazon.co.uk/gp/primecentral/cancel',
+    };
+
+    const serviceLower = serviceName.toLowerCase();
+    const matchedUrl = Object.keys(cancellationUrls).find(key => 
+      serviceLower.includes(key)
+    );
+
+    if (matchedUrl) {
+      window.open(cancellationUrls[matchedUrl], '_blank');
+    } else if (serviceLower.includes('gym') || serviceLower.includes('fitness')) {
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent('cancel ' + serviceName + ' membership')}`;
+      window.open(searchUrl, '_blank');
     } else {
-      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(serviceName + ' cancel subscription')}`;
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent('cancel ' + serviceName)}`;
       window.open(searchUrl, '_blank');
     }
   };
@@ -83,12 +105,12 @@ const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
                   <p className="text-sm text-muted-foreground">
                     £{parseFloat(sub.amount).toFixed(2)} {t("perFrequency", { frequency: sub.frequency })}
                   </p>
-                  {sub.estimated_annual_cost && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                      <TrendingDown className="h-3 w-3" />
-                      {t("annualCost", { amount: parseFloat(sub.estimated_annual_cost).toFixed(2) })}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                    <TrendingDown className="h-3 w-3" />
+                    Annual cost: £{sub.estimated_annual_cost 
+                      ? parseFloat(sub.estimated_annual_cost).toFixed(2) 
+                      : (parseFloat(sub.amount) * (sub.frequency === 'monthly' ? 12 : sub.frequency === 'yearly' ? 1 : 12)).toFixed(2)}
+                  </p>
                 </div>
                 <Button
                   variant="outline"
