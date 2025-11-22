@@ -48,14 +48,19 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     
+    console.log('Attempting magic link sign in with email:', email);
+    console.log('Redirect URL:', `${window.location.origin}/dashboard`);
+    
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
+        shouldCreateUser: true,
       },
     });
 
     if (error) {
+      console.error('Magic link error:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -67,6 +72,31 @@ const Auth = () => {
         title: "Check your email",
         description: "We've sent you a magic link to sign in",
       });
+    }
+    
+    setLoading(false);
+  };
+
+  const handlePasswordSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    console.log('Attempting password sign in with email:', email);
+    
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: email, // Simple password = email for backup
+    });
+
+    if (error) {
+      console.error('Password sign in error:', error);
+      toast({
+        title: "Error",
+        description: "Password sign in failed. Try magic link instead.",
+        variant: "destructive",
+      });
+    } else {
+      navigate("/dashboard");
     }
     
     setLoading(false);
@@ -93,7 +123,9 @@ const Auth = () => {
   };
 
   const handleTestMode = () => {
+    console.log('Entering test mode');
     localStorage.setItem('test_mode', 'true');
+    localStorage.setItem('test_user', JSON.stringify({ id: 'test-user', email: 'test@demo.com' }));
     navigate("/dashboard");
   };
 
@@ -110,23 +142,43 @@ const Auth = () => {
         </CardHeader>
         <CardContent>
           {!emailSent ? (
-            <form onSubmit={handleMagicLink} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+            <>
+              <form onSubmit={handleMagicLink} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Send Magic Link
+                </Button>
+              </form>
+              
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or sign in with password</span>
+                </div>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send Magic Link
+              
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handlePasswordSignIn}
+                disabled={loading || !email}
+              >
+                Sign in with Password
               </Button>
-            </form>
+            </>
           ) : (
             <div className="text-center space-y-4">
               <div className="p-4 bg-primary/10 rounded-lg">

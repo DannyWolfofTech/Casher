@@ -39,19 +39,29 @@ const Dashboard = () => {
       // Check for test mode
       const testMode = localStorage.getItem('test_mode');
       if (testMode === 'true') {
-        setUser({ id: 'test-user' } as User);
+        console.log('Test mode detected, loading test data');
+        const testUser = JSON.parse(localStorage.getItem('test_user') || '{"id":"test-user","email":"test@demo.com"}');
+        setUser(testUser as User);
         setUserTier('pro');
         setCanUpload(true);
         setLoading(false);
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Checking authentication session...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      }
       
       if (!session) {
+        console.log('No session found, redirecting to auth');
         navigate("/auth");
         return;
       }
+      
+      console.log('Session found for user:', session.user.email);
       
       setUser(session.user);
       
@@ -183,14 +193,16 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     const testMode = localStorage.getItem('test_mode');
     if (testMode === 'true') {
+      console.log('Exiting test mode');
       localStorage.removeItem('test_mode');
+      localStorage.removeItem('test_user');
       localStorage.removeItem('test_transactions');
       localStorage.removeItem('test_subscriptions');
-      navigate("/");
+      navigate("/auth");
       return;
     }
     await supabase.auth.signOut();
-    navigate("/");
+    navigate("/auth");
   };
 
   const shareReferral = async () => {
@@ -228,7 +240,14 @@ const Dashboard = () => {
       
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
+            {localStorage.getItem('test_mode') === 'true' && (
+              <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-xs font-medium text-yellow-700 dark:text-yellow-400">
+                Test Mode - Data not saved permanently
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             <LanguageSelector />
             <ThemeToggle />
@@ -246,7 +265,7 @@ const Dashboard = () => {
             </Button>
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              {t("signOut")}
+              {localStorage.getItem('test_mode') === 'true' ? 'Exit Test Mode' : t("signOut")}
             </Button>
           </div>
         </div>
