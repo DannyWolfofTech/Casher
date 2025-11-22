@@ -148,6 +148,18 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    
+    // Listen for test data updates
+    const handleTestDataUpdate = () => {
+      console.log('Test data updated event received, refreshing dashboard');
+      fetchDashboardData();
+    };
+    
+    window.addEventListener('test-data-updated', handleTestDataUpdate);
+    
+    return () => {
+      window.removeEventListener('test-data-updated', handleTestDataUpdate);
+    };
   }, [refreshKey]);
 
   const fetchDashboardData = async () => {
