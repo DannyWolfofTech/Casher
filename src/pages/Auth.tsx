@@ -18,7 +18,6 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -35,17 +34,19 @@ const Auth = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
         // Send welcome email for all sign-ins (Resend will deduplicate)
-        try {
-          await supabase.functions.invoke("send-welcome-email", {
-            body: { email: session.user.email },
-          });
-          console.log("Welcome email sent to:", session.user.email);
-        } catch (err) {
-          console.log("Welcome email error:", err);
-        }
+        (async () => {
+          try {
+            await supabase.functions.invoke("send-welcome-email", {
+              body: { email: session.user.email },
+            });
+            console.log("Welcome email sent to:", session.user.email);
+          } catch (err) {
+            console.log("Welcome email error:", err);
+          }
+        })();
 
         navigate("/dashboard");
       }
@@ -54,9 +55,7 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const validateCredentials = () => {
     const result = credentialsSchema.safeParse({ email, password });
     if (!result.success) {
       const message = result.error.issues[0]?.message ?? "Please check your details and try again.";
@@ -65,58 +64,70 @@ const Auth = () => {
         description: message,
         variant: "destructive",
       });
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleSignUp = async (e: React.MouseEvent<HTMLButtonElement> | React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateCredentials()) return;
 
     setLoading(true);
     try {
-      if (isSignUp) {
-        const redirectUrl = `${window.location.origin}/`;
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: redirectUrl,
-          },
-        });
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-        if (error) {
-          console.error("Sign up error:", error);
-          toast({
-            title: "Sign up failed",
-            description: error.message,
-            variant: "destructive",
-          });
-          return;
-        }
-
+      if (error) {
+        console.error("Sign up error:", error);
         toast({
-          title: "Account created",
-          description: "Your account has been created and you're now signed in.",
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive",
         });
-        navigate("/dashboard");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          console.error("Sign in error:", error);
-          toast({
-            title: "Sign in failed",
-            description: error.message,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        toast({
-          title: "Signed in",
-          description: "Welcome back!",
-        });
-        navigate("/dashboard");
+        return;
       }
+
+      toast({
+        title: "Account created",
+        description: "Your account has been created and you're now signed in.",
+      });
+      navigate("/dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogIn = async (e: React.MouseEvent<HTMLButtonElement> | React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateCredentials()) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("Sign in error:", error);
+        toast({
+          title: "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Signed in",
+        description: "Welcome back!",
+      });
+      navigate("/dashboard");
     } finally {
       setLoading(false);
     }
@@ -130,10 +141,8 @@ const Auth = () => {
     window.location.href = "/dashboard";
   };
 
-  const title = isSignUp ? "Create your account" : "Welcome back";
-  const description = isSignUp
-    ? "Create an account with your email and a password."
-    : "Sign in with your email and password.";
+  const title = "Sign up or log in";
+  const description = "Use your email and password to access your dashboard.";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
@@ -143,13 +152,13 @@ const Auth = () => {
           <CardDescription className="text-center">{description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
+          <form className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="name@example.com"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -161,40 +170,35 @@ const Auth = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete={isSignUp ? "new-password" : "current-password"}
+                autoComplete="current-password"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSignUp ? "Create Account" : "Log In"}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Button
+                type="button"
+                className="w-full"
+                disabled={loading}
+                onClick={handleSignUp}
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign Up
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={loading}
+                onClick={handleLogIn}
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Log In
+              </Button>
+            </div>
           </form>
-
-          <div className="mt-4 text-center text-sm">
-            {isSignUp ? (
-              <Button
-                type="button"
-                variant="link"
-                className="px-0"
-                onClick={() => setIsSignUp(false)}
-              >
-                Already have an account? Log in
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="link"
-                className="px-0"
-                onClick={() => setIsSignUp(true)}
-              >
-                Don't have an account? Create one
-              </Button>
-            )}
-          </div>
 
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
