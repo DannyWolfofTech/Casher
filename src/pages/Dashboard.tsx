@@ -359,11 +359,11 @@ const Dashboard = () => {
                     <Upload className="mr-2 h-5 w-5" />
                     Upload CSV
                   </Button>
-                  {userTier === "free" && (
-                    <p className="text-xs text-muted-foreground mt-2 text-center">
-                      {t("uploadsUsed", { count: uploadsUsed })}
-                    </p>
-                  )}
+              {userTier === "free" && (
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Uploads used: {uploadsUsed}/{userTier === "free" ? 1 : "∞"}
+                </p>
+              )}
                 </>
               )}
               <div className="mt-4 p-4 bg-muted rounded-lg">
