@@ -22,16 +22,21 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
 
   const fetchSpendingData = async () => {
     try {
-      // Check for test mode
-      const testMode = localStorage.getItem('test_mode');
+      // Check for test mode (use correct key)
+      const testMode = localStorage.getItem('casher_test_mode');
       let transactions: any[] = [];
 
       if (testMode === 'true') {
         transactions = JSON.parse(localStorage.getItem('test_transactions') || '[]');
       } else {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
         const { data, error } = await supabase
           .from('transactions')
-          .select('category, amount');
+          .select('category, amount')
+          .eq('user_id', user.id);
 
         if (error) throw error;
         transactions = data || [];
