@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet";
+import { z } from "zod";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { z } from "zod";
 
 const credentialsSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -15,47 +17,38 @@ const credentialsSchema = z.object({
 });
 
 const Auth = () => {
-  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState<null | "signup" | "signin">(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
-      }
-    };
-    checkUser();
+    let isMounted = true;
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        // Send welcome email for all sign-ins (Resend will deduplicate)
-        (async () => {
-          try {
-            await supabase.functions.invoke("send-welcome-email", {
-              body: { email: session.user.email },
-            });
-            console.log("Welcome email sent to:", session.user.email);
-          } catch (err) {
-            console.log("Welcome email error:", err);
-          }
-        })();
-
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      if (session) {
         navigate("/dashboard");
       }
     });
 
-    return () => subscription.unsubscribe();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
-  const validateCredentials = () => {
+  const validate = () => {
     const result = credentialsSchema.safeParse({ email, password });
     if (!result.success) {
       const message = result.error.issues[0]?.message ?? "Please check your details and try again.";
@@ -69,16 +62,18 @@ const Auth = () => {
     return true;
   };
 
-  const handleSignUp = async (e: React.MouseEvent<HTMLButtonElement> | React.FormEvent) => {
-    e.preventDefault();
+  const handleSignUp = async () => {
+    if (!validate()) return;
 
-    if (!validateCredentials()) return;
-
-    setLoading(true);
+    setLoading("signup");
     try {
+      const redirectUrl = `${window.location.origin}/dashboard`;
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
       });
 
       if (error) {
@@ -97,16 +92,14 @@ const Auth = () => {
       });
       navigate("/dashboard");
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   };
 
-  const handleLogIn = async (e: React.MouseEvent<HTMLButtonElement> | React.FormEvent) => {
-    e.preventDefault();
+  const handleSignIn = async () => {
+    if (!validate()) return;
 
-    if (!validateCredentials()) return;
-
-    setLoading(true);
+    setLoading("signin");
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -129,92 +122,100 @@ const Auth = () => {
       });
       navigate("/dashboard");
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   };
 
-  const handleTestMode = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+  const handleTestMode = () => {
     console.log("Entering test mode");
     localStorage.setItem("casher_test_mode", "true");
     localStorage.setItem("casher_test_user", '{"id":"test-123","email":"demo@test.com"}');
     window.location.href = "/dashboard";
   };
 
-  const title = "Sign up or log in";
-  const description = "Use your email and password to access your dashboard.";
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">{title}</CardTitle>
-          <CardDescription className="text-center">{description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
+    <>
+      <Helmet>
+        <title>Casher Login | Email & Password Access</title>
+        <meta
+          name="description"
+          content="Sign in or create your Casher account using email and password to analyze your freelance finances."
+        />
+        <link rel="canonical" href={`${window.location.origin}/auth`} />
+      </Helmet>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Sign up or sign in</CardTitle>
+            <CardDescription className="text-center">
+              Use your email and password to access your Casher dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Password (min 6 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={loading !== null}
+                  onClick={handleSignUp}
+                >
+                  {loading === "signup" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create Account
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={loading !== null}
+                  onClick={handleSignIn}
+                >
+                  {loading === "signin" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign In
+                </Button>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
-              <Button
-                type="button"
-                className="w-full"
-                disabled={loading}
-                onClick={handleSignUp}
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign Up
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled={loading}
-                onClick={handleLogIn}
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Log In
-              </Button>
-            </div>
-          </form>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">For Testing</span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">For Testing</span>
-            </div>
-          </div>
 
-          <Button variant="secondary" className="w-full" onClick={handleTestMode}>
-            Skip Login (Test Mode)
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+            <Button variant="secondary" className="w-full" type="button" onClick={handleTestMode}>
+              Skip Login (Test Mode)
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 };
 
