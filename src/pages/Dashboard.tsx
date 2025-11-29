@@ -15,6 +15,8 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import TransactionsTable from "@/components/TransactionsTable";
+import UploadHistory from "@/components/UploadHistory";
+import ProgressTracker from "@/components/ProgressTracker";
 import { useTranslation } from "react-i18next";
 
 const Dashboard = () => {
@@ -323,6 +325,12 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        <ProgressTracker 
+          userId={user?.id} 
+          currentMonthSpending={monthlySpending}
+          refreshKey={refreshKey}
+        />
+
         {!showUpload ? (
           <Card>
             <CardHeader>
@@ -380,7 +388,7 @@ const Dashboard = () => {
           <CSVUpload onUploadComplete={async () => {
             setShowUpload(false);
             
-            // Increment upload count
+            // Increment upload count and save upload history
             if (user) {
               await supabase
                 .from("profiles")
@@ -388,6 +396,32 @@ const Dashboard = () => {
                   monthly_uploads_used: uploadsUsed + 1 
                 })
                 .eq("user_id", user.id);
+              
+              // Save upload history record
+              const { data: subscriptions } = await supabase
+                .from('detected_subscriptions')
+                .select('amount, estimated_annual_cost')
+                .eq('user_id', user.id)
+                .eq('status', 'active');
+              
+              const { data: transactions } = await supabase
+                .from('transactions')
+                .select('amount')
+                .eq('user_id', user.id);
+              
+              const totalSpending = transactions?.reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0) || 0;
+              const subsCount = subscriptions?.length || 0;
+              const potentialSavings = subscriptions?.reduce((sum, s) => sum + (Number(s.estimated_annual_cost) || 0), 0) || 0;
+              
+              await supabase
+                .from('upload_history')
+                .insert({
+                  user_id: user.id,
+                  total_spending: totalSpending,
+                  subscriptions_count: subsCount,
+                  potential_savings: potentialSavings,
+                  transaction_count: transactions?.length || 0
+                });
               
               setUploadsUsed(prev => prev + 1);
               const uploadLimit = userTier === "free" ? 1 : Infinity;
@@ -400,8 +434,10 @@ const Dashboard = () => {
 
         <div className="grid gap-6 md:grid-cols-2">
           <SpendingChart refreshKey={refreshKey} />
-          <SubscriptionsList refreshKey={refreshKey} />
+          <SubscriptionsList refreshKey={refreshKey} userId={user?.id} />
         </div>
+
+        <UploadHistory userId={user?.id} refreshKey={refreshKey} />
 
         <TransactionsTable refreshKey={refreshKey} userTier={userTier} />
 
