@@ -85,7 +85,8 @@ const Dashboard = () => {
 
       if (profileData) {
         setUserTier(profileData.subscription_tier || "free");
-        setUploadsUsed(profileData.monthly_uploads_used || 0);
+        
+        let currentUploads = profileData.monthly_uploads_used || 0;
 
         // Check if we need to reset monthly uploads
         const resetDate = new Date(profileData.uploads_reset_date);
@@ -98,12 +99,14 @@ const Dashboard = () => {
               uploads_reset_date: new Date().toISOString().split('T')[0]
             })
             .eq("user_id", session.user.id);
-          setUploadsUsed(0);
+          currentUploads = 0;
         }
+
+        setUploadsUsed(currentUploads);
 
         // Check upload limit
         const uploadLimit = profileData.subscription_tier === "free" ? 1 : Infinity;
-        setCanUpload((profileData.monthly_uploads_used || 0) < uploadLimit);
+        setCanUpload(currentUploads < uploadLimit);
         
         // Show onboarding for new users with no uploads
         if ((profileData.monthly_uploads_used || 0) === 0 && !localStorage.getItem('onboarding_seen')) {
@@ -423,9 +426,10 @@ const Dashboard = () => {
                   transaction_count: transactions?.length || 0
                 });
               
-              setUploadsUsed(prev => prev + 1);
+              const newUploadsUsed = uploadsUsed + 1;
+              setUploadsUsed(newUploadsUsed);
               const uploadLimit = userTier === "free" ? 1 : Infinity;
-              setCanUpload((uploadsUsed + 1) < uploadLimit);
+              setCanUpload(newUploadsUsed < uploadLimit);
             }
             
             setRefreshKey(prev => prev + 1);
