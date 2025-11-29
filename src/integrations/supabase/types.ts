@@ -59,6 +59,7 @@ export type Database = {
           full_name: string | null
           id: string
           language: string | null
+          monthly_spending_history: Json | null
           monthly_uploads_used: number | null
           stripe_customer_id: string | null
           subscription_tier: string | null
@@ -72,6 +73,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           language?: string | null
+          monthly_spending_history?: Json | null
           monthly_uploads_used?: number | null
           stripe_customer_id?: string | null
           subscription_tier?: string | null
@@ -85,6 +87,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           language?: string | null
+          monthly_spending_history?: Json | null
           monthly_uploads_used?: number | null
           stripe_customer_id?: string | null
           subscription_tier?: string | null
@@ -223,6 +226,39 @@ export type Database = {
           is_recurring?: boolean | null
           merchant?: string | null
           recurring_frequency?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      upload_history: {
+        Row: {
+          created_at: string
+          id: string
+          potential_savings: number
+          subscriptions_count: number
+          total_spending: number
+          transaction_count: number
+          upload_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          potential_savings?: number
+          subscriptions_count?: number
+          total_spending: number
+          transaction_count?: number
+          upload_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          potential_savings?: number
+          subscriptions_count?: number
+          total_spending?: number
+          transaction_count?: number
+          upload_date?: string
           user_id?: string
         }
         Relationships: []

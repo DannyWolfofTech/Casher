@@ -9,9 +9,10 @@ import { useTranslation } from "react-i18next";
 
 interface SubscriptionsListProps {
   refreshKey?: number;
+  userId?: string;
 }
 
-const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
+const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) => {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -30,9 +31,14 @@ const SubscriptionsList = ({ refreshKey = 0 }: SubscriptionsListProps) => {
         const testSubscriptions = JSON.parse(localStorage.getItem('test_subscriptions') || '[]');
         setSubscriptions(testSubscriptions);
       } else {
+        if (!userId) {
+          setSubscriptions([]);
+          return;
+        }
         const { data, error } = await supabase
           .from('detected_subscriptions')
           .select('*')
+          .eq('user_id', userId)
           .eq('status', 'active')
           .order('amount', { ascending: false });
 
