@@ -9,6 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
+// Hardcoded Stripe Publishable Key (Test Mode)
+const STRIPE_PK = "pk_test_51SCrpvJMS012Ip2AFxn0fgxc5MFSSQ21FKjTQzMWcY67b1XrTC0JaW7zMQ8DXUsHRd0BQa07qzsfgHNv0O3EQWRu00bHXyvXld";
+
 const Pricing = () => {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -34,7 +37,7 @@ const Pricing = () => {
     checkUser();
   }, []);
 
-  const handleSubscribe = async (planName: string, priceId: string) => {
+  const handleSubscribe = async (priceId: string) => {
     if (!user) {
       toast({
         title: "Please sign in",
@@ -47,26 +50,35 @@ const Pricing = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { 
-          priceId,
-          tier: planName.toLowerCase()
-        },
+      console.log("Invoking create-checkout-session with priceId:", priceId);
+      
+      const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+        body: { priceId },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase function error:", error);
+        throw error;
+      }
+
+      console.log("Checkout session response:", data);
 
       if (data?.url) {
+        console.log("Redirecting to Stripe Checkout:", data.url);
         window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
       }
     } catch (error: any) {
+      console.error("Checkout error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to start checkout",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleEmailSignup = async (e: React.FormEvent) => {
@@ -125,7 +137,7 @@ const Pricing = () => {
     {
       name: "Pro",
       price: "£9.99",
-      priceId: "price_1QrgOhP3g2xFZS3kADN8cXYZ",
+      priceId: "price_1SYzJQJMS012Ip2AChBRKO5w",
       description: "For regular users",
       features: [
         "Unlimited CSV uploads",
@@ -141,7 +153,7 @@ const Pricing = () => {
     {
       name: "Premium",
       price: "£14.99",
-      priceId: "price_1QrgPJP3g2xFZS3kBQM9dYZA",
+      priceId: "price_1SYzKoJMS012Ip2Ask6ktJJi",
       description: "For power users",
       features: [
         "All Pro features",
@@ -229,7 +241,7 @@ const Pricing = () => {
                     className="w-full"
                     size="lg"
                     variant={plan.popular ? "default" : "outline"}
-                    onClick={() => plan.name === "Free" ? navigate("/auth") : handleSubscribe(plan.name, plan.priceId)}
+                    onClick={() => plan.name === "Free" ? navigate("/auth") : handleSubscribe(plan.priceId)}
                     disabled={loading && plan.name !== "Free"}
                   >
                     {loading && plan.name !== "Free" ? (
