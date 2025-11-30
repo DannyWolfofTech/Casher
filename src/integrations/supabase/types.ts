@@ -56,12 +56,14 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          current_period_end: string | null
           full_name: string | null
           id: string
           language: string | null
           monthly_spending_history: Json | null
           monthly_uploads_used: number | null
           stripe_customer_id: string | null
+          subscription_status: string | null
           subscription_tier: string | null
           theme: string | null
           updated_at: string
@@ -70,12 +72,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          current_period_end?: string | null
           full_name?: string | null
           id?: string
           language?: string | null
           monthly_spending_history?: Json | null
           monthly_uploads_used?: number | null
           stripe_customer_id?: string | null
+          subscription_status?: string | null
           subscription_tier?: string | null
           theme?: string | null
           updated_at?: string
@@ -84,12 +88,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          current_period_end?: string | null
           full_name?: string | null
           id?: string
           language?: string | null
           monthly_spending_history?: Json | null
           monthly_uploads_used?: number | null
           stripe_customer_id?: string | null
+          subscription_status?: string | null
           subscription_tier?: string | null
           theme?: string | null
           updated_at?: string
