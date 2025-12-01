@@ -2,42 +2,44 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, PieChart, Shield, TrendingDown, CheckCircle } from "lucide-react";
+import { Upload, PieChart, Shield, CheckCircle, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import logoFull from "@/assets/logo-full.png";
-
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
-  const { t } = useLanguage();
-
+  const {
+    t
+  } = useLanguage();
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       setUser(session?.user);
-      
       if (session?.user) {
         navigate("/dashboard");
       }
     };
-
     checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: {
+        subscription
+      }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user);
       if (session?.user) {
         navigate("/dashboard");
       }
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+  return <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" onClick={() => navigate("/")} />
@@ -105,7 +107,7 @@ const Index = () => {
 
             <Card>
               <CardHeader>
-                <TrendingDown className="h-10 w-10 text-primary mb-2" />
+                <TrendingUp className="h-10 w-10 text-primary mb-2" />
                 <CardTitle>{t("saveMoney")}</CardTitle>
                 <CardDescription>
                   {t("saveMoneyDesc")}
@@ -216,8 +218,6 @@ const Index = () => {
           </Button>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
