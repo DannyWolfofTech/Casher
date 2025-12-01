@@ -5,7 +5,7 @@ import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, LogOut, Upload, PieChart as PieChartIcon, TrendingDown, Share2 } from "lucide-react";
+import { Loader2, LogOut, Upload, PieChart as PieChartIcon, TrendingDown, Share2, History } from "lucide-react";
 import logoFull from "@/assets/logo-full.png";
 import CSVUpload from "@/components/CSVUpload";
 import SpendingChart from "@/components/SpendingChart";
@@ -273,6 +273,10 @@ const Dashboard = () => {
           <div className="flex items-center gap-4">
             <LanguageSelector />
             <ThemeToggle />
+            <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/history")}>
+              <History className="mr-2 h-4 w-4" />
+              History
+            </Button>
             <Button variant="outline" size="sm" onClick={shareReferral}>
               <Share2 className="mr-2 h-4 w-4" />
               {t("share")}
