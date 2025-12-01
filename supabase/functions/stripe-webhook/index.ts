@@ -18,6 +18,7 @@ serve(async (req) => {
     // Get environment variables
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_CUSTOM");
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    console.log("Using Webhook Secret starting with:", webhookSecret ? webhookSecret.substring(0, 5) : "MISSING");
     
     if (!stripeKey || !webhookSecret) {
       console.error("Missing required environment variables");
