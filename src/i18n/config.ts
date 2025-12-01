@@ -48,7 +48,7 @@ const resources = {
       supportsFormat: "Supports CSV files from HSBC, NatWest, Barclays, and more",
       analyzeTransactions: "Analyze Transactions",
       processing: "Processing...",
-      successProcessed: "Processed {transactions} transactions and detected {subscriptions} subscriptions.",
+      successProcessed: "Processed {{transactions}} transactions and detected {{subscriptions}} subscriptions.",
       errorProcessing: "Failed to process CSV",
       errorReading: "Failed to read file",
       
@@ -219,7 +219,7 @@ const resources = {
       supportsFormat: "Suportă fișiere CSV de la HSBC, NatWest, Barclays și altele",
       analyzeTransactions: "Analizează tranzacții",
       processing: "Se procesează...",
-      successProcessed: "Procesate {transactions} tranzacții și detectate {subscriptions} abonamente.",
+      successProcessed: "Procesate {{transactions}} tranzacții și detectate {{subscriptions}} abonamente.",
       errorProcessing: "Eșec procesare CSV",
       errorReading: "Eșec citire fișier",
       
@@ -390,7 +390,7 @@ const resources = {
       supportsFormat: "Soporta archivos CSV de HSBC, NatWest, Barclays y más",
       analyzeTransactions: "Analizar transacciones",
       processing: "Procesando...",
-      successProcessed: "Procesadas {transactions} transacciones y detectadas {subscriptions} suscripciones.",
+      successProcessed: "Procesadas {{transactions}} transacciones y detectadas {{subscriptions}} suscripciones.",
       errorProcessing: "Error al procesar CSV",
       errorReading: "Error al leer archivo",
       
