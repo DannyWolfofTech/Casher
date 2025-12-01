@@ -39,6 +39,15 @@ const Dashboard = () => {
 
   useEffect(() => {
     const checkUser = async () => {
+      // CRITICAL: Force test mode OFF for authenticated users
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (authSession) {
+        // User is authenticated - disable test mode completely
+        localStorage.removeItem('casher_test_mode');
+        localStorage.removeItem('casher_test_user');
+        console.log('User authenticated, test mode disabled');
+      }
+      
       const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
       if (isTestMode) {
         console.log('Test mode detected, loading test data');
@@ -395,6 +404,9 @@ const Dashboard = () => {
         ) : (
           <CSVUpload onUploadComplete={async () => {
             setShowUpload(false);
+            
+            // Force refresh all data after upload
+            setRefreshKey(prev => prev + 1);
             
             // Increment upload count and save upload history
             if (user) {
