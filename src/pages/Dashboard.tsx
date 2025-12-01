@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, LogOut, Upload, PieChart as PieChartIcon, TrendingDown, Share2 } from "lucide-react";
+import logoFull from "@/assets/logo-full.png";
 import CSVUpload from "@/components/CSVUpload";
 import SpendingChart from "@/components/SpendingChart";
 import SubscriptionsList from "@/components/SubscriptionsList";
@@ -262,7 +263,7 @@ const Dashboard = () => {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
+            <img src={logoFull} alt="Casher" className="h-10 cursor-pointer" onClick={() => navigate("/dashboard")} />
             {localStorage.getItem('casher_test_mode') === 'true' && (
               <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-xs font-medium text-yellow-700 dark:text-yellow-400">
                 🧪 Test Mode - Data stored locally
