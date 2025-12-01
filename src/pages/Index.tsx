@@ -39,8 +39,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <img src={logoFull} alt="Casher" className="h-10 cursor-pointer" onClick={() => navigate("/")} />
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+          <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" onClick={() => navigate("/")} />
           <div className="flex gap-4 items-center">
             <LanguageSelector />
             <ThemeToggle />
@@ -56,9 +56,7 @@ const Index = () => {
 
       <main className="container mx-auto px-4">
         <section className="py-20 text-center">
-          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            {t("appName")}
-          </h1>
+          <img src={logoFull} alt="Casher" className="h-32 mx-auto mb-6" />
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             {t("tagline")}
           </p>

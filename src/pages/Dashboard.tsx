@@ -261,9 +261,9 @@ const Dashboard = () => {
       <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
       
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <img src={logoFull} alt="Casher" className="h-10 cursor-pointer" onClick={() => navigate("/dashboard")} />
+            <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" onClick={() => navigate("/dashboard")} />
             {localStorage.getItem('casher_test_mode') === 'true' && (
               <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-xs font-medium text-yellow-700 dark:text-yellow-400">
                 🧪 Test Mode - Data stored locally
