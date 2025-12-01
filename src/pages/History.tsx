@@ -8,7 +8,7 @@ import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tool
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import logoFull from "@/assets/logo-full.png";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 interface HistoricalData {
   month: string;
@@ -103,11 +103,30 @@ const History = () => {
         .order('upload_date', { ascending: true });
 
       if (uploads && uploads.length > 0) {
-        const trend = uploads.map(u => ({
-          month: format(new Date(u.upload_date), 'MMM yyyy'),
-          cost: Number(u.total_spending),
-          date: new Date(u.upload_date)
-        }));
+        const trend = uploads.map(u => {
+          // Handle both ISO format and DD/MM/YYYY format
+          let dateObj: Date;
+          try {
+            // First try standard ISO format
+            dateObj = new Date(u.upload_date);
+            // If invalid, try UK format DD/MM/YYYY
+            if (isNaN(dateObj.getTime()) && typeof u.upload_date === 'string' && u.upload_date.includes('/')) {
+              const parts = u.upload_date.split('/');
+              if (parts.length === 3) {
+                // DD/MM/YYYY format
+                dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+              }
+            }
+          } catch (e) {
+            dateObj = new Date();
+          }
+          
+          return {
+            month: format(dateObj, 'MMM yyyy'),
+            cost: Number(u.total_spending),
+            date: dateObj
+          };
+        });
         setTrendData(trend);
       }
 
@@ -226,7 +245,7 @@ const History = () => {
           {/* Category Breakdown */}
           <Card>
             <CardHeader>
-              <CardTitle>Spending by Category</CardTitle>
+              <CardTitle>Subscription Breakdown</CardTitle>
               <CardDescription>Where your money goes</CardDescription>
             </CardHeader>
             <CardContent>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -272,7 +272,9 @@ const Dashboard = () => {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" onClick={() => navigate("/dashboard")} />
+            <Link to={user ? "/dashboard" : "/"}>
+              <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" />
+            </Link>
             {localStorage.getItem('casher_test_mode') === 'true' && (
               <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-xs font-medium text-yellow-700 dark:text-yellow-400">
                 🧪 Test Mode - Data stored locally
@@ -362,7 +364,7 @@ const Dashboard = () => {
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                     <p className="text-sm font-medium">{t("uploadLimitReached")}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {t("uploadLimitMessage", { count: uploadsUsed })}
+                      Uploads used: {uploadsUsed}/1
                     </p>
                   </div>
                   <Button 
