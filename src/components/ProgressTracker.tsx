@@ -66,9 +66,9 @@ const ProgressTracker = ({ userId, currentMonthSpending, refreshKey = 0 }: Progr
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {isSaving ? (
-            <TrendingDown className="h-5 w-5 text-green-600" />
+            <TrendingUp className="h-5 w-5 text-green-600" />
           ) : (
-            <TrendingUp className="h-5 w-5 text-red-600" />
+            <TrendingDown className="h-5 w-5 text-red-600" />
           )}
           Your Progress
         </CardTitle>
@@ -95,7 +95,7 @@ const ProgressTracker = ({ userId, currentMonthSpending, refreshKey = 0 }: Progr
             )}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            {isSaving ? 'Down' : 'Up'} {Math.abs(Number(percentageChange))}% from last month
+            {isSaving ? 'Up' : 'Down'} {Math.abs(Number(percentageChange))}% from last month
           </p>
         </div>
       </CardContent>
