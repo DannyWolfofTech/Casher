@@ -1,14 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, TrendingDown, CheckCircle2, Activity } from "lucide-react";
+import { Loader2, ArrowLeft, TrendingDown, CheckCircle2, Activity, Download, Filter, TrendingUp, Calendar as CalendarIcon } from "lucide-react";
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import logoFull from "@/assets/logo-full.png";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface HistoricalData {
   month: string;
@@ -21,13 +26,22 @@ interface CategoryData {
   value: number;
 }
 
-interface CancelledSubscription {
+interface Subscription {
   id: string;
   service_name: string;
   amount: number;
   estimated_annual_cost: number;
   created_at: string;
   status: string;
+  frequency: string;
+}
+
+interface YoYComparison {
+  metric: string;
+  currentYear: number;
+  previousYear: number;
+  change: number;
+  changePercent: number;
 }
 
 const COLORS = ['#00C853', '#1A237E', '#64B5F6', '#81C784', '#4FC3F7', '#AED581'];
@@ -40,7 +54,18 @@ const History = () => {
   const [activeSubscriptions, setActiveSubscriptions] = useState(0);
   const [trendData, setTrendData] = useState<HistoricalData[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
-  const [cancelledSubs, setCancelledSubs] = useState<CancelledSubscription[]>([]);
+  const [cancelledSubs, setCancelledSubs] = useState<Subscription[]>([]);
+  const [allSubscriptions, setAllSubscriptions] = useState<Subscription[]>([]);
+  const [yoyComparison, setYoyComparison] = useState<YoYComparison[]>([]);
+  
+  // Filter states
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+  
+  const exportRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,30 +94,9 @@ const History = () => {
         .eq('user_id', userId);
 
       if (allSubs) {
-        setTotalDetected(allSubs.length);
-        
-        const active = allSubs.filter(s => s.status === 'active');
-        setActiveSubscriptions(active.length);
-
-        const cancelled = allSubs.filter(s => s.status === 'cancelled');
-        setCancelledSubs(cancelled);
-        
-        const savings = cancelled.reduce((sum, s) => sum + (Number(s.estimated_annual_cost) || 0), 0);
-        setAnnualSavings(savings);
-
-        // Category breakdown (for active subscriptions)
-        const categoryMap: { [key: string]: number } = {};
-        active.forEach(sub => {
-          const name = sub.service_name;
-          const category = getCategoryFromName(name);
-          categoryMap[category] = (categoryMap[category] || 0) + Number(sub.amount);
-        });
-
-        const catData = Object.entries(categoryMap).map(([name, value]) => ({
-          name,
-          value: Number(value.toFixed(2))
-        }));
-        setCategoryData(catData);
+        setAllSubscriptions(allSubs);
+        calculateMetrics(allSubs);
+        calculateYoYComparison(allSubs);
       }
 
       // Fetch upload history for trend
@@ -104,16 +108,12 @@ const History = () => {
 
       if (uploads && uploads.length > 0) {
         const trend = uploads.map(u => {
-          // Handle both ISO format and DD/MM/YYYY format
           let dateObj: Date;
           try {
-            // First try standard ISO format
             dateObj = new Date(u.upload_date);
-            // If invalid, try UK format DD/MM/YYYY
             if (isNaN(dateObj.getTime()) && typeof u.upload_date === 'string' && u.upload_date.includes('/')) {
               const parts = u.upload_date.split('/');
               if (parts.length === 3) {
-                // DD/MM/YYYY format
                 dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
               }
             }
@@ -135,6 +135,94 @@ const History = () => {
     }
   };
 
+  const calculateMetrics = (subs: Subscription[]) => {
+    let filtered = subs;
+    
+    if (dateFrom || dateTo) {
+      filtered = filtered.filter(sub => {
+        const subDate = new Date(sub.created_at);
+        if (dateFrom && subDate < dateFrom) return false;
+        if (dateTo && subDate > dateTo) return false;
+        return true;
+      });
+    }
+    
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(sub => getCategoryFromName(sub.service_name) === selectedCategory);
+    }
+    
+    if (selectedStatus !== "all") {
+      filtered = filtered.filter(sub => sub.status === selectedStatus);
+    }
+
+    setTotalDetected(filtered.length);
+    
+    const active = filtered.filter(s => s.status === 'active');
+    setActiveSubscriptions(active.length);
+
+    const cancelled = filtered.filter(s => s.status === 'cancelled');
+    setCancelledSubs(cancelled);
+    
+    const savings = cancelled.reduce((sum, s) => sum + (Number(s.estimated_annual_cost) || 0), 0);
+    setAnnualSavings(savings);
+
+    const categoryMap: { [key: string]: number } = {};
+    active.forEach(sub => {
+      const name = sub.service_name;
+      const category = getCategoryFromName(name);
+      categoryMap[category] = (categoryMap[category] || 0) + Number(sub.amount);
+    });
+
+    const catData = Object.entries(categoryMap).map(([name, value]) => ({
+      name,
+      value: Number(value.toFixed(2))
+    }));
+    setCategoryData(catData);
+  };
+
+  const calculateYoYComparison = (subs: Subscription[]) => {
+    const currentYear = new Date().getFullYear();
+    const previousYear = currentYear - 1;
+
+    const currentYearSubs = subs.filter(s => new Date(s.created_at).getFullYear() === currentYear);
+    const previousYearSubs = subs.filter(s => new Date(s.created_at).getFullYear() === previousYear);
+
+    const currentActive = currentYearSubs.filter(s => s.status === 'active').length;
+    const previousActive = previousYearSubs.filter(s => s.status === 'active').length;
+
+    const currentCancelled = currentYearSubs.filter(s => s.status === 'cancelled');
+    const previousCancelled = previousYearSubs.filter(s => s.status === 'cancelled');
+
+    const currentSavings = currentCancelled.reduce((sum, s) => sum + (Number(s.estimated_annual_cost) || 0), 0);
+    const previousSavings = previousCancelled.reduce((sum, s) => sum + (Number(s.estimated_annual_cost) || 0), 0);
+
+    const comparisons: YoYComparison[] = [
+      {
+        metric: "Active Subscriptions",
+        currentYear: currentActive,
+        previousYear: previousActive,
+        change: currentActive - previousActive,
+        changePercent: previousActive > 0 ? ((currentActive - previousActive) / previousActive) * 100 : 0
+      },
+      {
+        metric: "Cancelled Subscriptions",
+        currentYear: currentCancelled.length,
+        previousYear: previousCancelled.length,
+        change: currentCancelled.length - previousCancelled.length,
+        changePercent: previousCancelled.length > 0 ? ((currentCancelled.length - previousCancelled.length) / previousCancelled.length) * 100 : 0
+      },
+      {
+        metric: "Annual Savings",
+        currentYear: currentSavings,
+        previousYear: previousSavings,
+        change: currentSavings - previousSavings,
+        changePercent: previousSavings > 0 ? ((currentSavings - previousSavings) / previousSavings) * 100 : 0
+      }
+    ];
+
+    setYoyComparison(comparisons);
+  };
+
   const getCategoryFromName = (name: string): string => {
     const lower = name.toLowerCase();
     if (lower.includes('netflix') || lower.includes('spotify') || lower.includes('prime')) return 'Streaming';
@@ -144,6 +232,20 @@ const History = () => {
     if (lower.includes('phone') || lower.includes('mobile')) return 'Telecom';
     return 'Other';
   };
+
+
+  const clearFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setSelectedCategory("all");
+    setSelectedStatus("all");
+  };
+
+  useEffect(() => {
+    if (allSubscriptions.length > 0) {
+      calculateMetrics(allSubscriptions);
+    }
+  }, [dateFrom, dateTo, selectedCategory, selectedStatus]);
 
   if (loading) {
     return (
@@ -171,7 +273,124 @@ const History = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-4 py-8 space-y-8" ref={exportRef}>
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                <CardTitle>Filters</CardTitle>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
+                {showFilters ? "Hide" : "Show"} Filters
+              </Button>
+            </div>
+          </CardHeader>
+          {showFilters && (
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">From Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !dateFrom && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateFrom ? format(dateFrom, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateFrom}
+                        onSelect={setDateFrom}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">To Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !dateTo && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateTo ? format(dateTo, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateTo}
+                        onSelect={setDateTo}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Category</label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="Streaming">Streaming</SelectItem>
+                      <SelectItem value="Fitness">Fitness</SelectItem>
+                      <SelectItem value="Software">Software</SelectItem>
+                      <SelectItem value="Insurance">Insurance</SelectItem>
+                      <SelectItem value="Telecom">Telecom</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Status</label>
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+                {(dateFrom || dateTo || selectedCategory !== "all" || selectedStatus !== "all") && (
+                  <Badge variant="secondary">
+                    Filters Active
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
         {/* Hero Metrics */}
         <div className="grid gap-6 md:grid-cols-3">
           <Card>
@@ -207,6 +426,65 @@ const History = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Year-over-Year Comparison */}
+        {yoyComparison.length > 0 && (
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Year-over-Year Comparison
+              </CardTitle>
+              <CardDescription>
+                Compare {new Date().getFullYear()} vs {new Date().getFullYear() - 1}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {yoyComparison.map((comparison, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 rounded-lg border bg-card"
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold">{comparison.metric}</p>
+                      <div className="flex items-center gap-4 mt-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">{new Date().getFullYear()}: </span>
+                          <span className="font-medium">
+                            {comparison.metric === "Annual Savings" ? `£${comparison.currentYear.toFixed(2)}` : comparison.currentYear}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">{new Date().getFullYear() - 1}: </span>
+                          <span className="font-medium">
+                            {comparison.metric === "Annual Savings" ? `£${comparison.previousYear.toFixed(2)}` : comparison.previousYear}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={cn(
+                        "text-lg font-bold flex items-center gap-1",
+                        comparison.change > 0 ? "text-primary" : comparison.change < 0 ? "text-destructive" : "text-muted-foreground"
+                      )}>
+                        {comparison.change > 0 ? (
+                          <TrendingUp className="h-4 w-4" />
+                        ) : comparison.change < 0 ? (
+                          <TrendingDown className="h-4 w-4" />
+                        ) : null}
+                        {comparison.change > 0 ? "+" : ""}{comparison.changePercent.toFixed(1)}%
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {comparison.change > 0 ? "+" : ""}{comparison.metric === "Annual Savings" ? `£${comparison.change.toFixed(2)}` : comparison.change}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Charts */}
         <div className="grid gap-6 md:grid-cols-2">
