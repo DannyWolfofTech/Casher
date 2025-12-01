@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
+import logoFull from "@/assets/logo-full.png";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -39,7 +40,7 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">{t("appName")}</h1>
+          <img src={logoFull} alt="Casher" className="h-10 cursor-pointer" onClick={() => navigate("/")} />
           <div className="flex gap-4 items-center">
             <LanguageSelector />
             <ThemeToggle />
