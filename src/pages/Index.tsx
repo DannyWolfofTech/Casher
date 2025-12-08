@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, PieChart, Shield, CheckCircle, TrendingUp, Smartphone } from "lucide-react";
+import { Upload, PieChart, Shield, CheckCircle, TrendingUp, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -213,7 +213,7 @@ const Index = () => {
         <section className="py-16 text-center">
           <Card className="bg-gradient-to-r from-primary/10 to-secondary/20 border-primary/20">
             <CardHeader>
-              <Smartphone className="h-12 w-12 text-primary mx-auto mb-4" />
+              <Download className="h-12 w-12 text-primary mx-auto mb-4" />
               <CardTitle className="text-2xl">{t("downloadApp")}</CardTitle>
               <CardDescription className="text-base">
                 {t("downloadAppDesc")}
