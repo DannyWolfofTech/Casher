@@ -59,7 +59,7 @@ const Index = () => {
       <main className="container mx-auto px-4">
         <section className="py-20 text-center">
           <img src={logoFull} alt="Casher" className="h-32 mx-auto mb-6" />
-          <p className="text-3xl md:text-5xl text-muted-foreground mb-8 max-w-2xl mx-auto font-semibold">
+          <p className="text-2xl md:text-3xl text-muted-foreground mb-8 max-w-2xl mx-auto font-medium">
             {t("tagline")}
           </p>
           <div className="flex gap-4 justify-center">
