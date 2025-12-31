@@ -42,7 +42,7 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <img alt="Casher" className="h-14 cursor-pointer" onClick={() => navigate("/")} src="/lovable-uploads/98d57758-d778-4258-8851-e0339ba356eb.png" />
+          <img alt="Casher" className="h-14 cursor-pointer" onClick={() => navigate("/")} src="" />
           <div className="flex gap-4 items-center">
             <LanguageSelector />
             <ThemeToggle />
