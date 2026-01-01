@@ -42,10 +42,13 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" onClick={() => navigate("/")} />
+          <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" onClick={() => user ? navigate("/dashboard") : navigate("/")} />
           <div className="flex gap-4 items-center">
             <LanguageSelector />
             <ThemeToggle />
+            <Button variant="ghost" onClick={() => navigate("/about")}>
+              {t("about")}
+            </Button>
             <Button variant="ghost" onClick={() => navigate("/privacy")}>
               {t("privacy")}
             </Button>
@@ -254,9 +257,14 @@ const Index = () => {
       <footer className="border-t py-8 mt-16">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>&copy; 2025 {t("appName")}. {t("allRightsReserved")}.</p>
-          <Button variant="link" onClick={() => navigate("/privacy")}>
-            {t("privacyPolicy")}
-          </Button>
+          <div className="flex gap-4 justify-center mt-2">
+            <Button variant="link" onClick={() => navigate("/about")}>
+              {t("about")}
+            </Button>
+            <Button variant="link" onClick={() => navigate("/privacy")}>
+              {t("privacyPolicy")}
+            </Button>
+          </div>
         </div>
       </footer>
     </div>;
