@@ -33,51 +33,76 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
 
   const parseCSVLocally = (csvText: string) => {
     const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      return { transactions: [], subscriptions: [], error: 'No data rows found' };
+    }
+
+    // Parse header row (case-insensitive)
+    const headerLine = lines[0];
+    const headers = headerLine.split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+    
+    // Find column indices (case-insensitive, multiple aliases)
+    const dateIndex = headers.findIndex(h => ['date', 'transaction date', 'trans date', 'posted date'].includes(h));
+    const descIndex = headers.findIndex(h => ['description', 'transaction description', 'memo', 'narrative', 'details', 'reference'].includes(h));
+    const amountIndex = headers.findIndex(h => ['amount', 'cost', 'value', 'debit amount', 'credit amount', 'sum'].includes(h));
+
+    // Check for required headers
+    if (dateIndex === -1 || descIndex === -1 || amountIndex === -1) {
+      return { 
+        transactions: [], 
+        subscriptions: [], 
+        error: "Could not find headers. Please ensure your CSV has 'Date', 'Description', and 'Amount' columns." 
+      };
+    }
+
     const transactions = [];
     const subscriptions = [];
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
-      const match = line.match(/(\d{2}\/\d{2}\/\d{4}),([^,]+),([-\d.]+)/);
+      // Parse CSV line properly (handle quoted values)
+      const values = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
       
-      if (match) {
-        const [, date, description, amount] = match;
-        const cleanAmount = parseFloat(amount);
+      if (values.length <= Math.max(dateIndex, descIndex, amountIndex)) continue;
+      
+      const date = values[dateIndex];
+      const description = values[descIndex];
+      const rawAmount = values[amountIndex];
+      const cleanAmount = parseFloat(rawAmount.replace(/[^0-9.-]/g, ''));
+      
+      if (!description || isNaN(cleanAmount) || cleanAmount === 0) continue;
+
+      transactions.push({
+        id: `test-${i}`,
+        date,
+        description: description.trim(),
+        amount: cleanAmount,
+        merchant: description.trim().substring(0, 50),
+        category: 'Other'
+      });
+
+      // Simple subscription detection
+      const subKeywords = ['netflix', 'spotify', 'prime', 'subscription', 'monthly', 'disney', 'apple music', 'youtube premium', 'hbo', 'gym', 'fitness'];
+      const isSubscription = subKeywords.some(keyword => 
+        description.toLowerCase().includes(keyword)
+      );
+
+      if (isSubscription && cleanAmount < 0) {
+        subscriptions.push({
+          id: `sub-${subscriptions.length}`,
+          service_name: description.trim().substring(0, 50),
+          amount: Math.abs(cleanAmount),
+          frequency: 'monthly',
+          estimated_annual_cost: Math.abs(cleanAmount) * 12,
+          status: 'active'
+        });
         
-        if (!isNaN(cleanAmount)) {
-          transactions.push({
-            id: `test-${i}`,
-            date,
-            description: description.trim(),
-            amount: cleanAmount,
-            merchant: description.trim().substring(0, 50),
-            category: 'Other'
-          });
-
-          // Simple subscription detection
-          const subKeywords = ['netflix', 'spotify', 'prime', 'subscription', 'monthly'];
-          const isSubscription = subKeywords.some(keyword => 
-            description.toLowerCase().includes(keyword)
-          );
-
-          if (isSubscription && cleanAmount < 0) {
-            subscriptions.push({
-              id: `sub-${subscriptions.length}`,
-              service_name: description.trim().substring(0, 50),
-              amount: Math.abs(cleanAmount),
-              frequency: 'monthly',
-              estimated_annual_cost: Math.abs(cleanAmount) * 12,
-              status: 'active'
-            });
-            
-            // Update transaction category
-            transactions[transactions.length - 1].category = 'Subscription';
-          }
-        }
+        // Update transaction category
+        transactions[transactions.length - 1].category = 'Subscription';
       }
     }
 
-    return { transactions, subscriptions };
+    return { transactions, subscriptions, error: null };
   };
 
   const handleUpload = async () => {
@@ -96,19 +121,24 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         
         if (isTestMode) {
           // Parse CSV locally in test mode
-          const { transactions, subscriptions } = parseCSVLocally(text);
+          const { transactions, subscriptions, error } = parseCSVLocally(text);
+          
+          if (error || transactions.length === 0) {
+            toast({
+              title: "Error",
+              description: error || "Could not find headers. Please ensure your CSV has 'Date', 'Description', and 'Amount' columns.",
+              variant: "destructive",
+            });
+            setLoading(false);
+            return;
+          }
+          
           console.log('Parsed data:', transactions.length, 'transactions,', subscriptions.length, 'subscriptions');
           
           // Store in localStorage
           localStorage.setItem('test_transactions', JSON.stringify(transactions));
           localStorage.setItem('test_subscriptions', JSON.stringify(subscriptions));
           console.log('Saved to localStorage:', transactions.length, 'transactions');
-          
-          // Verify data was saved
-          const savedTransactions = localStorage.getItem('test_transactions');
-          const savedSubscriptions = localStorage.getItem('test_subscriptions');
-          console.log('Verification - transactions saved:', savedTransactions !== null);
-          console.log('Verification - subscriptions saved:', savedSubscriptions !== null);
 
           toast({
             title: t("successProcessed", { 
