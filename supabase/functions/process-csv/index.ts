@@ -30,66 +30,89 @@ serve(async (req) => {
     const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
     const df = parsed.data as any[];
 
- if (df.length === 0) {
-   return new Response(JSON.stringify({ error: 'No valid transactions found' }), { 
-     headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-     status: 400 
-   });
- }
+  if (df.length === 0) {
+    return new Response(JSON.stringify({ error: "Could not find headers. Please ensure your CSV has 'Date', 'Description', and 'Amount' columns." }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+      status: 400 
+    });
+  }
 
- const transactions: any[] = [];
- const subscriptionMap = new Map<string, any>();
+  // Helper function to get value case-insensitively
+  const getFieldValue = (row: any, fieldNames: string[]): string => {
+    for (const field of fieldNames) {
+      // Check exact match first
+      if (row[field] !== undefined) return String(row[field]);
+      // Check case-insensitive
+      const lowerField = field.toLowerCase();
+      for (const key of Object.keys(row)) {
+        if (key.toLowerCase() === lowerField) return String(row[key]);
+      }
+    }
+    return '';
+  };
+
+  const transactions: any[] = [];
+  const subscriptionMap = new Map<string, any>();
 
   // Process transactions with per-row error handling
   df.forEach((transaction: any, index: number) => {
     try {
-      // Extract data (flexible for different bank formats - HSBC uses 'Transaction Description', 'Amount', 'Date')
-      const date = transaction.date || transaction.Date || transaction['transaction date'] || transaction['Transaction Date'] || new Date().toISOString();
-      const description = transaction.description || transaction.Description || transaction['Transaction Description'] || transaction.memo || transaction.Memo || transaction.narrative || transaction.Narrative || '';
-      const rawAmount = transaction.amount || transaction.Amount || transaction['debit amount'] || transaction['Debit Amount'] || transaction['credit amount'] || transaction['Credit Amount'] || '0';
-      const amount = parseFloat(String(rawAmount).replace(/[^0-9.-]/g, '')) || 0;  // Clean numbers, handle negatives
+      // Extract data (flexible for different bank formats - case-insensitive)
+      const date = getFieldValue(transaction, ['date', 'Date', 'DATE', 'transaction date', 'Transaction Date', 'posted date', 'Posted Date', 'trans date', 'Trans Date']);
+      const description = getFieldValue(transaction, ['description', 'Description', 'DESCRIPTION', 'transaction description', 'Transaction Description', 'memo', 'Memo', 'MEMO', 'narrative', 'Narrative', 'details', 'Details', 'reference', 'Reference']);
+      const rawAmount = getFieldValue(transaction, ['amount', 'Amount', 'AMOUNT', 'cost', 'Cost', 'COST', 'value', 'Value', 'VALUE', 'debit amount', 'Debit Amount', 'credit amount', 'Credit Amount', 'sum', 'Sum']);
+      
+      const amount = parseFloat(rawAmount.replace(/[^0-9.-]/g, '')) || 0;
 
       if (!description || isNaN(amount) || amount === 0) return;  // Skip invalid rows, not whole file
 
-     // Parse date (UK format to ISO)
-     const dateMatch = date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-     const parsedDate = dateMatch ? new Date(`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`) : new Date(date);
-     const dateStr = parsedDate.toISOString().split('T')[0];
+      // Parse date (UK format to ISO)
+      const dateMatch = date.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      const parsedDate = dateMatch ? new Date(`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`) : new Date(date);
+      const dateStr = parsedDate.toISOString().split('T')[0];
 
-     // Categorize and detect
-     const category = categorizeTransaction(description);
-     const isSubscription = detectSubscription(description);
-     const merchant = extractMerchant(description);
+      // Categorize and detect
+      const category = categorizeTransaction(description);
+      const isSubscription = detectSubscription(description);
+      const merchant = extractMerchant(description);
 
-     transactions.push({
-       user_id: user.id,
-       date: dateStr,
-       description,
-       amount: Math.abs(amount),
-       category,
-       is_recurring: isSubscription,
-       recurring_frequency: isSubscription ? 'monthly' : null,
-       merchant,
-     });
+      transactions.push({
+        user_id: user.id,
+        date: dateStr,
+        description,
+        amount: Math.abs(amount),
+        category,
+        is_recurring: isSubscription,
+        recurring_frequency: isSubscription ? 'monthly' : null,
+        merchant,
+      });
 
-     // Track subscriptions
-     if (isSubscription) {
-       if (!subscriptionMap.has(merchant)) {
-         subscriptionMap.set(merchant, {
-           service_name: merchant,
-           amount: Math.abs(amount),
-           frequency: 'monthly',
-           last_charged: dateStr,
-           estimated_annual_cost: Math.abs(amount) * 12,
-           cancellation_url: null,
-           status: 'active',
-         });
-       }
-     }
-   } catch (rowError) {
-     console.log(`Row ${index} error: ${rowError}`);  // Log bad rows, don't crash
-   }
- });
+      // Track subscriptions
+      if (isSubscription) {
+        if (!subscriptionMap.has(merchant)) {
+          subscriptionMap.set(merchant, {
+            service_name: merchant,
+            amount: Math.abs(amount),
+            frequency: 'monthly',
+            last_charged: dateStr,
+            estimated_annual_cost: Math.abs(amount) * 12,
+            cancellation_url: null,
+            status: 'active',
+          });
+        }
+      }
+    } catch (rowError) {
+      console.log(`Row ${index} error: ${rowError}`);  // Log bad rows, don't crash
+    }
+  });
+
+  // Check if we found any valid transactions
+  if (transactions.length === 0) {
+    return new Response(JSON.stringify({ error: "Could not find headers. Please ensure your CSV has 'Date', 'Description', and 'Amount' columns." }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+      status: 400 
+    });
+  }
 
     // Insert transactions
     const { error: transError } = await supabaseClient

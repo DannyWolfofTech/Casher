@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, PieChart, Shield, CheckCircle, TrendingUp, Download } from "lucide-react";
@@ -42,7 +42,9 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" onClick={() => user ? navigate("/dashboard") : navigate("/")} />
+          <Link to={user ? "/dashboard" : "/"}>
+            <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" />
+          </Link>
           <div className="flex gap-4 items-center">
             <LanguageSelector />
             <ThemeToggle />

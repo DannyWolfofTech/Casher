@@ -277,7 +277,7 @@ const Dashboard = () => {
             </Link>
             {localStorage.getItem('casher_test_mode') === 'true' && (
               <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-xs font-medium text-yellow-700 dark:text-yellow-400">
-                🧪 Test Mode - Data stored locally
+                🧪 Test Mode Active - Uploads are processed locally
               </span>
             )}
           </div>
