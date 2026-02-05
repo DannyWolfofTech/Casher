@@ -8,6 +8,7 @@ import { Check, ArrowLeft, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Hardcoded Stripe Publishable Key (Test Mode)
 const STRIPE_PK = "pk_test_51SCrpvJMS012Ip2AFxn0fgxc5MFSSQ21FKjTQzMWcY67b1XrTC0JaW7zMQ8DXUsHRd0BQa07qzsfgHNv0O3EQWRu00bHXyvXld";
@@ -19,6 +20,7 @@ const Pricing = () => {
   const [emailLoading, setEmailLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Set page title and meta tags
@@ -117,51 +119,54 @@ const Pricing = () => {
 
   const plans = [
     {
-      name: "Free",
+      name: t("free"),
+      nameKey: "free",
       price: "£0",
       priceId: "",
-      description: "Perfect for getting started",
+      description: t("perfectForGettingStarted"),
       features: [
-        "1 CSV upload per month",
-        "Basic transaction categorization",
-        "View insights & spot subscriptions",
-        "Multi-language support",
-        "Light/dark mode",
+        t("oneUploadPerMonth"),
+        t("basicCategorization"),
+        t("viewInsights"),
+        t("multiLanguage"),
+        t("lightDarkMode"),
       ],
       limits: [
-        "No CSV exports",
-        "No advanced filters",
-        "Limited dashboard access",
+        t("noExports"),
+        t("noAdvancedFilters"),
+        t("limitedDashboard"),
       ],
     },
     {
-      name: "Pro",
+      name: t("pro"),
+      nameKey: "pro",
       price: "£9.99",
       priceId: "price_1SYzJQJMS012Ip2AChBRKO5w",
-      description: "For regular users",
+      description: t("forRegularUsers"),
       features: [
-        "Unlimited CSV uploads",
-        "Advanced filters & search",
-        "CSV exports",
-        "Detailed spending reports",
-        "Priority email support",
-        "Monthly savings summary",
+        t("unlimitedUploads"),
+        t("advancedFiltersSearch"),
+        t("csvExportsFeature"),
+        t("detailedReports"),
+        t("priorityEmailSupport"),
+        t("monthlySavingsSummary"),
       ],
       limits: [],
       popular: true,
     },
     {
-      name: "Premium",
+      name: t("premium"),
+      nameKey: "premium",
       price: "£14.99",
       priceId: "price_1SYzKoJMS012Ip2Ask6ktJJi",
-      description: "For power users",
+      description: t("forPowerUsers"),
       features: [
-        "All Pro features",
-        "AI-powered insights",
-        "Custom financial recommendations",
-        "Priority chat support",
-        "Early access to features",
-        "Quarterly financial review",
+        t("allProFeatures"),
+        t("aiInsights"),
+        t("customRecommendations"),
+        t("priorityChatSupport"),
+        t("earlyAccess"),
+        t("quarterlyReview"),
       ],
       limits: [],
     },
@@ -173,7 +178,7 @@ const Pricing = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            {t("back")}
           </Button>
           <h1 className="text-2xl font-bold text-primary">Casher</h1>
           <div className="flex items-center gap-2">
@@ -186,10 +191,10 @@ const Pricing = () => {
       <main className="container mx-auto px-4 py-8 md:py-16">
           <div className="text-center mb-8 md:mb-12">
             <h1 className="text-3xl md:text-5xl font-bold mb-4">
-              Choose Your Plan
+              {t("chooseYourPlan")}
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground">
-              Start saving money on unused subscriptions today
+              {t("startSavingToday")}
             </p>
           </div>
 
@@ -200,9 +205,9 @@ const Pricing = () => {
                 key={plan.name}
                 className={`flex flex-col ${plan.popular ? "border-primary shadow-lg scale-105" : ""}`}
               >
-                {plan.popular && (
+              {plan.popular && (
                   <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-semibold rounded-t-lg">
-                    Most Popular
+                    {t("mostPopular")}
                   </div>
                 )}
                 <CardHeader>
@@ -210,13 +215,13 @@ const Pricing = () => {
                   <CardDescription className="text-base">{plan.description}</CardDescription>
                   <div className="mt-4">
                     <span className="text-3xl md:text-4xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground">/month</span>
+                    <span className="text-muted-foreground">{t("perMonth")}</span>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow">
                   <ul className="space-y-3">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start">
                         <Check className="mr-2 h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                         <span className="text-sm md:text-base">{feature}</span>
                       </li>
@@ -224,10 +229,10 @@ const Pricing = () => {
                     {plan.limits && plan.limits.length > 0 && (
                       <>
                         <li className="pt-2 border-t">
-                          <span className="text-sm font-semibold text-muted-foreground">Limitations:</span>
+                          <span className="text-sm font-semibold text-muted-foreground">{t("limitations")}</span>
                         </li>
-                        {plan.limits.map((limit) => (
-                          <li key={limit} className="flex items-start text-muted-foreground">
+                        {plan.limits.map((limit, idx) => (
+                          <li key={idx} className="flex items-start text-muted-foreground">
                             <X className="mr-2 h-5 w-5 flex-shrink-0 mt-0.5" />
                             <span className="text-sm">{limit}</span>
                           </li>
@@ -241,13 +246,13 @@ const Pricing = () => {
                     className="w-full"
                     size="lg"
                     variant={plan.popular ? "default" : "outline"}
-                    onClick={() => plan.name === "Free" ? navigate("/auth") : handleSubscribe(plan.priceId)}
-                    disabled={loading && plan.name !== "Free"}
+                    onClick={() => plan.nameKey === "free" ? navigate("/auth") : handleSubscribe(plan.priceId)}
+                    disabled={loading && plan.nameKey !== "free"}
                   >
-                    {loading && plan.name !== "Free" ? (
+                    {loading && plan.nameKey !== "free" ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {plan.name === "Free" ? "Get Started Free" : "Upgrade Now"}
+                    {plan.nameKey === "free" ? t("getStartedFree") : t("upgradeNow")}
                   </Button>
                 </CardFooter>
               </Card>
@@ -257,60 +262,60 @@ const Pricing = () => {
           {/* Comparison Table */}
           <div className="max-w-5xl mx-auto mb-12 md:mb-16">
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-6 md:mb-8">
-              Feature Comparison
+              {t("featureComparison")}
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse bg-card rounded-lg overflow-hidden">
                 <thead>
                   <tr className="bg-muted">
-                    <th className="text-left p-4 font-semibold">Feature</th>
-                    <th className="text-center p-4 font-semibold">Free</th>
-                    <th className="text-center p-4 font-semibold bg-primary/10">Pro</th>
-                    <th className="text-center p-4 font-semibold">Premium</th>
+                    <th className="text-left p-4 font-semibold">{t("feature")}</th>
+                    <th className="text-center p-4 font-semibold">{t("free")}</th>
+                    <th className="text-center p-4 font-semibold bg-primary/10">{t("pro")}</th>
+                    <th className="text-center p-4 font-semibold">{t("premium")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   <tr>
-                    <td className="p-4">CSV Uploads</td>
-                    <td className="text-center p-4">1/month</td>
-                    <td className="text-center p-4 bg-primary/5">Unlimited</td>
-                    <td className="text-center p-4">Unlimited</td>
+                    <td className="p-4">{t("csvUploads")}</td>
+                    <td className="text-center p-4">{t("onePerMonth")}</td>
+                    <td className="text-center p-4 bg-primary/5">{t("unlimited")}</td>
+                    <td className="text-center p-4">{t("unlimited")}</td>
                   </tr>
                   <tr>
-                    <td className="p-4">Transaction Categorization</td>
+                    <td className="p-4">{t("transactionCategorization")}</td>
                     <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">Subscription Detection</td>
+                    <td className="p-4">{t("subscriptionDetection")}</td>
                     <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">Advanced Filters</td>
+                    <td className="p-4">{t("advancedFilters")}</td>
                     <td className="text-center p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
                     <td className="text-center p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">CSV Exports</td>
+                    <td className="p-4">{t("csvExports")}</td>
                     <td className="text-center p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
                     <td className="text-center p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">AI-Powered Insights</td>
+                    <td className="p-4">{t("aiPoweredInsights")}</td>
                     <td className="text-center p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
                     <td className="text-center p-4 bg-primary/5"><X className="inline h-5 w-5 text-muted-foreground" /></td>
                     <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">Support</td>
-                    <td className="text-center p-4">Community</td>
-                    <td className="text-center p-4 bg-primary/5">Email</td>
-                    <td className="text-center p-4">Priority Chat</td>
+                    <td className="p-4">{t("support")}</td>
+                    <td className="text-center p-4">{t("community")}</td>
+                    <td className="text-center p-4 bg-primary/5">{t("email")}</td>
+                    <td className="text-center p-4">{t("priorityChat")}</td>
                   </tr>
                 </tbody>
               </table>
@@ -321,16 +326,16 @@ const Pricing = () => {
           <div className="max-w-2xl mx-auto mb-12 md:mb-16">
             <Card className="bg-gradient-to-br from-primary/5 to-secondary/5">
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl md:text-3xl">Get Weekly Pro Tips</CardTitle>
+                <CardTitle className="text-2xl md:text-3xl">{t("getWeeklyProTips")}</CardTitle>
                 <CardDescription className="text-base">
-                  Subscribe to receive expert financial advice and money-saving strategies
+                  {t("subscribeForTips")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleEmailSignup} className="flex flex-col sm:flex-row gap-4">
                   <Input
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder={t("enterYourEmail")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="flex-grow"
@@ -340,7 +345,7 @@ const Pricing = () => {
                     {emailLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    Subscribe
+                    {t("subscribe")}
                   </Button>
                 </form>
               </CardContent>
@@ -348,8 +353,8 @@ const Pricing = () => {
           </div>
 
         <div className="text-center text-sm text-muted-foreground space-y-2">
-          <p>All plans include GDPR-compliant data handling & multi-language support</p>
-          <p>Cancel anytime, no questions asked • 30-day money-back guarantee</p>
+          <p>{t("gdprCompliance")}</p>
+          <p>{t("cancelAnytime")}</p>
         </div>
       </main>
     </div>
