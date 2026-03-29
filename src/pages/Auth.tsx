@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { lovable } from "@/integrations/lovable/index";
 
 const credentialsSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
