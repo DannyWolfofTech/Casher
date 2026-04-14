@@ -81,12 +81,7 @@ serve(async (req) => {
       console.log("Price ID:", priceId);
 
       // Map price ID to subscription tier
-      let tier = "free";
-      if (priceId === "price_1SYzJQJMS012Ip2AChBRKO5w") {
-        tier = "pro";
-      } else if (priceId === "price_1SYzKoJMS012Ip2Ask6ktJJi") {
-        tier = "premium";
-      }
+      let tier = PRICE_ID_TO_TIER[priceId] || "free";
 
       console.log("Determined tier:", tier);
 
