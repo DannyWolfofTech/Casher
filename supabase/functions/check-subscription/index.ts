@@ -75,7 +75,17 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      
+      // Handle current_period_end - may be unix timestamp (number) or ISO string
+      const periodEnd = subscription.current_period_end;
+      if (typeof periodEnd === "number") {
+        subscriptionEnd = new Date(periodEnd * 1000).toISOString();
+      } else if (typeof periodEnd === "string") {
+        subscriptionEnd = periodEnd;
+      } else {
+        subscriptionEnd = null;
+      }
+      
       const priceId = subscription.items.data[0].price.id;
       
       // Determine tier from price ID
