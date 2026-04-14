@@ -93,8 +93,7 @@ serve(async (req) => {
       type: error.constructor.name
     });
     return new Response(JSON.stringify({ 
-      error: error.message,
-      details: error.stack 
+      error: "An error occurred during checkout. Please try again." 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
