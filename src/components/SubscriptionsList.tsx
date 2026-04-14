@@ -109,7 +109,7 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
                     <Badge variant="secondary">{sub.frequency}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    £{parseFloat(sub.amount).toFixed(2)} {t("perFrequency", { frequency: sub.frequency })}
+                    £{parseFloat(sub.amount).toFixed(2)} per {sub.frequency}
                   </p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                     <TrendingDown className="h-3 w-3" />
