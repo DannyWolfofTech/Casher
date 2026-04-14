@@ -169,8 +169,9 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        transactionsCount: transactions.length,
+        transactionsCount: newTransactions.length,
         subscriptionsCount: subscriptions.length,
+        duplicatesSkipped: skippedCount,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
