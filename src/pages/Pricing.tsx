@@ -15,7 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 const STRIPE_PK = "pk_test_51SCrpvJMS012Ip2AFxn0fgxc5MFSSQ21FKjTQzMWcY67b1XrTC0JaW7zMQ8DXUsHRd0BQa07qzsfgHNv0O3EQWRu00bHXyvXld";
 
 const Pricing = () => {
-  const [loading, setLoading] = useState(false);
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
@@ -51,7 +51,7 @@ const Pricing = () => {
       return;
     }
 
-    setLoading(true);
+    setLoadingTier(priceId);
     try {
       console.log("Invoking create-checkout-session with priceId:", priceId);
       
@@ -80,7 +80,7 @@ const Pricing = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setLoadingTier(null);
     }
   };
 
@@ -248,9 +248,9 @@ const Pricing = () => {
                     size="lg"
                     variant={plan.popular ? "default" : "outline"}
                     onClick={() => plan.nameKey === "free" ? navigate("/auth") : handleSubscribe(plan.priceId)}
-                    disabled={loading && plan.nameKey !== "free"}
+                    disabled={loadingTier !== null && plan.nameKey !== "free"}
                   >
-                    {loading && plan.nameKey !== "free" ? (
+                    {loadingTier === plan.priceId ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
                     {plan.nameKey === "free" ? t("getStartedFree") : t("upgradeNow")}
