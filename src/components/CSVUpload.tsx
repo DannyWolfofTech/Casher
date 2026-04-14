@@ -48,11 +48,15 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
 
         if (error) throw error;
 
+        const dupeMsg = data.duplicatesSkipped > 0 
+          ? ` (${data.duplicatesSkipped} duplicates skipped)` 
+          : '';
+
         toast({
           title: t("successProcessed", { 
             transactions: data.transactionsCount, 
             subscriptions: data.subscriptionsCount 
-          }),
+          }) + dupeMsg,
         });
 
         onUploadComplete();
