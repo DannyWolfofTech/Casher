@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { PRICE_ID_TO_TIER } from "../_shared/stripe-tiers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,12 +82,7 @@ serve(async (req) => {
       console.log("Price ID:", priceId);
 
       // Map price ID to subscription tier
-      let tier = "free";
-      if (priceId === "price_1SYzJQJMS012Ip2AChBRKO5w") {
-        tier = "pro";
-      } else if (priceId === "price_1SYzKoJMS012Ip2Ask6ktJJi") {
-        tier = "premium";
-      }
+      let tier = PRICE_ID_TO_TIER[priceId] || "free";
 
       console.log("Determined tier:", tier);
 

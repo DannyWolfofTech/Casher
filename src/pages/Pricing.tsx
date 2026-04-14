@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { STRIPE_TIERS } from "@/config/stripe";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -140,8 +141,8 @@ const Pricing = () => {
     {
       name: t("pro"),
       nameKey: "pro",
-      price: "£9.99",
-      priceId: "price_1SYzJQJMS012Ip2AChBRKO5w",
+      price: STRIPE_TIERS.pro.price,
+      priceId: STRIPE_TIERS.pro.priceId,
       description: t("forRegularUsers"),
       features: [
         t("unlimitedUploads"),
@@ -157,8 +158,8 @@ const Pricing = () => {
     {
       name: t("premium"),
       nameKey: "premium",
-      price: "£14.99",
-      priceId: "price_1SYzKoJMS012Ip2Ask6ktJJi",
+      price: STRIPE_TIERS.premium.price,
+      priceId: STRIPE_TIERS.premium.priceId,
       description: t("forPowerUsers"),
       features: [
         t("allProFeatures"),

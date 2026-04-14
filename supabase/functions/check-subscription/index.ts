@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { PRICE_ID_TO_TIER } from "../_shared/stripe-tiers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -90,11 +91,7 @@ serve(async (req) => {
       const priceId = subscription.items.data[0].price.id;
       
       // Determine tier from price ID
-      const PRICE_TO_TIER: Record<string, string> = {
-        "price_1SYzKoJMS012Ip2Ask6ktJJi": "premium",
-        "price_1SYzJQJMS012Ip2AChBRKO5w": "pro",
-      };
-      tier = PRICE_TO_TIER[priceId] || "pro"; // Default to pro if unknown paid price
+      tier = PRICE_ID_TO_TIER[priceId] || "pro"; // Default to pro if unknown paid price
       
       logStep("Active subscription found", { tier, endDate: subscriptionEnd });
 
