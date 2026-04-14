@@ -33,13 +33,17 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
+        const now = new Date();
+        const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const endOfMonthStr = `${endOfMonth.getFullYear()}-${String(endOfMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
+
         const { data, error } = await supabase
           .from('transactions')
           .select('category, amount')
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-        transactions = data || [];
+          .eq('user_id', user.id)
+          .gte('date', startOfMonth)
+          .lte('date', endOfMonthStr);
       }
 
       // Group by category and sum amounts
