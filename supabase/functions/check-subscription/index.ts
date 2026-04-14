@@ -76,8 +76,9 @@ serve(async (req) => {
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       
-      // Handle current_period_end - may be unix timestamp (number) or ISO string
-      const periodEnd = subscription.current_period_end;
+      // Handle current_period_end - check subscription level first, then item level
+      const periodEnd = subscription.current_period_end 
+        ?? subscription.items?.data?.[0]?.current_period_end;
       if (typeof periodEnd === "number") {
         subscriptionEnd = new Date(periodEnd * 1000).toISOString();
       } else if (typeof periodEnd === "string") {
