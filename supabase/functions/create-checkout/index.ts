@@ -70,14 +70,17 @@ serve(async (req) => {
     let customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
     console.log("Customer ID:", customerId || "none found");
 
+    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "") || "https://trycasher-com.lovable.app";
+    console.log("Using origin:", origin);
+
     console.log("Creating checkout session");
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/dashboard?checkout=success`,
-      cancel_url: `${req.headers.get("origin")}/pricing?checkout=cancel`,
+      success_url: `${origin}/dashboard?checkout=success`,
+      cancel_url: `${origin}/pricing?checkout=cancel`,
       metadata: { user_id: user.id, tier: tier || "unknown" },
     });
     console.log("Checkout session created:", session.id);
