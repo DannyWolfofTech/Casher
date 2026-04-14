@@ -91,9 +91,9 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
                   data={data}
                   cx="50%"
                   cy="50%"
-                  labelLine={true}
-                  label={({ name, value, percent }) => `${name}: £${value.toFixed(2)} (${(percent * 100).toFixed(0)}%)`}
-                  outerRadius={80}
+                  labelLine={false}
+                  outerRadius={90}
+                  innerRadius={40}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -101,7 +101,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => `£${value.toFixed(2)}`} />
+                <Tooltip formatter={(value: number) => [`£${value.toFixed(2)}`, 'Amount']} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>

@@ -198,11 +198,18 @@ const Dashboard = () => {
     }
     
     try {
-      // Fetch transactions for monthly spending (filtered by user)
+      // Fetch transactions for monthly spending (current month only)
+      const now = new Date();
+      const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const endOfMonthStr = `${endOfMonth.getFullYear()}-${String(endOfMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
+      
       const { data: transactions } = await supabase
         .from('transactions')
         .select('amount')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .gte('date', startOfMonth)
+        .lte('date', endOfMonthStr);
       
       const total = transactions?.reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0) || 0;
       setMonthlySpending(total);
