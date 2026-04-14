@@ -114,24 +114,58 @@ serve(async (req) => {
     });
   }
 
-    // Insert transactions
-    const { error: transError } = await supabaseClient
+    // Deduplicate: fetch existing transactions for this user with matching dates
+    const uniqueDates = [...new Set(transactions.map(t => t.date))];
+    const { data: existingTxns, error: fetchError } = await supabaseClient
       .from("transactions")
-      .insert(transactions);
+      .select("date, description, amount")
+      .eq("user_id", user.id)
+      .in("date", uniqueDates);
 
-    if (transError) throw transError;
+    if (fetchError) throw fetchError;
 
-    // Insert detected subscriptions
-    const subscriptions = Array.from(subscriptionMap.values()).map(sub => ({
-      ...sub,
-      user_id: user.id,
-    }));
+    // Build a Set of "date|description|amount" keys for fast lookup
+    const existingKeys = new Set(
+      (existingTxns || []).map(t => `${t.date}|${t.description}|${t.amount}`)
+    );
 
-    const { error: subError } = await supabaseClient
+    const newTransactions = transactions.filter(
+      t => !existingKeys.has(`${t.date}|${t.description}|${t.amount}`)
+    );
+
+    const skippedCount = transactions.length - newTransactions.length;
+    if (skippedCount > 0) {
+      console.log(`Skipped ${skippedCount} duplicate transactions`);
+    }
+
+    // Insert only new transactions
+    if (newTransactions.length > 0) {
+      const { error: transError } = await supabaseClient
+        .from("transactions")
+        .insert(newTransactions);
+      if (transError) throw transError;
+    }
+
+    // Deduplicate subscriptions similarly
+    const subNames = Array.from(subscriptionMap.keys());
+    const { data: existingSubs } = await supabaseClient
       .from("detected_subscriptions")
-      .insert(subscriptions);
+      .select("service_name")
+      .eq("user_id", user.id)
+      .in("service_name", subNames.length > 0 ? subNames : ['__none__']);
 
-    if (subError) throw subError;
+    const existingSubNames = new Set((existingSubs || []).map(s => s.service_name));
+
+    const subscriptions = Array.from(subscriptionMap.values())
+      .filter(sub => !existingSubNames.has(sub.service_name))
+      .map(sub => ({ ...sub, user_id: user.id }));
+
+    if (subscriptions.length > 0) {
+      const { error: subError } = await supabaseClient
+        .from("detected_subscriptions")
+        .insert(subscriptions);
+      if (subError) throw subError;
+    }
 
     return new Response(
       JSON.stringify({
