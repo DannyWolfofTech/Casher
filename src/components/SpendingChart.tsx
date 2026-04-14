@@ -44,6 +44,9 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
           .eq('user_id', user.id)
           .gte('date', startOfMonth)
           .lte('date', endOfMonthStr);
+
+        if (error) throw error;
+        transactions = data || [];
       }
 
       // Group by category and sum amounts
