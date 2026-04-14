@@ -33,10 +33,17 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
+        const now = new Date();
+        const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const endOfMonthStr = `${endOfMonth.getFullYear()}-${String(endOfMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
+
         const { data, error } = await supabase
           .from('transactions')
           .select('category, amount')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .gte('date', startOfMonth)
+          .lte('date', endOfMonthStr);
 
         if (error) throw error;
         transactions = data || [];
@@ -91,9 +98,9 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
                   data={data}
                   cx="50%"
                   cy="50%"
-                  labelLine={true}
-                  label={({ name, value, percent }) => `${name}: £${value.toFixed(2)} (${(percent * 100).toFixed(0)}%)`}
-                  outerRadius={80}
+                  labelLine={false}
+                  outerRadius={90}
+                  innerRadius={40}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -101,7 +108,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => `£${value.toFixed(2)}`} />
+                <Tooltip formatter={(value: number) => [`£${value.toFixed(2)}`, 'Amount']} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>

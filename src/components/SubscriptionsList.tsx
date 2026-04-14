@@ -20,7 +20,7 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
 
   useEffect(() => {
     fetchSubscriptions();
-  }, [refreshKey]);
+  }, [refreshKey, userId]);
 
   const fetchSubscriptions = async () => {
     try {
