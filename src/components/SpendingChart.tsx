@@ -90,17 +90,34 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
         ) : (
           <ChartContainer
             config={{}}
-            className="h-[300px]"
+            className="h-[400px]"
           >
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={data}
                   cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={90}
-                  innerRadius={40}
+                  cy="45%"
+                  labelLine={true}
+                  label={({ name, value, percent, cx, cy, midAngle, outerRadius }) => {
+                    const RADIAN = Math.PI / 180;
+                    const radius = outerRadius + 30;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                    return (
+                      <text
+                        x={x}
+                        y={y}
+                        fill="currentColor"
+                        textAnchor={x > cx ? 'start' : 'end'}
+                        dominantBaseline="central"
+                        fontSize={11}
+                      >
+                        {`${name} £${value.toFixed(0)}`}
+                      </text>
+                    );
+                  }}
+                  outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                 >

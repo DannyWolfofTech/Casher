@@ -25,7 +25,7 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
   const fetchSubscriptions = async () => {
     try {
       // Check for test mode
-      const testMode = localStorage.getItem('test_mode');
+      const testMode = localStorage.getItem('casher_test_mode');
       
       if (testMode === 'true') {
         const testSubscriptions = JSON.parse(localStorage.getItem('test_subscriptions') || '[]');
