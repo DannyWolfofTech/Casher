@@ -51,7 +51,7 @@ const Pricing = () => {
       return;
     }
 
-    setLoading(true);
+    setLoadingTier(priceId);
     try {
       console.log("Invoking create-checkout-session with priceId:", priceId);
       
@@ -80,7 +80,7 @@ const Pricing = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setLoadingTier(null);
     }
   };
 
@@ -248,9 +248,9 @@ const Pricing = () => {
                     size="lg"
                     variant={plan.popular ? "default" : "outline"}
                     onClick={() => plan.nameKey === "free" ? navigate("/auth") : handleSubscribe(plan.priceId)}
-                    disabled={loading && plan.nameKey !== "free"}
+                    disabled={loadingTier !== null && plan.nameKey !== "free"}
                   >
-                    {loading && plan.nameKey !== "free" ? (
+                    {loadingTier === plan.priceId ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
                     {plan.nameKey === "free" ? t("getStartedFree") : t("upgradeNow")}
