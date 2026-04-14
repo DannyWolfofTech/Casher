@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, LogOut, Upload, PieChart as PieChartIcon, TrendingDown, Share2, History } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import logoFull from "@/assets/logo-full.png";
 import CSVUpload from "@/components/CSVUpload";
 import SpendingChart from "@/components/SpendingChart";
