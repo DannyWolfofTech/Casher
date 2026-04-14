@@ -162,6 +162,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    if (!user) return;
     fetchDashboardData();
     
     // Listen for test data updates
@@ -175,7 +176,7 @@ const Dashboard = () => {
     return () => {
       window.removeEventListener('test-data-updated', handleTestDataUpdate);
     };
-  }, [refreshKey]);
+  }, [refreshKey, user]);
 
   const fetchDashboardData = async () => {
     if (!user) return;
@@ -297,9 +298,16 @@ const Dashboard = () => {
                 {t("adminPanel")}
               </Button>
             )}
-            <Button variant="outline" onClick={() => navigate("/pricing")}>
-              {t("upgradeToPro")}
-            </Button>
+            {userTier === "free" && (
+              <Button variant="outline" onClick={() => navigate("/pricing")}>
+                {t("upgradeToPro")}
+              </Button>
+            )}
+            {userTier !== "free" && (
+              <Badge className="bg-primary/10 text-primary border-primary/20 px-3 py-1">
+                {userTier === "premium" ? "Premium" : "Pro"} Plan
+              </Badge>
+            )}
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               {localStorage.getItem('casher_test_mode') === 'true' ? 'Exit Test Mode' : t("signOut")}
