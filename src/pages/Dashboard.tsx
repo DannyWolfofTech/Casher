@@ -40,26 +40,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     const checkUser = async () => {
-      // CRITICAL: Force test mode OFF for authenticated users
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (authSession) {
-        // User is authenticated - disable test mode completely
-        localStorage.removeItem('casher_test_mode');
-        localStorage.removeItem('casher_test_user');
-        console.log('User authenticated, test mode disabled');
-      }
-      
-      const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
-      if (isTestMode) {
-        console.log('Test mode detected, loading test data');
-        const testUser = JSON.parse(localStorage.getItem('casher_test_user') || '{"id":"test-123","email":"demo@test.com"}');
-        setUser(testUser as User);
-        setUserTier('pro');
-        setCanUpload(true);
-        setLoading(false);
-        return;
-      }
-
       console.log('Checking authentication session...');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -134,11 +114,6 @@ const Dashboard = () => {
 
     checkUser();
 
-    const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
-    if (isTestMode) {
-      return;
-    }
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         navigate("/auth");
@@ -165,37 +140,10 @@ const Dashboard = () => {
   useEffect(() => {
     if (!user) return;
     fetchDashboardData();
-    
-    // Listen for test data updates
-    const handleTestDataUpdate = () => {
-      console.log('Test data updated event received, refreshing dashboard');
-      fetchDashboardData();
-    };
-    
-    window.addEventListener('test-data-updated', handleTestDataUpdate);
-    
-    return () => {
-      window.removeEventListener('test-data-updated', handleTestDataUpdate);
-    };
   }, [refreshKey, user]);
 
   const fetchDashboardData = async () => {
     if (!user) return;
-    
-    // Test mode: load from localStorage
-    const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
-    if (isTestMode) {
-      const testTransactions = JSON.parse(localStorage.getItem('test_transactions') || '[]');
-      const testSubscriptions = JSON.parse(localStorage.getItem('test_subscriptions') || '[]');
-      
-      const total = testTransactions.reduce((sum: number, t: any) => sum + Math.abs(Number(t.amount)), 0);
-      setMonthlySpending(total);
-      setSubscriptionCount(testSubscriptions.length);
-      
-      const savings = testSubscriptions.reduce((sum: number, s: any) => sum + (Number(s.estimated_annual_cost) || 0), 0);
-      setPotentialSavings(savings);
-      return;
-    }
     
     try {
       // Fetch transactions for monthly spending (current month only)
@@ -231,16 +179,6 @@ const Dashboard = () => {
   };
 
   const handleSignOut = async () => {
-    const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
-    if (isTestMode) {
-      console.log('Exiting test mode');
-      localStorage.removeItem('casher_test_mode');
-      localStorage.removeItem('casher_test_user');
-      localStorage.removeItem('test_transactions');
-      localStorage.removeItem('test_subscriptions');
-      window.location.href = '/';
-      return;
-    }
     await supabase.auth.signOut();
     navigate("/auth");
   };
@@ -284,11 +222,6 @@ const Dashboard = () => {
             <Link to={user ? "/dashboard" : "/"}>
               <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" />
             </Link>
-            {localStorage.getItem('casher_test_mode') === 'true' && (
-              <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-xs font-medium text-yellow-700 dark:text-yellow-400">
-                🧪 Test Mode Active - Uploads are processed locally
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-4">
             <LanguageSelector />
@@ -318,7 +251,7 @@ const Dashboard = () => {
             )}
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              {localStorage.getItem('casher_test_mode') === 'true' ? 'Exit Test Mode' : t("signOut")}
+              {t("signOut")}
             </Button>
           </div>
         </div>

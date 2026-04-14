@@ -12,7 +12,7 @@ interface SpendingChartProps {
 }
 
 const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<Array<{ name: string; value: number }>>([]);
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
@@ -22,41 +22,30 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
 
   const fetchSpendingData = async () => {
     try {
-      // Check for test mode (use correct key)
-      const testMode = localStorage.getItem('casher_test_mode');
-      let transactions: any[] = [];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      if (testMode === 'true') {
-        transactions = JSON.parse(localStorage.getItem('test_transactions') || '[]');
-      } else {
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+      const now = new Date();
+      const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const endOfMonthStr = `${endOfMonth.getFullYear()}-${String(endOfMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
 
-        const now = new Date();
-        const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        const endOfMonthStr = `${endOfMonth.getFullYear()}-${String(endOfMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('category, amount')
+        .eq('user_id', user.id)
+        .gte('date', startOfMonth)
+        .lte('date', endOfMonthStr);
 
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('category, amount')
-          .eq('user_id', user.id)
-          .gte('date', startOfMonth)
-          .lte('date', endOfMonthStr);
-
-        if (error) throw error;
-        transactions = data || [];
-      }
+      if (error) throw error;
 
       // Group by category and sum amounts
       const categoryTotals: { [key: string]: number } = {};
-      transactions.forEach((t: any) => {
+      (transactions || []).forEach((t) => {
         const category = t.category || 'Other';
-        categoryTotals[category] = (categoryTotals[category] || 0) + Math.abs(parseFloat(t.amount));
+        categoryTotals[category] = (categoryTotals[category] || 0) + Math.abs(parseFloat(String(t.amount)));
       });
 
-      // Filter out categories with £0 spending and format data
       const chartData = Object.entries(categoryTotals)
         .filter(([_, value]) => value > 0)
         .map(([name, value]) => ({
@@ -88,10 +77,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
             {t("noDataAvailable")}
           </div>
         ) : (
-          <ChartContainer
-            config={{}}
-            className="h-[400px]"
-          >
+          <ChartContainer config={{}} className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -99,7 +85,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
                   cx="50%"
                   cy="45%"
                   labelLine={true}
-                  label={({ name, value, percent, cx, cy, midAngle, outerRadius }) => {
+                  label={({ name, value, cx, cy, midAngle, outerRadius }) => {
                     const RADIAN = Math.PI / 180;
                     const radius = outerRadius + 30;
                     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -121,7 +107,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {data.map((entry, index) => (
+                  {data.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

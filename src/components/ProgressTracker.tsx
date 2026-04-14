@@ -19,29 +19,19 @@ const ProgressTracker = ({ userId, currentMonthSpending, refreshKey = 0 }: Progr
 
   const fetchPreviousMonth = async () => {
     try {
-      const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
+      if (!userId) return;
       
-      if (isTestMode) {
-        const testHistory = JSON.parse(localStorage.getItem('test_monthly_history') || '[]');
-        if (testHistory.length > 0) {
-          setPreviousMonthSpending(testHistory[0].spending);
-        }
-      } else {
-        if (!userId) return;
-        
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('monthly_spending_history')
-          .eq('user_id', userId)
-          .maybeSingle();
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('monthly_spending_history')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-        if (profileData?.monthly_spending_history) {
-          const history = profileData.monthly_spending_history as Array<{ month: string; spending: number }>;
-          if (history.length > 0) {
-            // Get the most recent month's spending
-            const sortedHistory = history.sort((a, b) => new Date(b.month).getTime() - new Date(a.month).getTime());
-            setPreviousMonthSpending(sortedHistory[0].spending);
-          }
+      if (profileData?.monthly_spending_history) {
+        const history = profileData.monthly_spending_history as Array<{ month: string; spending: number }>;
+        if (history.length > 0) {
+          const sortedHistory = history.sort((a, b) => new Date(b.month).getTime() - new Date(a.month).getTime());
+          setPreviousMonthSpending(sortedHistory[0].spending);
         }
       }
     } catch (error) {

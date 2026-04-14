@@ -24,27 +24,19 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
 
   const fetchSubscriptions = async () => {
     try {
-      // Check for test mode
-      const testMode = localStorage.getItem('casher_test_mode');
-      
-      if (testMode === 'true') {
-        const testSubscriptions = JSON.parse(localStorage.getItem('test_subscriptions') || '[]');
-        setSubscriptions(testSubscriptions);
-      } else {
-        if (!userId) {
-          setSubscriptions([]);
-          return;
-        }
-        const { data, error } = await supabase
-          .from('detected_subscriptions')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .order('amount', { ascending: false });
-
-        if (error) throw error;
-        setSubscriptions(data || []);
+      if (!userId) {
+        setSubscriptions([]);
+        return;
       }
+      const { data, error } = await supabase
+        .from('detected_subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .order('amount', { ascending: false });
+
+      if (error) throw error;
+      setSubscriptions(data || []);
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
     } finally {
@@ -58,7 +50,6 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
       return;
     }
 
-    // Map of common services to their cancellation URLs
     const cancellationUrls: { [key: string]: string } = {
       'netflix': 'https://www.netflix.com/cancelplan',
       'spotify': 'https://www.spotify.com/account/subscription/',
@@ -75,11 +66,9 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
     if (matchedUrl) {
       window.open(cancellationUrls[matchedUrl], '_blank');
     } else if (serviceLower.includes('gym') || serviceLower.includes('fitness')) {
-      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent('cancel ' + serviceName + ' membership')}`;
-      window.open(searchUrl, '_blank');
+      window.open(`https://www.google.com/search?q=${encodeURIComponent('cancel ' + serviceName + ' membership')}`, '_blank');
     } else {
-      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent('cancel ' + serviceName)}`;
-      window.open(searchUrl, '_blank');
+      window.open(`https://www.google.com/search?q=${encodeURIComponent('cancel ' + serviceName)}`, '_blank');
     }
   };
 

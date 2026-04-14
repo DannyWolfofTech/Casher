@@ -127,13 +127,6 @@ const Auth = () => {
     }
   };
 
-  const handleTestMode = () => {
-    console.log("Entering test mode");
-    localStorage.setItem("casher_test_mode", "true");
-    localStorage.setItem("casher_test_user", '{"id":"test-123","email":"demo@test.com"}');
-    window.location.href = "/dashboard";
-  };
-
   return (
     <>
       <Helmet>
@@ -236,18 +229,6 @@ const Auth = () => {
               Sign in with Google
             </Button>
 
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">For Testing</span>
-              </div>
-            </div>
-
-            <Button variant="secondary" className="w-full" type="button" onClick={handleTestMode}>
-              Skip Login (Test Mode)
-            </Button>
           </CardContent>
         </Card>
       </div>

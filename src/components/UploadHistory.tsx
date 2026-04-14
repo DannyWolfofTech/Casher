@@ -31,27 +31,20 @@ const UploadHistory = ({ userId, refreshKey = 0 }: UploadHistoryProps) => {
 
   const fetchHistory = async () => {
     try {
-      const isTestMode = localStorage.getItem('casher_test_mode') === 'true';
-      
-      if (isTestMode) {
-        const testHistory = JSON.parse(localStorage.getItem('test_upload_history') || '[]');
-        setHistory(testHistory);
-      } else {
-        if (!userId) {
-          setHistory([]);
-          return;
-        }
-        
-        const { data, error } = await supabase
-          .from('upload_history')
-          .select('*')
-          .eq('user_id', userId)
-          .order('upload_date', { ascending: false })
-          .limit(10);
-
-        if (error) throw error;
-        setHistory(data || []);
+      if (!userId) {
+        setHistory([]);
+        return;
       }
+      
+      const { data, error } = await supabase
+        .from('upload_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('upload_date', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setHistory(data || []);
     } catch (error) {
       console.error('Error fetching upload history:', error);
     } finally {

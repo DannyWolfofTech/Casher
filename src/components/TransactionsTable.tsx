@@ -47,48 +47,28 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
 
   const fetchTransactions = async () => {
     try {
-      // Check for test mode
-      const testMode = localStorage.getItem('test_mode');
-      
-      if (testMode === 'true') {
-        let testTransactions = JSON.parse(localStorage.getItem('test_transactions') || '[]');
-        
-        // Apply search filter if query exists
-        if (searchQuery.trim()) {
-          const query = searchQuery.toLowerCase();
-          testTransactions = testTransactions.filter((t: any) => 
-            t.description.toLowerCase().includes(query)
-          );
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
+      let query = supabase
+        .from('transactions')
+        .select('*', { count: 'exact' })
+        .order('date', { ascending: false });
+
+      // Sanitize and apply search filter
+      if (searchQuery.trim()) {
+        const sanitized = searchQuery.replace(/[%_\\]/g, '');
+        if (sanitized) {
+          query = query.or(`description.ilike.%${sanitized}%,category.ilike.%${sanitized}%`);
         }
-        
-        // Apply pagination
-        const from = (currentPage - 1) * itemsPerPage;
-        const to = from + itemsPerPage;
-        const paginated = testTransactions.slice(from, to);
-        
-        setTransactions(paginated);
-        setTotalPages(Math.ceil(testTransactions.length / itemsPerPage));
-      } else {
-        const from = (currentPage - 1) * itemsPerPage;
-        const to = from + itemsPerPage - 1;
-
-        let query = supabase
-          .from('transactions')
-          .select('*', { count: 'exact' })
-          .order('date', { ascending: false });
-
-        // Apply search filter if query exists
-        if (searchQuery.trim()) {
-          query = query.or(`description.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
-        }
-
-        const { data, error, count } = await query.range(from, to);
-
-        if (error) throw error;
-
-        setTransactions(data || []);
-        setTotalPages(Math.ceil((count || 0) / itemsPerPage));
       }
+
+      const { data, error, count } = await query.range(from, to);
+
+      if (error) throw error;
+
+      setTransactions(data || []);
+      setTotalPages(Math.ceil((count || 0) / itemsPerPage));
     } catch (error) {
       console.error('Error fetching transactions:', error);
     }
@@ -104,7 +84,6 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
       return;
     }
 
-    // Create CSV content
     const headers = ['Date', 'Description', 'Amount', 'Category'];
     const rows = transactions.map(t => [
       t.date,
@@ -118,7 +97,6 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
       ...rows.map(row => row.join(','))
     ].join('\n');
 
-    // Download
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -202,22 +180,14 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>{t('allTransactions')}</CardTitle>
-            <CardDescription>
-              {t('transactionsDescription')}
-            </CardDescription>
+            <CardDescription>{t('transactionsDescription')}</CardDescription>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={userTier === 'free'}
-          >
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={userTier === 'free'}>
             <Download className="mr-2 h-4 w-4" />
             {t('export')}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Search Box */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -255,9 +225,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
                       <TableCell className="whitespace-nowrap">
                         {new Date(transaction.date).toLocaleDateString('en-GB')}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {transaction.description}
-                      </TableCell>
+                      <TableCell className="max-w-xs truncate">{transaction.description}</TableCell>
                       <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
                         £{Math.abs(transaction.amount).toFixed(2)}
                       </TableCell>
@@ -274,11 +242,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
                       </TableCell>
                       <TableCell>
                         {transaction.category === 'Subscription' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCancelSubscription(transaction)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleCancelSubscription(transaction)}>
                             <X className="h-4 w-4 mr-1" />
                             {t('cancel')}
                           </Button>
@@ -297,20 +261,10 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
                 {t("pageOf", { current: currentPage, total: totalPages })}
               </p>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -319,7 +273,6 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
         </CardContent>
       </Card>
 
-      {/* Cancel Subscription Modal */}
       <Dialog open={cancelModal.open} onOpenChange={(open) => setCancelModal({ open, transaction: cancelModal.transaction })}>
         <DialogContent>
           <DialogHeader>
@@ -327,45 +280,34 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
             <DialogDescription>{t('cancelInstructions')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {cancelModal.transaction && (
-              <>
-                {(() => {
-                  const instructions = getCancellationInstructions(
-                    cancelModal.transaction.category || '',
-                    cancelModal.transaction.description
-                  );
-                  return (
-                    <div className="space-y-3">
-                      {instructions.steps.map((step, index) => (
-                        <div key={index} className="flex gap-2">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
-                            {index + 1}
-                          </span>
-                          <p className="text-sm">{step}</p>
-                        </div>
-                      ))}
-                      <div className="flex gap-2 pt-4">
-                        {instructions.website && (
-                          <Button
-                            onClick={() => window.open(`https://${instructions.website}`, '_blank')}
-                            className="flex-1"
-                          >
-                            {t('openWebsite')}
-                          </Button>
-                        )}
-                        <Button
-                          onClick={handleMarkCanceled}
-                          variant="outline"
-                          className="flex-1"
-                        >
-                          {t('markCanceled')}
-                        </Button>
-                      </div>
+            {cancelModal.transaction && (() => {
+              const instructions = getCancellationInstructions(
+                cancelModal.transaction.category || '',
+                cancelModal.transaction.description
+              );
+              return (
+                <div className="space-y-3">
+                  {instructions.steps.map((step, index) => (
+                    <div key={index} className="flex gap-2">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                        {index + 1}
+                      </span>
+                      <p className="text-sm">{step}</p>
                     </div>
-                  );
-                })()}
-              </>
-            )}
+                  ))}
+                  <div className="flex gap-2 pt-4">
+                    {instructions.website && (
+                      <Button onClick={() => window.open(`https://${instructions.website}`, '_blank')} className="flex-1">
+                        {t('openWebsite')}
+                      </Button>
+                    )}
+                    <Button onClick={handleMarkCanceled} variant="outline" className="flex-1">
+                      {t('markCanceled')}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>
