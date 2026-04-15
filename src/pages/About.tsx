@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { User } from "@supabase/supabase-js";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Shield, Lock, Target } from "lucide-react";
