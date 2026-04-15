@@ -4,6 +4,8 @@ import { ChartContainer } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -14,6 +16,7 @@ interface SpendingChartProps {
 const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
   const [data, setData] = useState<Array<{ name: string; value: number }>>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -22,6 +25,8 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
 
   const fetchSpendingData = async () => {
     try {
+      setError(false);
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -54,8 +59,9 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
         }));
 
       setData(chartData);
-    } catch (error) {
-      console.error('Error fetching spending data:', error);
+    } catch (err) {
+      console.error('Error fetching spending data:', err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -71,6 +77,15 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
         {loading ? (
           <div className="h-[300px] flex items-center justify-center text-muted-foreground">
             {t("loading")}
+          </div>
+        ) : error ? (
+          <div className="h-[300px] flex flex-col items-center justify-center gap-3 text-muted-foreground">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+            <p className="text-sm">{t("failedToLoadData")}</p>
+            <Button variant="outline" size="sm" onClick={fetchSpendingData}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              {t("retry")}
+            </Button>
           </div>
         ) : data.length === 0 ? (
           <div className="h-[300px] flex items-center justify-center text-muted-foreground">

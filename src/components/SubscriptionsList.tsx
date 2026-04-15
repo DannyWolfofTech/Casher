@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, TrendingDown } from "lucide-react";
+import { AlertCircle, ExternalLink, RefreshCw, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
@@ -15,6 +15,7 @@ interface SubscriptionsListProps {
 const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) => {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -24,6 +25,8 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
 
   const fetchSubscriptions = async () => {
     try {
+      setError(false);
+      setLoading(true);
       if (!userId) {
         setSubscriptions([]);
         return;
@@ -37,8 +40,9 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
 
       if (error) throw error;
       setSubscriptions(data || []);
-    } catch (error) {
-      console.error('Error fetching subscriptions:', error);
+    } catch (err) {
+      console.error('Error fetching subscriptions:', err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -81,6 +85,15 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
       <CardContent>
         {loading ? (
           <div className="text-center text-muted-foreground py-8">{t("loading")}</div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground py-8">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+            <p className="text-sm">{t("failedToLoadData")}</p>
+            <Button variant="outline" size="sm" onClick={fetchSubscriptions}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              {t("retry")}
+            </Button>
+          </div>
         ) : subscriptions.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             {t("noSubscriptionsYet")}

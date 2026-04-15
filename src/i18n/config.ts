@@ -32,6 +32,8 @@ const resources = {
       overallSpendingBreakdown: "Your overall spending breakdown",
       loading: "Loading...",
       noDataAvailable: "No data available. Upload a CSV to see your spending.",
+      failedToLoadData: "Failed to load data. Please try again.",
+      retry: "Retry",
       
       // Subscriptions
       recurringPayments: "Recurring payments we found in your transactions",
@@ -203,6 +205,8 @@ const resources = {
       overallSpendingBreakdown: "Defalcarea totală a cheltuielilor",
       loading: "Se încarcă...",
       noDataAvailable: "Nicio dată disponibilă. Încarcă un CSV pentru a vedea cheltuielile.",
+      failedToLoadData: "Nu s-au putut încărca datele. Vă rugăm să încercați din nou.",
+      retry: "Reîncearcă",
       
       // Subscriptions
       recurringPayments: "Plăți recurente găsite în tranzacțiile tale",
@@ -374,6 +378,8 @@ const resources = {
       overallSpendingBreakdown: "Desglose total de gastos",
       loading: "Cargando...",
       noDataAvailable: "No hay datos disponibles. Sube un CSV para ver tus gastos.",
+      failedToLoadData: "Error al cargar los datos. Por favor, inténtalo de nuevo.",
+      retry: "Reintentar",
       
       // Subscriptions
       recurringPayments: "Pagos recurrentes encontrados en tus transacciones",

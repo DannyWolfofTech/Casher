@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, Download, Search, X } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Download, RefreshCw, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import {
@@ -33,6 +33,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState(false);
   const [cancelModal, setCancelModal] = useState<{ open: boolean; transaction: Transaction | null }>({
     open: false,
     transaction: null,
@@ -47,6 +48,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
 
   const fetchTransactions = async () => {
     try {
+      setError(false);
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
@@ -69,8 +71,9 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
 
       setTransactions(data || []);
       setTotalPages(Math.ceil((count || 0) / itemsPerPage));
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
+    } catch (err) {
+      console.error('Error fetching transactions:', err);
+      setError(true);
     }
   };
 
@@ -170,8 +173,28 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
     }
   };
 
-  if (transactions.length === 0 && !searchQuery) {
+  if (transactions.length === 0 && !searchQuery && !error) {
     return null;
+  }
+
+  if (error && transactions.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('allTransactions')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground py-8">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+            <p className="text-sm">{t("failedToLoadData")}</p>
+            <Button variant="outline" size="sm" onClick={fetchTransactions}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              {t("retry")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
