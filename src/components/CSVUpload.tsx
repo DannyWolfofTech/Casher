@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { captureApiError } from "@/lib/sentry";
 import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
 
         onUploadComplete();
       } catch (error: any) {
+        captureApiError(error, { operation: 'csvUpload' });
         toast({
           title: "Error",
           description: error.message || t("errorProcessing"),
