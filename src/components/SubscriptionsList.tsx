@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { captureApiError } from "@/lib/sentry";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
       setSubscriptions(data || []);
     } catch (err) {
       console.error('Error fetching subscriptions:', err);
+      captureApiError(err, { operation: 'fetchSubscriptions' });
       setError(true);
     } finally {
       setLoading(false);

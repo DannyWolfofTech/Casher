@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { captureApiError } from "@/lib/sentry";
 
 export const useDashboardData = (userId: string | undefined, refreshKey: number) => {
   const [monthlySpending, setMonthlySpending] = useState(0);
@@ -40,6 +41,7 @@ export const useDashboardData = (userId: string | undefined, refreshKey: number)
       setPotentialSavings(savings);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      captureApiError(error, { operation: 'fetchDashboardData' });
     }
   };
 
