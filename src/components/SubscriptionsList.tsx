@@ -7,6 +7,7 @@ import { AlertCircle, ExternalLink, RefreshCw, TrendingDown } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { Tables } from "@/integrations/supabase/types";
 
 interface SubscriptionsListProps {
   refreshKey?: number;
@@ -14,7 +15,7 @@ interface SubscriptionsListProps {
 }
 
 const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) => {
-  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Tables<"detected_subscriptions">[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { toast } = useToast();
