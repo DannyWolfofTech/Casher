@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { captureApiError } from "@/lib/sentry";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
@@ -61,6 +62,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
       setData(chartData);
     } catch (err) {
       console.error('Error fetching spending data:', err);
+      captureApiError(err, { operation: 'fetchSpendingData' });
       setError(true);
     } finally {
       setLoading(false);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { captureApiError } from "@/lib/sentry";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -73,6 +74,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
       setTotalPages(Math.ceil((count || 0) / itemsPerPage));
     } catch (err) {
       console.error('Error fetching transactions:', err);
+      captureApiError(err, { operation: 'fetchTransactions' });
       setError(true);
     }
   };
