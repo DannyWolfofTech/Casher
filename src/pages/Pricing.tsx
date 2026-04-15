@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { User } from "@supabase/supabase-js";
 import { STRIPE_TIERS } from "@/config/stripe";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +17,7 @@ const STRIPE_PK = "pk_test_51SCrpvJMS012Ip2AFxn0fgxc5MFSSQ21FKjTQzMWcY67b1XrTC0J
 
 const Pricing = () => {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
   const navigate = useNavigate();
@@ -72,11 +73,12 @@ const Pricing = () => {
       } else {
         throw new Error("No checkout URL returned");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to start checkout";
       console.error("Checkout error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to start checkout",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -108,10 +110,11 @@ const Pricing = () => {
         description: "Welcome email sent! Check your inbox for pro tips.",
       });
       setEmail("");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to subscribe";
       toast({
         title: "Error",
-        description: error.message || "Failed to subscribe",
+        description: message,
         variant: "destructive",
       });
     }

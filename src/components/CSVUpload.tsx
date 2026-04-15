@@ -61,11 +61,12 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         });
 
         onUploadComplete();
-      } catch (error: any) {
+      } catch (error: unknown) {
         captureApiError(error, { operation: 'csvUpload' });
+        const message = error instanceof Error ? error.message : t("errorProcessing");
         toast({
           title: "Error",
-          description: error.message || t("errorProcessing"),
+          description: message,
           variant: "destructive",
         });
       } finally {

@@ -16,7 +16,7 @@ export function LanguageSelector() {
   const { language, setLanguage } = useLanguage();
   const { i18n } = useTranslation();
 
-  const handleLanguageChange = (value: any) => {
+  const handleLanguageChange = (value: "en" | "fr" | "es" | "ro" | "de" | "it" | "pl") => {
     setLanguage(value);
     i18n.changeLanguage(value);
   };

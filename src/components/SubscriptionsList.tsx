@@ -7,6 +7,7 @@ import { AlertCircle, ExternalLink, RefreshCw, TrendingDown } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { Tables } from "@/integrations/supabase/types";
 
 interface SubscriptionsListProps {
   refreshKey?: number;
@@ -14,7 +15,7 @@ interface SubscriptionsListProps {
 }
 
 const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) => {
-  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Tables<"detected_subscriptions">[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { toast } = useToast();
@@ -113,13 +114,13 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
                     <Badge variant="secondary">{sub.frequency}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    £{parseFloat(sub.amount).toFixed(2)} per {sub.frequency}
+                    £{Number(sub.amount).toFixed(2)} per {sub.frequency}
                   </p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                     <TrendingDown className="h-3 w-3" />
                     Annual cost: £{sub.estimated_annual_cost 
-                      ? parseFloat(sub.estimated_annual_cost).toFixed(2) 
-                      : (parseFloat(sub.amount) * (sub.frequency === 'monthly' ? 12 : sub.frequency === 'yearly' ? 1 : 12)).toFixed(2)}
+                      ? Number(sub.estimated_annual_cost).toFixed(2) 
+                      : (Number(sub.amount) * (sub.frequency === 'monthly' ? 12 : sub.frequency === 'yearly' ? 1 : 12)).toFixed(2)}
                   </p>
                 </div>
                 <Button

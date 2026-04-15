@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { User } from "@supabase/supabase-js";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Shield, Lock, Target } from "lucide-react";
@@ -9,7 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import logoFull from "@/assets/logo-full.png";
 
 const About = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
