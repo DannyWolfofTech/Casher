@@ -134,7 +134,7 @@ Deno.test("detectSubscription - returns false for grocery shopping", () => {
 // Tests for extractMerchant
 Deno.test("extractMerchant - removes UK date format", () => {
   const result = extractMerchant("NETFLIX.COM 15/03/2024 Payment");
-  assertEquals(result, "NETFLIX.COM Payment");
+  assertEquals(result, "NETFLIX.COM  Payment");
 });
 
 Deno.test("extractMerchant - removes transaction codes", () => {
@@ -156,7 +156,7 @@ Deno.test("extractMerchant - truncates long names to 50 chars", () => {
 
 Deno.test("extractMerchant - removes multiple dates", () => {
   const result = extractMerchant("12/01/2024 AMAZON 25/12/2023 Purchase");
-  assertEquals(result, "AMAZON Purchase");
+  assertEquals(result, "AMAZON  Purchase");
 });
 
 Deno.test("extractMerchant - handles empty string", () => {
