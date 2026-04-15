@@ -10,7 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import logoFull from "@/assets/logo-full.png";
 
 const About = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const { t } = useLanguage();
 

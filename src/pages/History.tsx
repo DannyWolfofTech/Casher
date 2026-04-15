@@ -49,7 +49,7 @@ const COLORS = ['#00C853', '#1A237E', '#64B5F6', '#81C784', '#4FC3F7', '#AED581'
 
 const History = () => {
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [totalDetected, setTotalDetected] = useState(0);
   const [annualSavings, setAnnualSavings] = useState(0);
   const [activeSubscriptions, setActiveSubscriptions] = useState(0);
