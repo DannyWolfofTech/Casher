@@ -480,7 +480,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      referrals_user_view: {
+        Row: {
+          converted_at: string | null
+          created_at: string | null
+          id: string | null
+          referral_code: string | null
+          referrer_id: string | null
+          reward_granted: boolean | null
+          status: string | null
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          referral_code?: string | null
+          referrer_id?: string | null
+          reward_granted?: boolean | null
+          status?: string | null
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          referral_code?: string | null
+          referrer_id?: string | null
+          reward_granted?: boolean | null
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       delete_email: {
