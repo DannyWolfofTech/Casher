@@ -9,7 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 
 interface CSVUploadProps {
-  onUploadComplete: () => void;
+  onUploadComplete: (result?: {
+    batchSpending?: number;
+    batchSubsCount?: number;
+    batchAnnualSavings?: number;
+    transactionsCount?: number;
+  }) => void;
 }
 
 const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
@@ -54,13 +59,18 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
           : '';
 
         toast({
-          title: t("successProcessed", { 
-            transactions: data.transactionsCount, 
-            subscriptions: data.subscriptionsCount 
+          title: t("successProcessed", {
+            transactions: data.transactionsCount,
+            subscriptions: data.subscriptionsCount
           }) + dupeMsg,
         });
 
-        onUploadComplete();
+        onUploadComplete({
+          batchSpending: data.batchSpending,
+          batchSubsCount: data.batchSubsCount,
+          batchAnnualSavings: data.batchAnnualSavings,
+          transactionsCount: data.transactionsCount,
+        });
       } catch (error: unknown) {
         captureApiError(error, { operation: 'csvUpload' });
         const message = error instanceof Error ? error.message : t("errorProcessing");
