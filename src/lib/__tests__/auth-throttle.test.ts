@@ -20,30 +20,33 @@ describe("useAuth checkSubscription throttle", () => {
   let t: ReturnType<typeof makeThrottled>;
   beforeEach(() => { t = makeThrottled(60_000); });
 
-  it("first call always passes", () => {
-    expect(t.call(1000)).toBe(true);
+  // Use realistic Date.now()-style timestamps (much larger than 60_000)
+  const T0 = 1_700_000_000_000;
+
+  it("first call (after epoch-relative 0) passes", () => {
+    expect(t.call(T0)).toBe(true);
     expect(t.count).toBe(1);
   });
   it("second call within 60s is suppressed", () => {
-    t.call(0);
-    expect(t.call(30_000)).toBe(false);
+    t.call(T0);
+    expect(t.call(T0 + 30_000)).toBe(false);
     expect(t.count).toBe(1);
   });
   it("call exactly at 60s boundary passes", () => {
-    t.call(0);
-    expect(t.call(60_000)).toBe(true);
+    t.call(T0);
+    expect(t.call(T0 + 60_000)).toBe(true);
     expect(t.count).toBe(2);
   });
   it("burst of 100 calls in 1s only fires once", () => {
-    for (let i = 0; i < 100; i++) t.call(1000 + i);
+    for (let i = 0; i < 100; i++) t.call(T0 + i);
     expect(t.count).toBe(1);
   });
   it("re-enables after window elapses", () => {
-    t.call(0);
-    t.call(30_000); // suppressed
-    t.call(70_000); // passes
-    t.call(80_000); // suppressed
-    t.call(140_000); // passes
+    t.call(T0);
+    t.call(T0 + 30_000); // suppressed
+    t.call(T0 + 70_000); // passes
+    t.call(T0 + 80_000); // suppressed
+    t.call(T0 + 140_000); // passes
     expect(t.count).toBe(3);
   });
 });
