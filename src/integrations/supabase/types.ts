@@ -527,6 +527,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_monthly_uploads: {
+        Args: { _user_id: string }
+        Returns: {
+          monthly_uploads_used: number
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string

@@ -75,7 +75,7 @@ serve(async (req) => {
     console.log("Customer ID:", customerId || "none found");
 
     // Get origin for redirect URLs
-    const origin = req.headers.get("origin") || "https://master-vault-download.lovable.app";
+    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "") || "https://trycasher.com";
     console.log("Using origin:", origin);
 
     // Create checkout session

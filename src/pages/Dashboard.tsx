@@ -26,16 +26,39 @@ const Dashboard = () => {
   const { user, loading, isAdmin, userTier, uploadsUsed, canUpload, showOnboarding, setShowOnboarding, setUploadsUsed, setCanUpload, handleSignOut } = useAuth();
   const { monthlySpending, subscriptionCount, potentialSavings } = useDashboardData(user?.id, refreshKey);
 
-  const handleUploadComplete = async () => {
+  const handleUploadComplete = async (uploadResult?: {
+    batchSpending?: number;
+    batchSubsCount?: number;
+    batchAnnualSavings?: number;
+    transactionsCount?: number;
+  }) => {
     setShowUpload(false);
-    setRefreshKey(prev => prev + 1);
     if (user) {
-      await supabase.from("profiles").update({ monthly_uploads_used: uploadsUsed + 1 }).eq("user_id", user.id);
-      const { data: subscriptions } = await supabase.from('detected_subscriptions').select('amount, estimated_annual_cost').eq('user_id', user.id).eq('status', 'active');
-      const { data: transactions } = await supabase.from('transactions').select('amount').eq('user_id', user.id);
-      const totalSpending = transactions?.reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0) || 0;
-      await supabase.from('upload_history').insert({ user_id: user.id, total_spending: totalSpending, subscriptions_count: subscriptions?.length || 0, potential_savings: subscriptions?.reduce((sum, s) => sum + (Number(s.estimated_annual_cost) || 0), 0) || 0, transaction_count: transactions?.length || 0 });
-      const newUploadsUsed = uploadsUsed + 1;
+      // Atomic increment via SQL — avoids stale React state race condition
+      const { data: updated, error: updErr } = await supabase
+        .rpc('increment_monthly_uploads', { _user_id: user.id })
+        .single<{ monthly_uploads_used: number }>();
+
+      let newUploadsUsed = uploadsUsed + 1;
+      if (!updErr && updated && typeof updated.monthly_uploads_used === 'number') {
+        newUploadsUsed = updated.monthly_uploads_used;
+      } else {
+        // Fallback if RPC missing — non-atomic but safe
+        await supabase
+          .from("profiles")
+          .update({ monthly_uploads_used: newUploadsUsed })
+          .eq("user_id", user.id);
+      }
+
+      // Record per-batch metrics (NOT cumulative)
+      await supabase.from('upload_history').insert({
+        user_id: user.id,
+        total_spending: uploadResult?.batchSpending ?? 0,
+        subscriptions_count: uploadResult?.batchSubsCount ?? 0,
+        potential_savings: uploadResult?.batchAnnualSavings ?? 0,
+        transaction_count: uploadResult?.transactionsCount ?? 0,
+      });
+
       setUploadsUsed(newUploadsUsed);
       setCanUpload(newUploadsUsed < (userTier === "free" ? 1 : Infinity));
     }
