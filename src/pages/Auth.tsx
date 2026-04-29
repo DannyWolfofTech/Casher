@@ -92,6 +92,14 @@ const Auth = () => {
         description: "Your account has been created and you're now signed in.",
       });
       navigate("/dashboard");
+    } catch (err: unknown) {
+      console.error("Sign up network error:", err);
+      const message = err instanceof Error ? err.message : "Network error. Please check your connection and try again.";
+      toast({
+        title: "Sign up failed",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(null);
     }
@@ -122,6 +130,14 @@ const Auth = () => {
         description: "Welcome back!",
       });
       navigate("/dashboard");
+    } catch (err: unknown) {
+      console.error("Sign in network error:", err);
+      const message = err instanceof Error ? err.message : "Network error. Please check your connection and try again.";
+      toast({
+        title: "Sign in failed",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(null);
     }

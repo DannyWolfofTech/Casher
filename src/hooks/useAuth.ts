@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -12,8 +12,13 @@ export const useAuth = () => {
   const [canUpload, setCanUpload] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
+  const lastSubCheckRef = useRef<number>(0);
 
   const checkSubscription = async () => {
+    // Throttle: at most once every 60s, regardless of trigger
+    const now = Date.now();
+    if (now - lastSubCheckRef.current < 60_000) return;
+    lastSubCheckRef.current = now;
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (!error && data) {
@@ -76,9 +81,16 @@ export const useAuth = () => {
 
     checkUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) { navigate("/auth"); }
-      else { setUser(session.user); checkSubscription(); }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+        return;
+      }
+      setUser(session.user);
+      // Only re-check subscription on actual sign-in, not on token refresh
+      if (event === "SIGNED_IN") {
+        checkSubscription();
+      }
     });
 
     return () => subscription.unsubscribe();
