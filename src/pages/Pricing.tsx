@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
+import SEO from "@/components/SEO";
 
 // Hardcoded Stripe Publishable Key (Test Mode)
 const STRIPE_PK = "pk_test_51SCrpvJMS012Ip2AFxn0fgxc5MFSSQ21FKjTQzMWcY67b1XrTC0JaW7zMQ8DXUsHRd0BQa07qzsfgHNv0O3EQWRu00bHXyvXld";
@@ -24,14 +25,7 @@ const Pricing = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
 
-  useEffect(() => {
-    // Set page title and meta tags
-    document.title = "Pricing - Casher | CSV Transaction Categorizer & Subscription Tracker";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "Choose your Casher plan: Free basic categorization, Pro unlimited uploads with filters & exports (£9.99/mo), or Premium with AI insights (£14.99/mo). CSV transaction categorizer.");
-    }
-  }, []);
+  // SEO handled by <SEO /> component below
 
   useEffect(() => {
     const checkUser = async () => {
@@ -178,6 +172,39 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+      <SEO
+        title="Pricing — Casher subscription tracker plans"
+        description="Free, Pro (£9.99/mo) and Premium (£14.99/mo) plans for CSV-based subscription tracking. Pick the plan that fits your savings goals."
+        path="/pricing"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: "Casher Pro",
+            description: "Unlimited CSV uploads, filters, and exports for tracking subscriptions.",
+            offers: {
+              "@type": "Offer",
+              price: "9.99",
+              priceCurrency: "GBP",
+              url: "https://trycasher.com/pricing",
+              availability: "https://schema.org/InStock",
+            },
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: "Casher Premium",
+            description: "Everything in Pro plus AI insights and savings recommendations.",
+            offers: {
+              "@type": "Offer",
+              price: "14.99",
+              priceCurrency: "GBP",
+              url: "https://trycasher.com/pricing",
+              availability: "https://schema.org/InStock",
+            },
+          },
+        ]}
+      />
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Button variant="ghost" onClick={() => navigate(-1)}>
