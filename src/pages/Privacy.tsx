@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import SEO from "@/components/SEO";
 
 const Privacy = () => {
   const navigate = useNavigate();
@@ -9,6 +10,11 @@ const Privacy = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Privacy Policy — Casher"
+        description="How Casher collects, processes, and protects your data. GDPR-compliant CSV processing with encrypted storage and auto-deletion."
+        path="/privacy"
+      />
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
           <Button variant="ghost" onClick={() => navigate(-1)}>
