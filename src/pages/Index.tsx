@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import logoFull from "@/assets/logo-full.png";
+import SEO from "@/components/SEO";
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
@@ -41,6 +42,11 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
   return <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+      <SEO
+        title="Casher — Plug your financial leaks & save money"
+        description="Upload your bank CSV, spot recurring subscriptions, and cancel the ones you don't use. Privacy-first, no bank login."
+        path="/"
+      />
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <Link to={user ? "/dashboard" : "/"}>

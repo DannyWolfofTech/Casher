@@ -17,6 +17,7 @@ import SavingsGoals from "@/components/SavingsGoals";
 import TransactionsTable from "@/components/TransactionsTable";
 import UploadHistory from "@/components/UploadHistory";
 import ProgressTracker from "@/components/ProgressTracker";
+import SEO from "@/components/SEO";
 
 const Dashboard = () => {
   const [showUpload, setShowUpload] = useState(false);
@@ -69,6 +70,12 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+      <SEO
+        title="Dashboard — Casher"
+        description="Your Casher dashboard: spending overview, recurring subscriptions, and savings opportunities."
+        path="/dashboard"
+        noindex
+      />
       <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <DashboardHeader isAdmin={isAdmin} userTier={userTier} hasUser={!!user} onSignOut={handleSignOut} />
       <main className="container mx-auto px-4 py-8 space-y-8">

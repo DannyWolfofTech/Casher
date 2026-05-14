@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import logoFull from "@/assets/logo-full.png";
+import SEO from "@/components/SEO";
 
 const About = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -30,6 +31,11 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+      <SEO
+        title="About Casher — CSV-only, privacy-first subscription tracker"
+        description="Learn why Casher uses CSV uploads instead of bank logins, how we keep your data safe, and our mission to help you save money."
+        path="/about"
+      />
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <Link to={user ? "/dashboard" : "/"}>
