@@ -108,7 +108,7 @@ const Index = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 border border-foreground/10">
             <div className="p-10 md:p-12 border-b md:border-b-0 md:border-r border-foreground/10 hover:bg-foreground/[0.02] transition-colors">
-              <div className="w-12 h-12 bg-primary/10 text-primary flex items-center justify-center rounded-sm mb-8">
+              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-sm mb-8">
                 <Upload className="w-6 h-6" />
               </div>
               <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">01. Upload</h3>
@@ -126,7 +126,7 @@ const Index = () => {
               </p>
             </div>
             <div className="p-10 md:p-12 hover:bg-foreground/[0.02] transition-colors">
-              <div className="w-12 h-12 bg-primary text-primary-foreground flex items-center justify-center rounded-sm mb-8">
+              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-sm mb-8">
                 <Check className="w-6 h-6" />
               </div>
               <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">03. Save</h3>
