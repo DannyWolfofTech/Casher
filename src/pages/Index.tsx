@@ -1,281 +1,196 @@
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { useNavigate, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, PieChart, Shield, CheckCircle, TrendingUp, Download } from "lucide-react";
+import { Upload, ArrowUpRight, BarChart3, Check, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
-import logoFull from "@/assets/logo-full.png";
 import SEO from "@/components/SEO";
+
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
-  const {
-    t
-  } = useLanguage();
+  const { t } = useLanguage();
+
   useEffect(() => {
     const checkUser = async () => {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user);
-      if (session?.user) {
-        navigate("/dashboard");
-      }
+      if (session?.user) navigate("/dashboard");
     };
     checkUser();
-    const {
-      data: {
-        subscription
-      }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user);
-      if (session?.user) {
-        navigate("/dashboard");
-      }
+      if (session?.user) navigate("/dashboard");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
-  return <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+
+  return (
+    <div className="min-h-screen bg-background text-foreground font-sans antialiased selection:bg-primary selection:text-primary-foreground">
       <SEO
         title="Casher — Plug your financial leaks & save money"
         description="Upload your bank CSV, spot recurring subscriptions, and cancel the ones you don't use. Privacy-first, no bank login."
         path="/"
       />
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <Link to={user ? "/dashboard" : "/"}>
-            <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" />
-          </Link>
-          <div className="flex gap-4 items-center">
+
+      {/* Navigation */}
+      <nav className="w-full border-b border-foreground/10">
+        <div className="max-w-7xl mx-auto py-5 px-6 md:px-8 flex items-center justify-between">
+          <div className="flex items-center gap-10">
+            <Link to={user ? "/dashboard" : "/"} className="text-xl font-bold tracking-tighter text-foreground">
+              Casher
+            </Link>
+            <div className="hidden md:flex gap-7 text-xs font-medium uppercase tracking-[0.18em] text-foreground/60">
+              <button onClick={() => navigate("/about")} className="hover:text-foreground transition-colors">{t("about")}</button>
+              <button onClick={() => navigate("/pricing")} className="hover:text-foreground transition-colors">Pricing</button>
+              <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">{t("privacy")}</button>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
             <LanguageSelector />
-            <ThemeToggle />
-            <Button variant="ghost" onClick={() => navigate("/about")}>
-              {t("about")}
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/privacy")}>
-              {t("privacy")}
-            </Button>
-            <Button onClick={() => navigate("/auth")}>
+            <button
+              onClick={() => navigate("/auth")}
+              className="bg-primary text-primary-foreground px-5 py-2.5 rounded-sm font-semibold text-sm hover:brightness-110 transition-all"
+            >
               {t("getStarted")}
-            </Button>
+            </button>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="container mx-auto px-4">
-        <section className="py-20 text-center">
-          <img src={logoFull} alt="Casher" className="h-32 mx-auto mb-6" />
-          <p className="text-2xl md:text-3xl text-muted-foreground mb-8 max-w-2xl mx-auto font-medium">
-            {t("tagline")}
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Button size="lg" onClick={() => navigate("/auth")}>
-              <Upload className="mr-2 h-5 w-5" />
-              {t("uploadCSV")}
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/pricing")}>
-              {t("viewPricing")}
-            </Button>
-          </div>
-        </section>
-
-        <section className="py-16">
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card>
-              <CardHeader>
-                <Upload className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>{t("easyUpload")}</CardTitle>
-                <CardDescription>
-                  {t("easyUploadDesc")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {t("easyUploadDetails")}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <PieChart className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>{t("smartAnalysis")}</CardTitle>
-                <CardDescription>
-                  {t("smartAnalysisDesc")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {t("smartAnalysisDetails")}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <TrendingUp className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>{t("saveMoney")}</CardTitle>
-                <CardDescription>
-                  {t("saveMoneyDesc")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {t("saveMoneyDetails")}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        <section className="py-16 text-center">
-          <h2 className="text-3xl font-bold mb-8">{t("howItWorks")}</h2>
-          <div className="grid md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-            <div>
-              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
-                1
-              </div>
-              <h3 className="font-semibold mb-2">{t("exportCSV")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("exportCSVDesc")}
-              </p>
-            </div>
-            <div>
-              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
-                2
-              </div>
-              <h3 className="font-semibold mb-2">{t("uploadFile")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("uploadFileDesc")}
-              </p>
-            </div>
-            <div>
-              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
-                3
-              </div>
-              <h3 className="font-semibold mb-2">{t("reviewAnalysis")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("reviewAnalysisDesc")}
-              </p>
-            </div>
-            <div>
-              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 text-xl font-bold">
-                4
-              </div>
-              <h3 className="font-semibold mb-2">{t("cancelAndSave")}</h3>
-              <p className="text-sm text-muted-foreground">
-                {t("cancelAndSaveDesc")}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-16">
-          <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader className="text-center">
-              <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
-              <CardTitle className="text-2xl">{t("yourDataIsSafe")}</CardTitle>
-              <CardDescription className="text-base">
-                {t("privacyDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">{t("gdprCompliant")}</p>
-                    <p className="text-sm text-muted-foreground">{t("gdprDesc")}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">{t("encryptedStorage")}</p>
-                    <p className="text-sm text-muted-foreground">{t("encryptedStorageDesc")}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">{t("autoDeletion")}</p>
-                    <p className="text-sm text-muted-foreground">{t("autoDeletionDesc")}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <section className="py-16 text-center">
-          <div className="bg-muted/50 rounded-lg p-8 max-w-3xl mx-auto">
-            <p className="text-sm text-muted-foreground mb-4">
-              <strong>{t("disclaimer")}</strong> {t("disclaimerText")}
+      {/* Hero */}
+      <section className="w-full border-b border-foreground/10">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 py-20 md:py-32 grid grid-cols-1 md:grid-cols-12 gap-12">
+          <div className="md:col-span-8">
+            <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl leading-[0.9] tracking-tight mb-8 text-foreground">
+              Plugging your <br />
+              <span className="italic">financial leaks.</span>
+            </h1>
+            <p className="text-lg md:text-2xl leading-relaxed max-w-xl text-foreground/70 mb-12">
+              The UK-focused subscription tracker built for freelancers. Spot and cancel unused services by simply uploading your CSV.
             </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => navigate("/auth")}
+                className="group bg-foreground text-background px-8 py-4 rounded-sm font-bold flex items-center justify-center gap-3 hover:bg-primary transition-colors"
+              >
+                <Upload className="w-5 h-5 transition-transform group-hover:-translate-y-0.5" />
+                {t("uploadCSV")}
+              </button>
+              <button
+                onClick={() => navigate("/pricing")}
+                className="border-2 border-foreground text-foreground px-8 py-4 rounded-sm font-bold hover:bg-foreground/5 transition-colors"
+              >
+                {t("viewPricing")}
+              </button>
+            </div>
           </div>
-        </section>
-
-        {/* Download App Section */}
-        <section className="py-16 text-center">
-          <Card className="bg-gradient-to-r from-primary/10 to-secondary/20 border-primary/20">
-            <CardHeader>
-              <Download className="h-12 w-12 text-primary mx-auto mb-4" />
-              <CardTitle className="text-2xl">{t("downloadApp")}</CardTitle>
-              <CardDescription className="text-base">
-                {t("downloadAppDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  size="lg" 
-                  className="gap-2"
-                  onClick={() => window.open('#', '_blank')}
-                >
-                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                  </svg>
-                  {t("downloadIOS")}
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => window.open('#', '_blank')}
-                >
-                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/>
-                  </svg>
-                  {t("downloadAndroid")}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-4">
-                {t("comingSoon")}
+          <aside className="md:col-span-4 flex flex-col justify-end">
+            <div className="border-t-4 border-primary pt-6">
+              <span className="block text-5xl font-serif mb-2 text-foreground">£420.00</span>
+              <p className="text-xs uppercase tracking-[0.2em] text-foreground/50 font-bold">
+                Average annual leak recovered
               </p>
-            </CardContent>
-          </Card>
-        </section>
-      </main>
+            </div>
+          </aside>
+        </div>
+      </section>
 
-      <footer className="border-t py-8 mt-16">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+      {/* How it works — three steps */}
+      <section className="w-full">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 py-20 md:py-28">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12 gap-6">
+            <h2 className="font-serif text-4xl md:text-6xl tracking-tight text-foreground">
+              How it <span className="italic">works.</span>
+            </h2>
+            <p className="text-xs uppercase tracking-[0.2em] text-foreground/50 font-bold">Three quiet steps</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 border border-foreground/10">
+            <div className="p-10 md:p-12 border-b md:border-b-0 md:border-r border-foreground/10 hover:bg-foreground/[0.02] transition-colors">
+              <div className="w-12 h-12 bg-primary/10 text-primary flex items-center justify-center rounded-sm mb-8">
+                <Upload className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">01. Upload</h3>
+              <p className="text-foreground/60 leading-relaxed">
+                Drag your bank CSV export into the analyzer. No bank logins, no API access — just a file you already have.
+              </p>
+            </div>
+            <div className="p-10 md:p-12 border-b md:border-b-0 md:border-r border-foreground/10 hover:bg-foreground/[0.02] transition-colors">
+              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-sm mb-8">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">02. Analyze</h3>
+              <p className="text-foreground/60 leading-relaxed">
+                We cross-reference thousands of UK merchants to surface recurring payments hiding in plain sight.
+              </p>
+            </div>
+            <div className="p-10 md:p-12 hover:bg-foreground/[0.02] transition-colors">
+              <div className="w-12 h-12 bg-primary text-primary-foreground flex items-center justify-center rounded-sm mb-8">
+                <Check className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">03. Save</h3>
+              <p className="text-foreground/60 leading-relaxed">
+                Get a clear cancel list with direct links and email templates for every subscription you no longer need.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Privacy strip */}
+      <section className="w-full border-t border-foreground/10">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 py-16 grid grid-cols-1 md:grid-cols-12 gap-8">
+          <div className="md:col-span-4">
+            <Shield className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-serif text-3xl md:text-4xl tracking-tight text-foreground">Your data, <span className="italic">untouched.</span></h3>
+          </div>
+          <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              { title: "GDPR compliant", body: "Stored in EU regions and removable on request." },
+              { title: "Encrypted at rest", body: "Files and tables encrypted with industry standards." },
+              { title: "No bank login", body: "We never see your banking credentials. Ever." },
+            ].map((item) => (
+              <div key={item.title} className="border-t border-foreground/15 pt-4">
+                <p className="font-bold text-foreground mb-1">{item.title}</p>
+                <p className="text-sm text-foreground/60 leading-relaxed">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Closing CTA */}
+      <section className="w-full bg-[#1A237E] text-white">
+        <div className="max-w-4xl mx-auto px-6 md:px-8 py-24 md:py-32 text-center">
+          <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.95] mb-10 italic">
+            Stop paying for what <br />you don't use.
+          </h2>
+          <button
+            onClick={() => navigate("/auth")}
+            className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-10 py-5 rounded-sm font-bold text-base hover:scale-[1.02] transition-transform"
+          >
+            {t("getStarted")}
+            <ArrowUpRight className="w-5 h-5" />
+          </button>
+          <p className="mt-10 text-white/40 text-xs uppercase tracking-[0.25em] font-bold">
+            Simple CSV Upload &middot; UK Centric &middot; Secure
+          </p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-foreground/10 py-10">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-foreground/60">
           <p>&copy; 2025 {t("appName")}. {t("allRightsReserved")}.</p>
-          <div className="flex gap-4 justify-center mt-2">
-            <Button variant="link" onClick={() => navigate("/about")}>
-              {t("about")}
-            </Button>
-            <Button variant="link" onClick={() => navigate("/privacy")}>
-              {t("privacyPolicy")}
-            </Button>
+          <div className="flex gap-6">
+            <button onClick={() => navigate("/about")} className="hover:text-foreground transition-colors">{t("about")}</button>
+            <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">{t("privacyPolicy")}</button>
           </div>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
