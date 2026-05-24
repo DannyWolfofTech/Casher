@@ -164,19 +164,19 @@ const Index = () => {
       </section>
 
       {/* Closing CTA */}
-      <section className="w-full bg-[#1A237E] text-white">
-        <div className="max-w-4xl mx-auto px-6 md:px-8 py-24 md:py-32 text-center">
-          <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.95] mb-10 italic">
+      <section className="w-full px-6 md:px-8 py-16">
+        <div className="max-w-6xl mx-auto bg-[#1A237E] text-white rounded-[2rem] px-8 md:px-16 py-20 md:py-28 text-center">
+          <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.95] mb-10 italic text-white">
             Stop paying for what <br />you don't use.
           </h2>
           <button
             onClick={() => navigate("/auth")}
-            className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-10 py-5 rounded-sm font-bold text-base hover:scale-[1.02] transition-transform"
+            className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-10 py-5 rounded-full font-semibold text-base hover:scale-[1.02] transition-transform"
           >
             {t("getStarted")}
             <ArrowUpRight className="w-5 h-5" />
           </button>
-          <p className="mt-10 text-white/40 text-xs uppercase tracking-[0.25em] font-bold">
+          <p className="mt-10 text-white/70 text-xs uppercase tracking-[0.25em] font-semibold">
             Simple CSV Upload &middot; UK Centric &middot; Secure
           </p>
         </div>
@@ -184,7 +184,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-foreground/10 py-10">
-        <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-foreground/60">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-foreground/70">
           <p>&copy; 2025 {t("appName")}. {t("allRightsReserved")}.</p>
           <div className="flex gap-6">
             <button onClick={() => navigate("/about")} className="hover:text-foreground transition-colors">{t("about")}</button>
