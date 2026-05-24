@@ -76,14 +76,14 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={() => navigate("/auth")}
-                className="group bg-foreground text-background px-8 py-4 rounded-sm font-bold flex items-center justify-center gap-3 hover:bg-primary transition-colors"
+                className="group bg-foreground text-background px-8 py-4 rounded-full font-semibold flex items-center justify-center gap-3 hover:bg-primary transition-colors"
               >
                 <Upload className="w-5 h-5 transition-transform group-hover:-translate-y-0.5" />
                 {t("uploadCSV")}
               </button>
               <button
                 onClick={() => navigate("/pricing")}
-                className="border-2 border-foreground text-foreground px-8 py-4 rounded-sm font-bold hover:bg-foreground/5 transition-colors"
+                className="border border-foreground/30 text-foreground px-8 py-4 rounded-full font-semibold hover:bg-foreground/5 transition-colors"
               >
                 {t("viewPricing")}
               </button>
