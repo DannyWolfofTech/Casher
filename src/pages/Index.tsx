@@ -109,31 +109,31 @@ const Index = () => {
             </h2>
             <p className="text-xs uppercase tracking-[0.2em] text-foreground/50 font-bold">Three quiet steps</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 border border-foreground/10">
-            <div className="p-10 md:p-12 border-b md:border-b-0 md:border-r border-foreground/10 hover:bg-foreground/[0.02] transition-colors">
-              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-sm mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-10 md:p-12 rounded-3xl bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors">
+              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-full mb-8">
                 <Upload className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">01. Upload</h3>
-              <p className="text-foreground/60 leading-relaxed">
+              <h3 className="text-2xl font-semibold mb-3 tracking-tight text-foreground">01. Upload</h3>
+              <p className="text-foreground/70 leading-relaxed">
                 Drag your bank CSV export into the analyzer. No bank logins, no API access — just a file you already have.
               </p>
             </div>
-            <div className="p-10 md:p-12 border-b md:border-b-0 md:border-r border-foreground/10 hover:bg-foreground/[0.02] transition-colors">
-              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-sm mb-8">
+            <div className="p-10 md:p-12 rounded-3xl bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors">
+              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-full mb-8">
                 <BarChart3 className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">02. Analyze</h3>
-              <p className="text-foreground/60 leading-relaxed">
+              <h3 className="text-2xl font-semibold mb-3 tracking-tight text-foreground">02. Analyze</h3>
+              <p className="text-foreground/70 leading-relaxed">
                 We cross-reference thousands of UK merchants to surface recurring payments hiding in plain sight.
               </p>
             </div>
-            <div className="p-10 md:p-12 hover:bg-foreground/[0.02] transition-colors">
-              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-sm mb-8">
+            <div className="p-10 md:p-12 rounded-3xl bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors">
+              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-full mb-8">
                 <Check className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">03. Save</h3>
-              <p className="text-foreground/60 leading-relaxed">
+              <h3 className="text-2xl font-semibold mb-3 tracking-tight text-foreground">03. Save</h3>
+              <p className="text-foreground/70 leading-relaxed">
                 Get a clear cancel list with direct links and email templates for every subscription you no longer need.
               </p>
             </div>
