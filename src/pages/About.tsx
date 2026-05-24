@@ -30,7 +30,8 @@ const About = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+    <div className="min-h-screen bg-background">
+
       <SEO
         title="About Casher — CSV-only, privacy-first subscription tracker"
         description="Learn why Casher uses CSV uploads instead of bank logins, how we keep your data safe, and our mission to help you save money."
