@@ -51,7 +51,7 @@ const Index = () => {
             <LanguageSelector />
             <button
               onClick={() => navigate("/auth")}
-              className="bg-primary text-primary-foreground px-5 py-2.5 rounded-sm font-semibold text-sm hover:brightness-110 transition-all"
+              className="bg-primary text-primary-foreground px-5 py-2.5 rounded-full font-semibold text-sm hover:brightness-110 transition-all"
             >
               {t("getStarted")}
             </button>
@@ -76,14 +76,14 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={() => navigate("/auth")}
-                className="group bg-foreground text-background px-8 py-4 rounded-sm font-bold flex items-center justify-center gap-3 hover:bg-primary transition-colors"
+                className="group bg-foreground text-background px-8 py-4 rounded-full font-semibold flex items-center justify-center gap-3 hover:bg-primary transition-colors"
               >
                 <Upload className="w-5 h-5 transition-transform group-hover:-translate-y-0.5" />
                 {t("uploadCSV")}
               </button>
               <button
                 onClick={() => navigate("/pricing")}
-                className="border-2 border-foreground text-foreground px-8 py-4 rounded-sm font-bold hover:bg-foreground/5 transition-colors"
+                className="border border-foreground/30 text-foreground px-8 py-4 rounded-full font-semibold hover:bg-foreground/5 transition-colors"
               >
                 {t("viewPricing")}
               </button>
@@ -109,31 +109,31 @@ const Index = () => {
             </h2>
             <p className="text-xs uppercase tracking-[0.2em] text-foreground/50 font-bold">Three quiet steps</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 border border-foreground/10">
-            <div className="p-10 md:p-12 border-b md:border-b-0 md:border-r border-foreground/10 hover:bg-foreground/[0.02] transition-colors">
-              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-sm mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-10 md:p-12 rounded-3xl bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors">
+              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-full mb-8">
                 <Upload className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">01. Upload</h3>
-              <p className="text-foreground/60 leading-relaxed">
+              <h3 className="text-2xl font-semibold mb-3 tracking-tight text-foreground">01. Upload</h3>
+              <p className="text-foreground/70 leading-relaxed">
                 Drag your bank CSV export into the analyzer. No bank logins, no API access — just a file you already have.
               </p>
             </div>
-            <div className="p-10 md:p-12 border-b md:border-b-0 md:border-r border-foreground/10 hover:bg-foreground/[0.02] transition-colors">
-              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-sm mb-8">
+            <div className="p-10 md:p-12 rounded-3xl bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors">
+              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-full mb-8">
                 <BarChart3 className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">02. Analyze</h3>
-              <p className="text-foreground/60 leading-relaxed">
+              <h3 className="text-2xl font-semibold mb-3 tracking-tight text-foreground">02. Analyze</h3>
+              <p className="text-foreground/70 leading-relaxed">
                 We cross-reference thousands of UK merchants to surface recurring payments hiding in plain sight.
               </p>
             </div>
-            <div className="p-10 md:p-12 hover:bg-foreground/[0.02] transition-colors">
-              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-sm mb-8">
+            <div className="p-10 md:p-12 rounded-3xl bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors">
+              <div className="w-12 h-12 bg-foreground/10 text-foreground flex items-center justify-center rounded-full mb-8">
                 <Check className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 tracking-tight text-foreground">03. Save</h3>
-              <p className="text-foreground/60 leading-relaxed">
+              <h3 className="text-2xl font-semibold mb-3 tracking-tight text-foreground">03. Save</h3>
+              <p className="text-foreground/70 leading-relaxed">
                 Get a clear cancel list with direct links and email templates for every subscription you no longer need.
               </p>
             </div>
@@ -164,19 +164,19 @@ const Index = () => {
       </section>
 
       {/* Closing CTA */}
-      <section className="w-full bg-[#1A237E] text-white">
-        <div className="max-w-4xl mx-auto px-6 md:px-8 py-24 md:py-32 text-center">
-          <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.95] mb-10 italic">
+      <section className="w-full px-6 md:px-8 py-16">
+        <div className="max-w-6xl mx-auto bg-[#1A237E] text-white rounded-[2rem] px-8 md:px-16 py-20 md:py-28 text-center">
+          <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.95] mb-10 italic text-white">
             Stop paying for what <br />you don't use.
           </h2>
           <button
             onClick={() => navigate("/auth")}
-            className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-10 py-5 rounded-sm font-bold text-base hover:scale-[1.02] transition-transform"
+            className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-10 py-5 rounded-full font-semibold text-base hover:scale-[1.02] transition-transform"
           >
             {t("getStarted")}
             <ArrowUpRight className="w-5 h-5" />
           </button>
-          <p className="mt-10 text-white/40 text-xs uppercase tracking-[0.25em] font-bold">
+          <p className="mt-10 text-white/70 text-xs uppercase tracking-[0.25em] font-semibold">
             Simple CSV Upload &middot; UK Centric &middot; Secure
           </p>
         </div>
@@ -184,7 +184,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-foreground/10 py-10">
-        <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-foreground/60">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-foreground/70">
           <p>&copy; 2025 {t("appName")}. {t("allRightsReserved")}.</p>
           <div className="flex gap-6">
             <button onClick={() => navigate("/about")} className="hover:text-foreground transition-colors">{t("about")}</button>

@@ -30,7 +30,8 @@ const About = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+    <div className="min-h-screen bg-background">
+
       <SEO
         title="About Casher — CSV-only, privacy-first subscription tracker"
         description="Learn why Casher uses CSV uploads instead of bank logins, how we keep your data safe, and our mission to help you save money."
@@ -97,18 +98,18 @@ const About = () => {
 
         {/* Security Features */}
         <section className="py-16">
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="text-center p-6 rounded-lg bg-card border">
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="text-center p-8 rounded-3xl bg-foreground/[0.03]">
               <Lock className="h-10 w-10 text-primary mx-auto mb-4" />
               <h3 className="font-semibold text-lg mb-2">{t("noBankLogin")}</h3>
               <p className="text-sm text-muted-foreground">{t("noBankLoginDesc")}</p>
             </div>
-            <div className="text-center p-6 rounded-lg bg-card border">
+            <div className="text-center p-8 rounded-3xl bg-foreground/[0.03]">
               <Shield className="h-10 w-10 text-primary mx-auto mb-4" />
               <h3 className="font-semibold text-lg mb-2">{t("hundredPercentSecure")}</h3>
               <p className="text-sm text-muted-foreground">{t("hundredPercentSecureDesc")}</p>
             </div>
-            <div className="text-center p-6 rounded-lg bg-card border">
+            <div className="text-center p-8 rounded-3xl bg-foreground/[0.03]">
               <Target className="h-10 w-10 text-primary mx-auto mb-4" />
               <h3 className="font-semibold text-lg mb-2">{t("youInControl")}</h3>
               <p className="text-sm text-muted-foreground">{t("youInControlDesc")}</p>
