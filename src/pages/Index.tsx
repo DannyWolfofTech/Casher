@@ -38,7 +38,7 @@ const Index = () => {
       <nav className="w-full border-b border-foreground/10">
         <div className="max-w-7xl mx-auto py-5 px-6 md:px-8 flex items-center justify-between">
           <div className="flex items-center gap-10">
-            <Link to={user ? "/dashboard" : "/"} className="text-xl font-bold tracking-tighter text-foreground">
+            <Link to={user ? "/dashboard" : "/"} className="font-serif italic text-3xl tracking-tight text-foreground">
               Casher
             </Link>
             <div className="hidden md:flex gap-7 text-xs font-medium uppercase tracking-[0.18em] text-foreground/60">
