@@ -38,7 +38,7 @@ const Index = () => {
       <nav className="w-full border-b border-foreground/10">
         <div className="max-w-7xl mx-auto py-5 px-6 md:px-8 flex items-center justify-between">
           <div className="flex items-center gap-10">
-            <Link to={user ? "/dashboard" : "/"} className="text-xl font-bold tracking-tighter text-foreground">
+            <Link to={user ? "/dashboard" : "/"} className="font-serif italic text-3xl tracking-tight text-foreground">
               Casher
             </Link>
             <div className="hidden md:flex gap-7 text-xs font-medium uppercase tracking-[0.18em] text-foreground/60">
@@ -63,12 +63,15 @@ const Index = () => {
       <section className="w-full border-b border-foreground/10">
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-20 md:py-32 grid grid-cols-1 md:grid-cols-12 gap-12">
           <div className="md:col-span-8">
-            <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl leading-[0.9] tracking-tight mb-8 text-foreground">
-              Plugging your <br />
-              <span className="italic">financial leaks.</span>
+            <h1 className="font-serif italic text-7xl md:text-[10rem] lg:text-[13rem] leading-[0.85] tracking-tight mb-10 text-foreground">
+              Casher
             </h1>
-            <p className="text-lg md:text-2xl leading-relaxed max-w-xl text-foreground/70 mb-12">
-              The UK-focused subscription tracker built for freelancers. Spot and cancel unused services by simply uploading your CSV.
+            <div className="w-16 h-px bg-foreground mb-8" />
+            <p className="font-serif text-3xl md:text-5xl leading-[1.05] max-w-2xl text-foreground mb-4">
+              Plug your <span className="italic">financial leaks<span className="text-primary">.</span></span>
+            </p>
+            <p className="text-base md:text-lg leading-relaxed max-w-xl text-foreground/70 mb-12 mt-8">
+              The UK financial app that helps freelancers spot and cancel unused subscriptions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <button
