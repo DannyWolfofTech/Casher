@@ -51,7 +51,7 @@ const Index = () => {
             <LanguageSelector />
             <button
               onClick={() => navigate("/auth")}
-              className="bg-primary text-primary-foreground px-5 py-2.5 rounded-sm font-semibold text-sm hover:brightness-110 transition-all"
+              className="bg-primary text-primary-foreground px-5 py-2.5 rounded-full font-semibold text-sm hover:brightness-110 transition-all"
             >
               {t("getStarted")}
             </button>
