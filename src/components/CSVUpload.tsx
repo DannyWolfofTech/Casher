@@ -8,14 +8,58 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 
-interface CSVUploadProps {
-  onUploadComplete: (result?: {
-    batchSpending?: number;
-    batchSubsCount?: number;
-    batchAnnualSavings?: number;
-    transactionsCount?: number;
-  }) => void;
+export interface UploadResult {
+  code?: string;
+  replay?: boolean;
+  batchSpending?: number;
+  batchCredits?: number;
+  batchSubsCount?: number;
+  batchAnnualSavings?: number;
+  transactionsCount?: number;
+  subscriptionsCount?: number;
+  duplicatesSkipped?: number;
+  usage?: {
+    uploadsUsed: number;
+    uploadLimit: number | null;
+    tier: string;
+    canUpload: boolean;
+  };
 }
+
+interface CSVUploadProps {
+  onUploadComplete: (result?: UploadResult) => void;
+}
+
+interface StructuredFunctionError {
+  code: string;
+  message: string;
+  usage?: UploadResult["usage"];
+}
+
+/**
+ * supabase.functions.invoke() surfaces non-2xx responses as a
+ * FunctionsHttpError whose `context` is the raw Response. Read the structured
+ * body from it so the user sees the real reason instead of
+ * "Edge Function returned a non-2xx status code".
+ */
+async function readStructuredError(error: unknown): Promise<StructuredFunctionError | null> {
+  const context = (error as { context?: unknown })?.context;
+  if (!context || typeof (context as Response).json !== "function") return null;
+  try {
+    const body = await (context as Response).clone().json();
+    if (body && typeof body === "object" && (body.message || body.error)) {
+      return {
+        code: String(body.code ?? "UNKNOWN"),
+        message: String(body.message ?? body.error),
+        usage: body.usage,
+      };
+    }
+  } catch {
+    /* body was not JSON */
+  }
+  return null;
+}
+
 
 const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
@@ -52,25 +96,43 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
           body: { csv: text }
         });
 
-        if (error) throw error;
+        if (error) {
+          const structured = await readStructuredError(error);
+          if (structured) {
+            captureApiError(error, { operation: 'csvUpload', code: structured.code });
+            toast({
+              title: structured.code === 'QUOTA_EXCEEDED'
+                ? t("uploadLimitReached")
+                : "Upload failed",
+              description: structured.message,
+              variant: "destructive",
+            });
+            // Let the dashboard sync its counter with server truth.
+            if (structured.usage) onUploadComplete({ code: structured.code, usage: structured.usage });
+            return;
+          }
+          throw error;
+        }
 
-        const dupeMsg = data.duplicatesSkipped > 0 
-          ? ` (${data.duplicatesSkipped} duplicates skipped)` 
-          : '';
+        if (data?.replay) {
+          toast({
+            title: "Already uploaded",
+            description: data.message,
+          });
+        } else {
+          const dupeMsg = data.duplicatesSkipped > 0
+            ? ` (${data.duplicatesSkipped} duplicates skipped)`
+            : '';
 
-        toast({
-          title: t("successProcessed", {
-            transactions: data.transactionsCount,
-            subscriptions: data.subscriptionsCount
-          }) + dupeMsg,
-        });
+          toast({
+            title: t("successProcessed", {
+              transactions: data.transactionsCount,
+              subscriptions: data.subscriptionsCount
+            }) + dupeMsg,
+          });
+        }
 
-        onUploadComplete({
-          batchSpending: data.batchSpending,
-          batchSubsCount: data.batchSubsCount,
-          batchAnnualSavings: data.batchAnnualSavings,
-          transactionsCount: data.transactionsCount,
-        });
+        onUploadComplete(data as UploadResult);
       } catch (error: unknown) {
         captureApiError(error, { operation: 'csvUpload' });
         const message = error instanceof Error ? error.message : t("errorProcessing");
@@ -79,6 +141,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
           description: message,
           variant: "destructive",
         });
+
       } finally {
         setLoading(false);
       }

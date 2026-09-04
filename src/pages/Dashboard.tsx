@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Upload } from "lucide-react";
@@ -10,7 +10,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardSummaryCards from "@/components/DashboardSummaryCards";
 import { OnboardingModal } from "@/components/OnboardingModal";
-import CSVUpload from "@/components/CSVUpload";
+import CSVUpload, { type UploadResult } from "@/components/CSVUpload";
 import SpendingChart from "@/components/SpendingChart";
 import SubscriptionsList from "@/components/SubscriptionsList";
 import SavingsGoals from "@/components/SavingsGoals";
@@ -27,44 +27,23 @@ const Dashboard = () => {
   const { user, loading, isAdmin, userTier, uploadsUsed, canUpload, showOnboarding, setShowOnboarding, setUploadsUsed, setCanUpload, handleSignOut } = useAuth();
   const { monthlySpending, subscriptionCount, potentialSavings } = useDashboardData(user?.id, refreshKey);
 
-  const handleUploadComplete = async (uploadResult?: {
-    batchSpending?: number;
-    batchSubsCount?: number;
-    batchAnnualSavings?: number;
-    transactionsCount?: number;
-  }) => {
-    setShowUpload(false);
-    if (user) {
-      // Atomic increment via SQL — avoids stale React state race condition
-      const { data: updated, error: updErr } = await supabase
-        .rpc('increment_monthly_uploads', { _user_id: user.id })
-        .single<{ monthly_uploads_used: number }>();
-
-      let newUploadsUsed = uploadsUsed + 1;
-      if (!updErr && updated && typeof updated.monthly_uploads_used === 'number') {
-        newUploadsUsed = updated.monthly_uploads_used;
-      } else {
-        // Fallback if RPC missing — non-atomic but safe
-        await supabase
-          .from("profiles")
-          .update({ monthly_uploads_used: newUploadsUsed })
-          .eq("user_id", user.id);
-      }
-
-      // Record per-batch metrics (NOT cumulative)
-      await supabase.from('upload_history').insert({
-        user_id: user.id,
-        total_spending: uploadResult?.batchSpending ?? 0,
-        subscriptions_count: uploadResult?.batchSubsCount ?? 0,
-        potential_savings: uploadResult?.batchAnnualSavings ?? 0,
-        transaction_count: uploadResult?.transactionsCount ?? 0,
-      });
-
-      setUploadsUsed(newUploadsUsed);
-      setCanUpload(newUploadsUsed < (userTier === "free" ? 1 : Infinity));
+  // The server owns the upload counter and the upload_history record. The
+  // client only mirrors what process-csv reports back.
+  const handleUploadComplete = async (uploadResult?: UploadResult) => {
+    if (uploadResult?.usage) {
+      setUploadsUsed(uploadResult.usage.uploadsUsed);
+      setCanUpload(uploadResult.usage.canUpload);
     }
+
+    // A rejected upload (e.g. quota exceeded) keeps the upload panel open.
+    if (uploadResult?.code && uploadResult.code !== "OK" && uploadResult.code !== "REPLAY") {
+      return;
+    }
+
+    setShowUpload(false);
     setRefreshKey(prev => prev + 1);
   };
+
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 

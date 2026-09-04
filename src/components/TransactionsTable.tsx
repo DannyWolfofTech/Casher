@@ -15,6 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatSignedAmount, isCredit } from "@/lib/transactions";
+
 
 interface Transaction {
   id: string;
@@ -22,7 +24,10 @@ interface Transaction {
   description: string;
   amount: number;
   category: string | null;
+  /** null on legacy rows imported before signed cash-flow support. */
+  direction?: "debit" | "credit" | null;
 }
+
 
 interface TransactionsTableProps {
   refreshKey: number;
@@ -70,7 +75,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
 
       if (error) throw error;
 
-      setTransactions(data || []);
+      setTransactions((data ?? []) as unknown as Transaction[]);
       setTotalPages(Math.ceil((count || 0) / itemsPerPage));
     } catch (err) {
       console.error('Error fetching transactions:', err);
@@ -89,13 +94,15 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
       return;
     }
 
-    const headers = ['Date', 'Description', 'Amount', 'Category'];
+    const headers = ['Date', 'Description', 'Amount', 'Direction', 'Category'];
     const rows = transactions.map(t => [
       t.date,
       `"${t.description.replace(/"/g, '""')}"`,
       t.amount,
+      isCredit(t) ? 'credit' : 'debit',
       t.category || 'Uncategorized'
     ]);
+
     
     const csv = [
       headers.join(','),
@@ -251,9 +258,10 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
                         {new Date(transaction.date).toLocaleDateString('en-GB')}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">{transaction.description}</TableCell>
-                      <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                        £{Math.abs(transaction.amount).toFixed(2)}
+                      <TableCell className={`text-right font-medium ${isCredit(transaction) ? 'text-primary' : 'text-foreground'}`}>
+                        {formatSignedAmount(transaction)}
                       </TableCell>
+
                       <TableCell>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           transaction.category === 'Subscription' 

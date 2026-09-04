@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { spendingAmount, type DirectionalTransaction } from "@/lib/transactions";
+
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -38,19 +40,23 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
 
       const { data: transactions, error } = await supabase
         .from('transactions')
-        .select('category, amount')
+        .select('*')
         .eq('user_id', user.id)
         .gte('date', startOfMonth)
         .lte('date', endOfMonthStr);
 
       if (error) throw error;
 
-      // Group by category and sum amounts
+      // Group spending by category. Credits (money in) are excluded; legacy
+      // rows with no direction remain counted as spending.
       const categoryTotals: { [key: string]: number } = {};
-      (transactions || []).forEach((t) => {
+      ((transactions ?? []) as unknown as Array<{ category: string | null } & DirectionalTransaction>).forEach((t) => {
+        const value = spendingAmount(t);
+        if (value <= 0) return;
         const category = t.category || 'Other';
-        categoryTotals[category] = (categoryTotals[category] || 0) + Math.abs(parseFloat(String(t.amount)));
+        categoryTotals[category] = (categoryTotals[category] || 0) + value;
       });
+
 
       const chartData = Object.entries(categoryTotals)
         .filter(([_, value]) => value > 0)

@@ -45,35 +45,40 @@ export const useAuth = () => {
         .maybeSingle();
       setIsAdmin(!!roleData);
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("subscription_tier, monthly_uploads_used, uploads_reset_date")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
+      // Upload allowance is read-only for the client. The database decides
+      // (and resets) it using server time via get_upload_usage(); the browser
+      // never writes monthly_uploads_used or uploads_reset_date.
+      const { data: usageRows } = await supabase.rpc("get_upload_usage" as never);
+      const rawUsage: unknown = usageRows;
+      const usage = (Array.isArray(rawUsage) ? rawUsage[0] : rawUsage) as
 
-      if (profileData) {
-        setUserTier(profileData.subscription_tier || "free");
-        let currentUploads = profileData.monthly_uploads_used || 0;
+        | { uploads_used: number; upload_limit: number | null; tier: string }
+        | null
+        | undefined;
 
-        const resetDate = new Date(profileData.uploads_reset_date);
-        const now = new Date();
-        if (now.getMonth() !== resetDate.getMonth() || now.getFullYear() !== resetDate.getFullYear()) {
-          await supabase
-            .from("profiles")
-            .update({ monthly_uploads_used: 0, uploads_reset_date: new Date().toISOString().split('T')[0] })
-            .eq("user_id", session.user.id);
-          currentUploads = 0;
-        }
+      if (usage) {
+        const currentUploads = Number(usage.uploads_used ?? 0);
+        const uploadLimit = usage.upload_limit === null || usage.upload_limit === undefined
+          ? Infinity
+          : Number(usage.upload_limit);
 
+        setUserTier(usage.tier || "free");
         setUploadsUsed(currentUploads);
-        const uploadLimit = profileData.subscription_tier === "free" ? 1 : Infinity;
         setCanUpload(currentUploads < uploadLimit);
 
-        if ((profileData.monthly_uploads_used || 0) === 0 && !localStorage.getItem('onboarding_seen')) {
+        if (currentUploads === 0 && !localStorage.getItem('onboarding_seen')) {
           setShowOnboarding(true);
           localStorage.setItem('onboarding_seen', 'true');
         }
+      } else {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("subscription_tier")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (profileData) setUserTier(profileData.subscription_tier || "free");
       }
+
 
       await checkSubscription();
       setLoading(false);
