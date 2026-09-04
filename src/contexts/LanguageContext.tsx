@@ -73,7 +73,7 @@ const translations: Translations = {
     youInControl: "You're In Control",
     youInControlDesc: "Upload only what you want, when you want. Ask us to delete your account data at any time.",
     missionTitle: "Defeating Subscription Fatigue",
-    missionBody: "It starts with a £9.99 free trial you forgot to cancel. It ends with hundreds of pounds lost every year. Casher exists to spot those leaks instantly so you can put that money back in your pocket.",
+    missionBody: "It starts with a subscription you forgot to cancel. It ends with hundreds of pounds lost every year. Casher exists to spot those leaks instantly so you can put that money back in your pocket.",
     readyToSave: "Ready to Start Saving?",
     readyToSaveDesc: "Upload one statement and see exactly which subscriptions are still charging you.",
     // Pricing page
@@ -198,7 +198,7 @@ const translations: Translations = {
     youInControl: "Vous Êtes en Contrôle",
     youInControlDesc: "Téléchargez uniquement ce que vous voulez, quand vous voulez. Demandez la suppression de vos données à tout moment.",
     missionTitle: "Vaincre la Fatigue des Abonnements",
-    missionBody: "Cela commence par un essai gratuit de 9,99 £ que vous avez oublié d'annuler. Cela se termine par des centaines de livres perdues chaque année. Casher existe pour repérer ces fuites instantanément afin que vous puissiez remettre cet argent dans votre poche.",
+    missionBody: "Cela commence par un abonnement que vous avez oublié d'annuler. Cela se termine par des centaines de livres perdues chaque année. Casher existe pour repérer ces fuites instantanément afin que vous puissiez remettre cet argent dans votre poche.",
     readyToSave: "Prêt à Commencer à Économiser?",
     readyToSaveDesc: "Importez un relevé et voyez exactement quels abonnements vous facturent encore.",
     // Pricing page
@@ -323,7 +323,7 @@ const translations: Translations = {
     youInControl: "Tú Tienes el Control",
     youInControlDesc: "Sube solo lo que quieras, cuando quieras. Pide la eliminación de tus datos cuando lo desees.",
     missionTitle: "Derrotando la Fatiga de Suscripciones",
-    missionBody: "Comienza con una prueba gratuita de £9.99 que olvidaste cancelar. Termina con cientos de libras perdidas cada año. Casher existe para detectar esas fugas al instante para que puedas poner ese dinero de vuelta en tu bolsillo.",
+    missionBody: "Comienza con una suscripción que olvidaste cancelar. Termina con cientos de libras perdidas cada año. Casher existe para detectar esas fugas al instante para que puedas poner ese dinero de vuelta en tu bolsillo.",
     readyToSave: "¿Listo para Empezar a Ahorrar?",
     readyToSaveDesc: "Sube un extracto y descubre exactamente qué suscripciones te siguen cobrando.",
     // Pricing page
@@ -448,7 +448,7 @@ const translations: Translations = {
     youInControl: "Tu Ai Controlul",
     youInControlDesc: "Încarcă doar ce vrei, când vrei. Poți cere ștergerea datelor oricând.",
     missionTitle: "Înfrângerea Oboselii de Abonamente",
-    missionBody: "Începe cu o încercare gratuită de £9.99 pe care ai uitat să o anulezi. Se termină cu sute de lire pierdute în fiecare an. Casher există pentru a detecta aceste scurgeri instantaneu, astfel încât să poți pune acei bani înapoi în buzunar.",
+    missionBody: "Începe cu un abonament pe care ai uitat să îl anulezi. Se termină cu sute de lire pierdute în fiecare an. Casher există pentru a detecta aceste scurgeri instantaneu, astfel încât să poți pune acei bani înapoi în buzunar.",
     readyToSave: "Pregătit să Începi să Economisești?",
     readyToSaveDesc: "Încarcă un extras și vezi exact ce abonamente încă îți retrag bani.",
     // Pricing page
@@ -573,7 +573,7 @@ const translations: Translations = {
     youInControl: "Sie Haben die Kontrolle",
     youInControlDesc: "Laden Sie nur hoch, was Sie möchten, wann Sie möchten. Sie können die Löschung Ihrer Daten jederzeit anfordern.",
     missionTitle: "Abonnement-Müdigkeit Besiegen",
-    missionBody: "Es beginnt mit einer £9,99 kostenlosen Testversion, die Sie vergessen haben zu kündigen. Es endet mit Hunderten von Pfund, die jedes Jahr verloren gehen. Casher existiert, um diese Lecks sofort zu erkennen, damit Sie das Geld wieder in Ihre Tasche stecken können.",
+    missionBody: "Es beginnt mit einem Abonnement, das Sie vergessen haben zu kündigen. Es endet mit Hunderten von Pfund, die jedes Jahr verloren gehen. Casher existiert, um diese Lecks sofort zu erkennen, damit Sie das Geld wieder in Ihre Tasche stecken können.",
     readyToSave: "Bereit zu Sparen?",
     readyToSaveDesc: "Laden Sie einen Kontoauszug hoch und sehen Sie genau, welche Abos Sie noch belasten.",
     // Pricing page
@@ -698,7 +698,7 @@ const translations: Translations = {
     youInControl: "Sei Tu al Comando",
     youInControlDesc: "Carica solo ciò che vuoi, quando vuoi. Puoi richiedere la cancellazione dei tuoi dati in qualsiasi momento.",
     missionTitle: "Sconfiggere la Stanchezza degli Abbonamenti",
-    missionBody: "Inizia con una prova gratuita di £9,99 che hai dimenticato di annullare. Finisce con centinaia di sterline perse ogni anno. Casher esiste per individuare quelle perdite all'istante così puoi rimettere quei soldi in tasca.",
+    missionBody: "Inizia con un abbonamento che hai dimenticato di annullare. Finisce con centinaia di sterline perse ogni anno. Casher esiste per individuare quelle perdite all'istante così puoi rimettere quei soldi in tasca.",
     readyToSave: "Pronto a Iniziare a Risparmiare?",
     readyToSaveDesc: "Carica un estratto conto e scopri esattamente quali abbonamenti ti stanno ancora addebitando.",
     // Pricing page
@@ -823,7 +823,7 @@ const translations: Translations = {
     youInControl: "Masz Pełną Kontrolę",
     youInControlDesc: "Wysyłaj tylko to, co chcesz i kiedy chcesz. W każdej chwili możesz poprosić o usunięcie danych.",
     missionTitle: "Pokonując Zmęczenie Subskrypcjami",
-    missionBody: "Zaczyna się od bezpłatnego okresu próbnego za £9,99, który zapomniałeś anulować. Kończy się setkami funtów traconych każdego roku. Casher istnieje, aby natychmiast wykryć te wycieki, abyś mógł włożyć te pieniądze z powrotem do kieszeni.",
+    missionBody: "Zaczyna się od subskrypcji, którą zapomniałeś anulować. Kończy się setkami funtów traconych każdego roku. Casher istnieje, aby natychmiast wykryć te wycieki, abyś mógł włożyć te pieniądze z powrotem do kieszeni.",
     readyToSave: "Gotowy Zacząć Oszczędzać?",
     readyToSaveDesc: "Wgraj jeden wyciąg i zobacz dokładnie, które subskrypcje wciąż Cię obciążają.",
     // Pricing page
