@@ -1,39 +1,43 @@
--- =============================================================================
--- PENDING / NOT APPLIED.
---
--- This file lives outside supabase/migrations/ on purpose. The migration
--- directory is managed by Lovable's migration tool, which *applies* SQL as a
--- side effect of writing the file, and this change was explicitly requested to
--- be committed without touching the live database. Move/apply it deliberately
--- when you are ready.
---
--- Phase A: entitlement protection + concurrency-safe upload quota.
--- Additive only. No existing row is backfilled or modified.
---
--- 1. Clients can no longer self-grant a paid tier or reset their own upload
---    counter: entitlement columns on public.profiles become writable only by
---    trusted server-side code.
--- 2. Upload allowance moves into the database: reserve_upload_slot() takes a
---    row-level lock, uses database time for the calendar-month reset, and
---    returns the decision atomically. release_upload_slot() compensates when
---    the import fails after reservation.
--- 3. transactions gains nullable direction/import_version so signed cash flow
---    can be stored without changing the meaning of legacy rows (direction IS
---    NULL keeps its historic "treat as spending" semantics).
--- 4. upload_history gains csv_hash (idempotency) and total_credits.
--- =============================================================================
-
--- -----------------------------------------------------------------------------
--- 1. Entitlement protection
--- -----------------------------------------------------------------------------
+-- Phase A: entitlement protection + concurrency-safe upload quota. Additive only.
 
 CREATE OR REPLACE FUNCTION public.current_request_role()
 RETURNS text
-LANGUAGE sql
+LANGUAGE plpgsql
 STABLE
 SET search_path = public
 AS $$
-  SELECT current_setting('role', true);
+DECLARE
+  v_role text;
+  v_claims text;
+BEGIN
+  -- NOTE: current_user is deliberately NOT used. Inside a SECURITY DEFINER call
+  -- chain current_user is the function owner, which would defeat the check.
+  v_role := nullif(current_setting('request.jwt.claim.role', true), '');
+  IF v_role IS NOT NULL THEN
+    RETURN v_role;
+  END IF;
+
+  v_claims := nullif(current_setting('request.jwt.claims', true), '');
+  IF v_claims IS NOT NULL THEN
+    BEGIN
+      v_role := (v_claims::jsonb ->> 'role');
+    EXCEPTION WHEN OTHERS THEN
+      v_role := NULL;
+    END;
+    IF v_role IS NOT NULL THEN
+      RETURN v_role;
+    END IF;
+  END IF;
+
+  -- 'role' GUC is set by PostgREST (SET LOCAL role ...) and is not affected by
+  -- SECURITY DEFINER context switches.
+  v_role := nullif(current_setting('role', true), '');
+  IF v_role IS NOT NULL AND v_role <> 'none' THEN
+    RETURN v_role;
+  END IF;
+
+  RETURN session_user;
+END;
 $$;
 
 REVOKE ALL ON FUNCTION public.current_request_role() FROM PUBLIC;
@@ -41,26 +45,23 @@ REVOKE ALL ON FUNCTION public.current_request_role() FROM anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.current_request_role() TO service_role;
 
 -- Trusted server code opts in explicitly by setting app.entitlements_writable
--- inside its own transaction (see reserve_upload_slot / release_upload_slot).
+-- inside its own transaction (see reserve_upload_slot / release_upload_slot),
+-- or arrives with a service_role JWT. Everything else fails closed.
 CREATE OR REPLACE FUNCTION public.entitlement_writes_allowed()
 RETURNS boolean
 LANGUAGE sql
 STABLE
+SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT coalesce(current_setting('app.entitlements_writable', true), '') = 'on'
-      OR coalesce(current_setting('request.jwt.claim.role', true), '') = 'service_role'
-      OR current_user = 'service_role'
-      OR current_user = 'postgres';
+      OR public.current_request_role() = 'service_role';
 $$;
 
 REVOKE ALL ON FUNCTION public.entitlement_writes_allowed() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.entitlement_writes_allowed() FROM anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.entitlement_writes_allowed() TO service_role;
 
--- Reject client-side changes to billing/quota fields. On UPDATE the old values
--- are forced back, so a malicious PATCH silently no-ops instead of granting
--- Premium. On INSERT the fields fall back to free-tier defaults.
 CREATE OR REPLACE FUNCTION public.protect_profile_entitlements()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -83,7 +84,6 @@ BEGIN
   NEW.monthly_uploads_used := OLD.monthly_uploads_used;
   NEW.uploads_reset_date   := OLD.uploads_reset_date;
 
-  -- Only guard columns that exist on this schema version.
   IF to_jsonb(NEW) ? 'subscription_end' THEN
     NEW.subscription_end := OLD.subscription_end;
   END IF;
@@ -92,6 +92,12 @@ BEGIN
   END IF;
   IF to_jsonb(NEW) ? 'stripe_subscription_id' THEN
     NEW.stripe_subscription_id := OLD.stripe_subscription_id;
+  END IF;
+  IF to_jsonb(NEW) ? 'subscription_status' THEN
+    NEW.subscription_status := OLD.subscription_status;
+  END IF;
+  IF to_jsonb(NEW) ? 'current_period_end' THEN
+    NEW.current_period_end := OLD.current_period_end;
   END IF;
 
   RETURN NEW;
@@ -108,7 +114,6 @@ CREATE TRIGGER protect_profile_entitlements_upd
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.protect_profile_entitlements();
 
--- The old client-callable increment is superseded by reserve_upload_slot.
 DO $$
 BEGIN
   IF EXISTS (
@@ -123,11 +128,7 @@ BEGIN
 END;
 $$;
 
--- -----------------------------------------------------------------------------
--- 2. Upload quota (database time, row-locked)
--- -----------------------------------------------------------------------------
-
--- NULL limit = unlimited.
+-- Upload quota (database time, row-locked). NULL limit = unlimited.
 CREATE OR REPLACE FUNCTION public.upload_limit_for_tier(_tier text)
 RETURNS integer
 LANGUAGE sql
@@ -164,8 +165,6 @@ DECLARE
   v_used         integer;
   v_limit        integer;
 BEGIN
-  -- Row lock serialises concurrent uploads for the same user, so two parallel
-  -- requests can never both consume the last free slot.
   SELECT * INTO v_profile
   FROM public.profiles
   WHERE user_id = _user_id
@@ -178,7 +177,6 @@ BEGIN
 
   v_limit := public.upload_limit_for_tier(v_profile.subscription_tier);
 
-  -- Calendar-month reset decided by database time, never the browser clock.
   IF v_profile.uploads_reset_date IS NULL
      OR date_trunc('month', v_profile.uploads_reset_date)::date < v_period_start THEN
     v_used := 0;
@@ -187,7 +185,6 @@ BEGIN
   END IF;
 
   IF v_limit IS NOT NULL AND v_used >= v_limit THEN
-    -- Persist the reset even when refusing, so the counter stays truthful.
     PERFORM set_config('app.entitlements_writable', 'on', true);
     UPDATE public.profiles
     SET monthly_uploads_used = v_used,
@@ -220,7 +217,6 @@ REVOKE ALL ON FUNCTION public.reserve_upload_slot(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.reserve_upload_slot(uuid) FROM anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.reserve_upload_slot(uuid) TO service_role;
 
--- Compensating action when processing fails after a reservation.
 CREATE OR REPLACE FUNCTION public.release_upload_slot(_user_id uuid)
 RETURNS integer
 LANGUAGE plpgsql
@@ -247,7 +243,6 @@ REVOKE ALL ON FUNCTION public.release_upload_slot(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.release_upload_slot(uuid) FROM anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.release_upload_slot(uuid) TO service_role;
 
--- Read-only allowance for the signed-in user's own account (display only).
 CREATE OR REPLACE FUNCTION public.get_upload_usage()
 RETURNS TABLE (
   uploads_used integer,
@@ -290,10 +285,7 @@ REVOKE ALL ON FUNCTION public.get_upload_usage() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.get_upload_usage() FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_upload_usage() TO authenticated, service_role;
 
--- -----------------------------------------------------------------------------
--- 3. Signed cash-flow columns (nullable, no backfill)
--- -----------------------------------------------------------------------------
-
+-- Signed cash-flow columns (nullable, no backfill)
 ALTER TABLE public.transactions
   ADD COLUMN IF NOT EXISTS direction text,
   ADD COLUMN IF NOT EXISTS import_version integer;
@@ -318,10 +310,6 @@ COMMENT ON COLUMN public.transactions.import_version IS
 CREATE INDEX IF NOT EXISTS transactions_user_date_idx
   ON public.transactions (user_id, date DESC);
 
--- -----------------------------------------------------------------------------
--- 4. Upload history idempotency metadata
--- -----------------------------------------------------------------------------
-
 ALTER TABLE public.upload_history
   ADD COLUMN IF NOT EXISTS csv_hash text,
   ADD COLUMN IF NOT EXISTS total_credits numeric;
@@ -331,3 +319,30 @@ COMMENT ON COLUMN public.upload_history.csv_hash IS
 
 CREATE INDEX IF NOT EXISTS upload_history_user_hash_idx
   ON public.upload_history (user_id, csv_hash, created_at DESC);
+
+-- Executable regression assertions (no rows written)
+DO $$
+BEGIN
+  PERFORM set_config('app.entitlements_writable', 'off', true);
+  IF public.entitlement_writes_allowed() THEN
+    RAISE EXCEPTION 'entitlement_writes_allowed() must fail closed without opt-in (got true)';
+  END IF;
+
+  PERFORM set_config('app.entitlements_writable', 'on', true);
+  IF NOT public.entitlement_writes_allowed() THEN
+    RAISE EXCEPTION 'entitlement_writes_allowed() must honour explicit opt-in';
+  END IF;
+  PERFORM set_config('app.entitlements_writable', 'off', true);
+
+  PERFORM set_config('request.jwt.claim.role', 'service_role', true);
+  IF NOT public.entitlement_writes_allowed() THEN
+    RAISE EXCEPTION 'service_role requests must be allowed';
+  END IF;
+
+  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
+  IF public.entitlement_writes_allowed() THEN
+    RAISE EXCEPTION 'authenticated requests must be denied';
+  END IF;
+  PERFORM set_config('request.jwt.claim.role', '', true);
+END;
+$$;
