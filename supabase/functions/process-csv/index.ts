@@ -467,8 +467,11 @@ serve(async (req) => {
     }, 200);
   } catch (error) {
     // Compensate: the slot was reserved but the work failed.
-    const released = await releaseUploadSlot(supabase, user.id);
+    const released = usedFallbackQuota
+      ? await fallbackRelease(supabase, user.id)
+      : await releaseUploadSlot(supabase, user.id);
     console.error("[process-csv] processing failed", { released, error });
+
     return fail(
       "PROCESSING_FAILED",
       "We couldn't finish importing your statement. Your upload allowance was not used — please try again.",
