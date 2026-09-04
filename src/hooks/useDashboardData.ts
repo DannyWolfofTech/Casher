@@ -51,5 +51,5 @@ export const useDashboardData = (userId: string | undefined, refreshKey: number)
     }
   };
 
-  return { monthlySpending, subscriptionCount, potentialSavings };
+  return { monthlySpending, monthlyIncome, subscriptionCount, potentialSavings };
 };
