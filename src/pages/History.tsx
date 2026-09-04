@@ -10,6 +10,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import logoFull from "@/assets/logo-full.png";
 import { format } from "date-fns";
+import { buildMonthlySpendingTrend, type MonthlySpendingPoint } from "@/lib/monthly-spending";
+
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,11 +19,8 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-interface HistoricalData {
-  month: string;
-  cost: number;
-  date: Date;
-}
+type HistoricalData = MonthlySpendingPoint;
+
 
 interface CategoryData {
   name: string;
@@ -110,28 +109,9 @@ const History = () => {
         .order('upload_date', { ascending: true });
 
       if (uploads && uploads.length > 0) {
-        const trend = uploads.map(u => {
-          let dateObj: Date;
-          try {
-            dateObj = new Date(u.upload_date);
-            if (isNaN(dateObj.getTime()) && typeof u.upload_date === 'string' && u.upload_date.includes('/')) {
-              const parts = u.upload_date.split('/');
-              if (parts.length === 3) {
-                dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-              }
-            }
-          } catch (e) {
-            dateObj = new Date();
-          }
-          
-          return {
-            month: format(dateObj, 'MMM yyyy'),
-            cost: Number(u.total_spending),
-            date: dateObj
-          };
-        });
-        setTrendData(trend);
+        setTrendData(buildMonthlySpendingTrend(uploads));
       }
+
 
     } catch (error) {
       console.error('Error fetching history:', error);
@@ -494,8 +474,8 @@ const History = () => {
           {/* Trend Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Monthly Fixed Costs Trend</CardTitle>
-              <CardDescription>Track your spending over time</CardDescription>
+              <CardTitle>Monthly Spending Trend</CardTitle>
+              <CardDescription>Total uploaded statement spending by month</CardDescription>
             </CardHeader>
             <CardContent>
               {trendData.length > 0 ? (
@@ -503,9 +483,10 @@ const History = () => {
                   <LineChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
+                    <YAxis tickFormatter={(value: number) => `£${Number(value).toLocaleString('en-GB')}`} />
+                    <Tooltip formatter={(value: number) => [`£${Number(value).toFixed(2)}`, 'Total spending']} />
                     <Legend />
+
                     <Line 
                       type="monotone" 
                       dataKey="cost" 
