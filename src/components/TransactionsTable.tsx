@@ -44,6 +44,7 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [cancelModal, setCancelModal] = useState<{ open: boolean; transaction: Transaction | null }>({
     open: false,
     transaction: null,
@@ -92,8 +93,6 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
       setError(true);
     }
   };
-
-  const [exporting, setExporting] = useState(false);
 
   /** Fetch every row matching the current filter/sort, not just this page. */
   const fetchAllMatchingTransactions = async (): Promise<Transaction[]> => {
