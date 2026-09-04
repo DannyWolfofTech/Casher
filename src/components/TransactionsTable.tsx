@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatSignedAmount, isCredit } from "@/lib/transactions";
 import { buildTransactionsCsv, exportFileName } from "@/lib/csv-export";
-import { CANCELED_CATEGORY, findLinkedSubscription, nextTransactionCategory } from "@/lib/subscription-link";
+import { CANCELED_CATEGORY, nextTransactionCategory, syncLinkedSubscriptionStatus } from "@/lib/subscription-link";
 
 
 interface Transaction {

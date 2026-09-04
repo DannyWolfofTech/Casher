@@ -20,16 +20,22 @@ export const ALLOWED_PRICE_IDS: readonly string[] = Object.values(STRIPE_TIERS).
   (t) => t.priceId,
 );
 
-/** Static origins that are always allowed. */
+/**
+ * Static origins that are always allowed.
+ *
+ * The Lovable hosts are pinned to this project's exact preview/published URLs.
+ * A wildcard such as `*.lovable.app` would let any third-party Lovable project
+ * be used as a Checkout return origin.
+ */
 const STATIC_ALLOWED_ORIGINS = [
   CANONICAL_ORIGIN,
   "https://www.trycasher.com",
+  "https://id-preview--ea77ebbb-78bd-46c4-a0c9-0ab73994a416.lovable.app",
+  "https://preview--trycasher-com.lovable.app",
+  "https://ea77ebbb-78bd-46c4-a0c9-0ab73994a416.lovableproject.com",
   "http://localhost:8080",
   "http://localhost:5173",
 ];
-
-/** Lovable preview/published hosts, e.g. https://<id>.lovable.app */
-const LOVABLE_HOST = /^https:\/\/[a-z0-9-]+\.lovable\.app$/i;
 
 function extraAllowedOrigins(raw?: string | null): string[] {
   if (!raw) return [];
@@ -46,8 +52,7 @@ export function isAllowedPriceId(priceId: unknown): priceId is string {
 export function isAllowedOrigin(origin: string, extraRaw?: string | null): boolean {
   const normalized = origin.replace(/\/$/, "");
   if (STATIC_ALLOWED_ORIGINS.includes(normalized)) return true;
-  if (extraAllowedOrigins(extraRaw).includes(normalized)) return true;
-  return LOVABLE_HOST.test(normalized);
+  return extraAllowedOrigins(extraRaw).includes(normalized);
 }
 
 /**
