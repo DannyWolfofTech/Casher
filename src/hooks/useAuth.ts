@@ -71,13 +71,37 @@ export const useAuth = () => {
           localStorage.setItem('onboarding_seen', 'true');
         }
       } else {
+        // Pre-migration fallback: read the counters without ever writing them.
+        // The server remains the authority; this is display only.
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("subscription_tier")
+          .select("subscription_tier, monthly_uploads_used, uploads_reset_date")
           .eq("user_id", session.user.id)
           .maybeSingle();
-        if (profileData) setUserTier(profileData.subscription_tier || "free");
+
+        if (profileData) {
+          const tier = profileData.subscription_tier || "free";
+          const limit = tier === "free" ? 1 : Infinity;
+          const now = new Date();
+          const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+          const resetDate = profileData.uploads_reset_date
+            ? new Date(String(profileData.uploads_reset_date))
+            : null;
+          const used = !resetDate || resetDate.getTime() < periodStart.getTime()
+            ? 0
+            : Number(profileData.monthly_uploads_used ?? 0);
+
+          setUserTier(tier);
+          setUploadsUsed(used);
+          setCanUpload(used < limit);
+
+          if (used === 0 && !localStorage.getItem('onboarding_seen')) {
+            setShowOnboarding(true);
+            localStorage.setItem('onboarding_seen', 'true');
+          }
+        }
       }
+
 
 
       await checkSubscription();
