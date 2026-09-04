@@ -132,11 +132,18 @@ serve(async (req) => {
   const prior = priorUploads?.[0];
   if (prior) {
     // Same file, same user, recently processed: do NOT consume another slot
-    // and do NOT write a second history row.
-    const { data: usageRows } = await supabase.rpc("reserve_upload_slot_noop_placeholder" as never, {})
-      .then((r) => r)
-      .catch(() => ({ data: null }));
-    void usageRows;
+    // and do NOT write a second history row. Report current usage read-only.
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("subscription_tier, monthly_uploads_used")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const tier = String(profileRow?.subscription_tier ?? "free");
+    const uploadLimit = tier === "free" ? 1 : null;
+    const uploadsUsed = Number(profileRow?.monthly_uploads_used ?? 0);
+
+
 
     return json({
       ok: true,
