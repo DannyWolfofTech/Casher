@@ -67,9 +67,10 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error: any) {
-    console.error("Error checking failed webhooks:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Error checking failed webhooks:", message);
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

@@ -1,9 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { planCtaState, PREMIUM_PURCHASABLE } from "../pricing-cta";
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
+
+/** Every hand-written app source file (shadcn primitives included). */
+function globSourceFiles(): string[] {
+  const out: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(resolve(process.cwd(), dir), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(rel);
+      else if (rel.endsWith(".tsx")) out.push(rel);
+    }
+  };
+  walk("src");
+  return out;
+}
 
 describe("Premium is coming soon and not purchasable", () => {
   it("never offers checkout on Premium", () => {
@@ -70,5 +84,31 @@ describe("launch copy accuracy", () => {
   it("keeps production checkout free of console logging", () => {
     const pricing = read("src/pages/Pricing.tsx");
     expect(pricing).not.toMatch(/console\.(log|error)/);
+  });
+});
+
+describe("icon-only controls have accessible names", () => {
+  it("labels the theme toggle in both states", () => {
+    const src = read("src/components/ThemeToggle.tsx");
+    expect(src).toContain('"Switch to dark theme"');
+    expect(src).toContain('"Switch to light theme"');
+    expect(src).toMatch(/aria-label=\{label\}/);
+    // The icons are decorative once the button itself is named.
+    expect(src.match(/aria-hidden="true"/g) ?? []).toHaveLength(2);
+  });
+
+  it("gives every icon-only button in the app an accessible name", () => {
+    const files = globSourceFiles();
+    const offenders: string[] = [];
+    for (const file of files) {
+      const src = read(file);
+      // Match each <Button ...> opening tag that uses the icon size variant.
+      const tags = src.match(/<Button[^>]*size="icon"[\s\S]*?<\/Button>/g) ?? [];
+      for (const block of tags) {
+        // A name can come from aria-label, title, or visually hidden text.
+        if (!/aria-label|title=|sr-only/.test(block)) offenders.push(`${file}: ${block.slice(0, 120)}`);
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });

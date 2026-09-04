@@ -111,14 +111,15 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
     console.error("Checkout error:", {
-      message: error.message,
-      stack: error.stack,
-      type: error.constructor.name
+      message: err.message,
+      stack: err.stack,
+      type: err.name,
     });
-    return new Response(JSON.stringify({ 
-      error: error.message
+    return new Response(JSON.stringify({
+      error: err.message
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

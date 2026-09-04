@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { captureApiError } from "@/lib/sentry";
 import { sumCredits, sumSpending, type DirectionalTransaction } from "@/lib/transactions";
@@ -10,12 +10,7 @@ export const useDashboardData = (userId: string | undefined, refreshKey: number)
   const [subscriptionCount, setSubscriptionCount] = useState(0);
   const [potentialSavings, setPotentialSavings] = useState(0);
 
-  useEffect(() => {
-    if (!userId) return;
-    fetchDashboardData();
-  }, [refreshKey, userId]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!userId) return;
     try {
       const now = new Date();
@@ -49,7 +44,13 @@ export const useDashboardData = (userId: string | undefined, refreshKey: number)
       console.error('Error fetching dashboard data:', error);
       captureApiError(error, { operation: 'fetchDashboardData' });
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchDashboardData();
+    // refreshKey forces a refetch after a new upload.
+  }, [fetchDashboardData, refreshKey, userId]);
 
   return { monthlySpending, monthlyIncome, subscriptionCount, potentialSavings };
 };

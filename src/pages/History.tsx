@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,16 @@ interface YoYComparison {
 
 const COLORS = ['#00C853', '#1A237E', '#64B5F6', '#81C784', '#4FC3F7', '#AED581'];
 
+const getCategoryFromName = (name: string): string => {
+  const lower = name.toLowerCase();
+  if (lower.includes('netflix') || lower.includes('spotify') || lower.includes('prime')) return 'Streaming';
+  if (lower.includes('gym') || lower.includes('fitness') || lower.includes('sport')) return 'Fitness';
+  if (lower.includes('adobe') || lower.includes('microsoft') || lower.includes('cloud')) return 'Software';
+  if (lower.includes('insurance')) return 'Insurance';
+  if (lower.includes('phone') || lower.includes('mobile')) return 'Telecom';
+  return 'Other';
+};
+
 const History = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -70,55 +80,7 @@ const History = () => {
   const exportRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
-    
-    setUser(session.user);
-    await fetchHistoryData(session.user.id);
-    setLoading(false);
-  };
-
-  const fetchHistoryData = async (userId: string) => {
-    try {
-      // Fetch all subscriptions for metrics
-      const { data: allSubs } = await supabase
-        .from('detected_subscriptions')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (allSubs) {
-        setAllSubscriptions(allSubs);
-        calculateMetrics(allSubs);
-        calculateYoYComparison(allSubs);
-      }
-
-      // Fetch upload history for trend
-      const { data: uploads } = await supabase
-        .from('upload_history')
-        .select('*')
-        .eq('user_id', userId)
-        .order('upload_date', { ascending: true });
-
-      if (uploads && uploads.length > 0) {
-        setTrendData(buildMonthlySpendingTrend(uploads));
-      }
-
-
-    } catch (error) {
-      console.error('Error fetching history:', error);
-    }
-  };
-
-  const calculateMetrics = (subs: Subscription[]) => {
+  const calculateMetrics = useCallback((subs: Subscription[]) => {
     let filtered = subs;
     
     if (dateFrom || dateTo) {
@@ -161,9 +123,9 @@ const History = () => {
       value: Number(value.toFixed(2))
     }));
     setCategoryData(catData);
-  };
+  }, [dateFrom, dateTo, selectedCategory, selectedStatus]);
 
-  const calculateYoYComparison = (subs: Subscription[]) => {
+  const calculateYoYComparison = useCallback((subs: Subscription[]) => {
     const currentYear = new Date().getFullYear();
     const previousYear = currentYear - 1;
 
@@ -204,17 +166,56 @@ const History = () => {
     ];
 
     setYoyComparison(comparisons);
-  };
+  }, []);
 
-  const getCategoryFromName = (name: string): string => {
-    const lower = name.toLowerCase();
-    if (lower.includes('netflix') || lower.includes('spotify') || lower.includes('prime')) return 'Streaming';
-    if (lower.includes('gym') || lower.includes('fitness') || lower.includes('sport')) return 'Fitness';
-    if (lower.includes('adobe') || lower.includes('microsoft') || lower.includes('cloud')) return 'Software';
-    if (lower.includes('insurance')) return 'Insurance';
-    if (lower.includes('phone') || lower.includes('mobile')) return 'Telecom';
-    return 'Other';
-  };
+  const fetchHistoryData = useCallback(async (userId: string) => {
+    try {
+      // Fetch all subscriptions for metrics
+      const { data: allSubs } = await supabase
+        .from('detected_subscriptions')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (allSubs) {
+        setAllSubscriptions(allSubs);
+        calculateMetrics(allSubs);
+        calculateYoYComparison(allSubs);
+      }
+
+      // Fetch upload history for trend
+      const { data: uploads } = await supabase
+        .from('upload_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('upload_date', { ascending: true });
+
+      if (uploads && uploads.length > 0) {
+        setTrendData(buildMonthlySpendingTrend(uploads));
+      }
+
+
+    } catch (error) {
+      console.error('Error fetching history:', error);
+    }
+  }, [calculateMetrics, calculateYoYComparison]);
+
+  const checkUser = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+    
+    setUser(session.user);
+    await fetchHistoryData(session.user.id);
+    setLoading(false);
+  }, [fetchHistoryData, navigate]);
+
+  useEffect(() => {
+    checkUser();
+  }, [checkUser]);
+
 
 
   const clearFilters = () => {
@@ -228,7 +229,7 @@ const History = () => {
     if (allSubscriptions.length > 0) {
       calculateMetrics(allSubscriptions);
     }
-  }, [dateFrom, dateTo, selectedCategory, selectedStatus]);
+  }, [allSubscriptions, calculateMetrics]);
 
   if (loading) {
     return (

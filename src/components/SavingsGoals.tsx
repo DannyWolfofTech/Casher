@@ -180,9 +180,10 @@ export default function SavingsGoals() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label={`Delete savings goal ${goal.title}`}
                       onClick={() => deleteGoal(goal.id)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 aria-hidden="true" className="h-4 w-4" />
                     </Button>
                   </div>
                   <Progress value={progress} className="mb-2" />

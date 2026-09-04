@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { captureApiError } from "@/lib/sentry";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,15 +53,11 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
   const { t } = useTranslation();
   const itemsPerPage = 25;
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [refreshKey, currentPage, searchQuery]);
-
   /**
    * Single source of truth for the current search/sort so that the export
    * matches exactly what the table is showing (minus pagination).
    */
-  const buildQuery = (options?: { count?: 'exact' }) => {
+  const buildQuery = useCallback((options?: { count?: 'exact' }) => {
     let query = supabase
       .from('transactions')
       .select('*', options?.count ? { count: options.count } : undefined)
@@ -73,9 +69,9 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
       query = query.or(`description.ilike.%${sanitized}%,category.ilike.%${sanitized}%`);
     }
     return query;
-  };
+  }, [searchQuery]);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setError(false);
       const from = (currentPage - 1) * itemsPerPage;
@@ -92,7 +88,12 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
       captureApiError(err, { operation: 'fetchTransactions' });
       setError(true);
     }
-  };
+  }, [buildQuery, currentPage]);
+
+  useEffect(() => {
+    fetchTransactions();
+    // refreshKey forces a refetch after a new upload.
+  }, [fetchTransactions, refreshKey]);
 
   /** Fetch every row matching the current filter/sort, not just this page. */
   const fetchAllMatchingTransactions = async (): Promise<Transaction[]> => {

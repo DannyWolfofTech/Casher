@@ -51,14 +51,15 @@ serve(async (req) => {
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
       console.log("Webhook signature verified:", event.type);
-    } catch (err: any) {
-      console.error("Webhook signature verification failed:", err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Webhook signature verification failed:", message);
       // Log failed signature verification
       await supabaseAdmin.from("webhook_events").insert({
         event_id: `sig_fail_${Date.now()}`,
         event_type: "signature_verification_failed",
         processing_status: "failed",
-        error_message: err.message,
+        error_message: message,
         payload: { signature_present: !!signature },
       });
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
@@ -75,7 +76,7 @@ serve(async (req) => {
       event_id: eventId,
       event_type: eventType,
       processing_status: "processing",
-      payload: { metadata: (event.data.object as any)?.metadata },
+      payload: { metadata: (event.data.object as { metadata?: Record<string, string> })?.metadata },
     });
 
     /** Apply entitlement to the profile identified by user_id or customer id. */
@@ -176,20 +177,21 @@ serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error: any) {
-    console.error("Webhook error:", error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Webhook error:", message);
 
     // Mark event as failed
     await supabaseAdmin
       .from("webhook_events")
       .update({
         processing_status: "failed",
-        error_message: error.message,
+        error_message: message,
         processed_at: new Date().toISOString(),
       })
       .eq("event_id", eventId);
 
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

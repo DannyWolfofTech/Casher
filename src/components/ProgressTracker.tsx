@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,11 +13,7 @@ const ProgressTracker = ({ userId, currentMonthSpending, refreshKey = 0 }: Progr
   const [previousMonthSpending, setPreviousMonthSpending] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchPreviousMonth();
-  }, [userId, refreshKey]);
-
-  const fetchPreviousMonth = async () => {
+  const fetchPreviousMonth = useCallback(async () => {
     try {
       if (!userId) return;
       
@@ -39,7 +35,12 @@ const ProgressTracker = ({ userId, currentMonthSpending, refreshKey = 0 }: Progr
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchPreviousMonth();
+    // refreshKey forces a refetch after a new upload.
+  }, [fetchPreviousMonth, refreshKey]);
 
   if (loading || previousMonthSpending === null) {
     return null;

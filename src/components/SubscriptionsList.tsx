@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { captureApiError } from "@/lib/sentry";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,7 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  useEffect(() => {
-    fetchSubscriptions();
-  }, [refreshKey, userId]);
-
-  const fetchSubscriptions = async () => {
+  const fetchSubscriptions = useCallback(async () => {
     try {
       setError(false);
       setLoading(true);
@@ -49,7 +45,12 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchSubscriptions();
+    // refreshKey forces a refetch after a new upload.
+  }, [fetchSubscriptions, refreshKey]);
 
   const handleCancel = (serviceName: string, cancellationUrl: string | null) => {
     if (cancellationUrl) {
