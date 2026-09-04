@@ -71,23 +71,23 @@ const Pricing = () => {
 
       console.log("Checkout session response:", data);
 
-      if (data?.url) {
-        console.log("Redirecting to Stripe Checkout:", data.url);
-        window.open(data.url, "_blank");
-      } else {
-        throw new Error("No checkout URL returned");
-      }
+      // Same-tab navigation: a post-await window.open() is silently blocked as
+      // an unsolicited popup, which produced a spinner-then-nothing no-op.
+      redirectToCheckout(data?.url);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to start checkout";
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "We couldn't start checkout. Please try again in a moment.";
       console.error("Checkout error:", error);
       toast({
-        title: "Error",
+        title: "Checkout unavailable",
         description: message,
         variant: "destructive",
       });
-    } finally {
       setLoadingTier(null);
     }
+
   };
 
   const handleEmailSignup = async (e: React.FormEvent) => {
