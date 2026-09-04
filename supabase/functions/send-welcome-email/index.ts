@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const corsHeaders = {
@@ -6,9 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface WelcomeEmailRequest {
-  email: string;
-}
+const json = (body: unknown, status: number) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -16,29 +19,41 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Require an authenticated caller. The email is always taken from the
+    // verified session, never from the request body, so this endpoint cannot
+    // be used to send mail to arbitrary third-party addresses.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    const token = authHeader.slice("Bearer ".length).trim();
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    const user = userData?.user;
+    if (userError || !user?.email) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY is not configured");
+      console.error("send-welcome-email: RESEND_API_KEY is not configured");
+      return json({ error: "Email sending is not available right now" }, 503);
     }
 
     const resend = new Resend(resendApiKey);
-    const { email }: WelcomeEmailRequest = await req.json();
+    const recipient = user.email;
 
-    if (!email || !email.includes("@")) {
-      return new Response(
-        JSON.stringify({ error: "Valid email is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    console.log("Sending welcome email to:", email);
+    console.log("send-welcome-email: sending to authenticated user", user.id);
 
     const emailResponse = await resend.emails.send({
       from: "Casher <onboarding@resend.dev>",
-      to: [email],
+      to: [recipient],
       subject: "Welcome to Casher!",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -59,25 +74,15 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    if (emailResponse.error) {
+      console.error("send-welcome-email: provider error", emailResponse.error);
+      return json({ error: "Failed to send email" }, 502);
+    }
 
-    return new Response(JSON.stringify({ success: true, data: emailResponse }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
+    return json({ success: true }, 200);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("Error in send-welcome-email function:", error);
-    return new Response(
-      JSON.stringify({ error: message || "Failed to send email" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    console.error("send-welcome-email: unexpected error", error);
+    return json({ error: "Failed to send email" }, 500);
   }
 };
 
