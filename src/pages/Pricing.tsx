@@ -380,23 +380,19 @@ const Pricing = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleEmailSignup} className="flex flex-col sm:flex-row gap-4">
-                  <Input
-                    type="email"
-                    placeholder={t("enterYourEmail")}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="flex-grow"
-                    required
-                  />
+                <form onSubmit={handleEmailSignup} className="flex flex-col sm:flex-row gap-4 items-center">
+                  <p className="flex-grow text-sm text-muted-foreground text-center sm:text-left">
+                    {user ? `${t("tipsSendToAccount")} ${user.email}` : t("tipsSignInPrompt")}
+                  </p>
                   <Button type="submit" disabled={emailLoading} size="lg">
                     {emailLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {t("subscribe")}
+                    {user ? t("subscribe") : t("getStarted")}
                   </Button>
                 </form>
               </CardContent>
+
             </Card>
           </div>
 
