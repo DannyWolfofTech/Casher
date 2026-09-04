@@ -6,6 +6,7 @@ import { sumCredits, sumSpending, type DirectionalTransaction } from "@/lib/tran
 
 export const useDashboardData = (userId: string | undefined, refreshKey: number) => {
   const [monthlySpending, setMonthlySpending] = useState(0);
+  const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [subscriptionCount, setSubscriptionCount] = useState(0);
   const [potentialSavings, setPotentialSavings] = useState(0);
 
@@ -24,13 +25,16 @@ export const useDashboardData = (userId: string | undefined, refreshKey: number)
 
       const { data: transactions } = await supabase
         .from('transactions')
-        .select('amount')
+        .select('*')
         .eq('user_id', userId)
         .gte('date', startOfMonth)
         .lte('date', endOfMonthStr);
 
-      const total = transactions?.reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0) || 0;
-      setMonthlySpending(total);
+      // Legacy rows have no direction and stay counted as spending.
+      const rows = (transactions ?? []) as unknown as DirectionalTransaction[];
+      setMonthlySpending(sumSpending(rows));
+      setMonthlyIncome(sumCredits(rows));
+
 
       const { data: subscriptions } = await supabase
         .from('detected_subscriptions')
