@@ -289,15 +289,33 @@ serve(async (req) => {
     const uniqueDates = [...new Set(parsed.transactions.map((t) => t.date))];
 
     const existingRows: Array<{ date: string; description: string; amount: number; direction: string | null }> = [];
+    // `direction` may not exist yet (pre-migration); fall back to a plain select.
+    let selectCols = "date, description, amount, direction";
     for (const dateChunk of chunk(uniqueDates, 200)) {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("transactions")
-        .select("date, description, amount, direction")
+        .select(selectCols)
         .eq("user_id", user.id)
         .in("date", dateChunk);
+      if (error && isMissingDbObject(error)) {
+        selectCols = "date, description, amount";
+        ({ data, error } = await supabase
+          .from("transactions")
+          .select(selectCols)
+          .eq("user_id", user.id)
+          .in("date", dateChunk));
+      }
       if (error) throw error;
-      existingRows.push(...((data ?? []) as typeof existingRows));
+      existingRows.push(
+        ...((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+          date: String(r.date),
+          description: String(r.description),
+          amount: Number(r.amount),
+          direction: (r.direction as string | null) ?? null,
+        })),
+      );
     }
+
 
     // Sign-preserving keys for modern rows; absolute-value keys for legacy
     // rows (import_version < 2) which were stored without a direction.
