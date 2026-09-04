@@ -23,7 +23,6 @@ const Pricing = () => {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [userTier, setUserTier] = useState<string>("free");
-  const [email, setEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
