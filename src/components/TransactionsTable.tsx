@@ -22,7 +22,10 @@ interface Transaction {
   description: string;
   amount: number;
   category: string | null;
+  /** null on legacy rows imported before signed cash-flow support. */
+  direction?: "debit" | "credit" | null;
 }
+
 
 interface TransactionsTableProps {
   refreshKey: number;
