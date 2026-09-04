@@ -8,6 +8,13 @@
 
 export const IMPORT_VERSION = 2;
 
+/**
+ * Category used for money-in rows. This is the ONLY direction signal that
+ * survives on databases where the `direction` column does not exist yet, so
+ * readers treat `category === INCOME_CATEGORY` as a credit.
+ */
+export const INCOME_CATEGORY = "Income";
+
 export type Direction = "debit" | "credit";
 
 export interface NormalizedTransaction {
@@ -510,7 +517,7 @@ export function parseTransactionsCsv(csvText: string, options: ParseOptions = {}
       description,
       amount: resolved.amount,
       direction: resolved.direction,
-      category: categorizeTransaction(description),
+      category: resolved.direction === "credit" ? INCOME_CATEGORY : categorizeTransaction(description),
       isSubscription,
       merchant: extractMerchant(description),
       rowNumber,
