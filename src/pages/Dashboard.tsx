@@ -10,7 +10,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardSummaryCards from "@/components/DashboardSummaryCards";
 import { OnboardingModal } from "@/components/OnboardingModal";
-import CSVUpload from "@/components/CSVUpload";
+import CSVUpload, { type UploadResult } from "@/components/CSVUpload";
 import SpendingChart from "@/components/SpendingChart";
 import SubscriptionsList from "@/components/SubscriptionsList";
 import SavingsGoals from "@/components/SavingsGoals";
