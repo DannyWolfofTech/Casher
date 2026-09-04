@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { captureApiError } from "@/lib/sentry";
+import { sumCredits, sumSpending, type DirectionalTransaction } from "@/lib/transactions";
+
 
 export const useDashboardData = (userId: string | undefined, refreshKey: number) => {
   const [monthlySpending, setMonthlySpending] = useState(0);
