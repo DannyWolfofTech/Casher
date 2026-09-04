@@ -16,11 +16,16 @@ import {
 
 type ParseFailureResult = Extract<ReturnType<typeof parseTransactionsCsv>, { ok: false }>;
 
-/** Narrow a parse result to its failure branch, throwing if it unexpectedly succeeded. */
+/**
+ * Narrow a parse result to its failure branch, throwing if it unexpectedly
+ * succeeded. The cast is explicit because the preview typechecker does not
+ * narrow the union through the `throw` above.
+ */
 function failure(result: ReturnType<typeof parseTransactionsCsv>): ParseFailureResult {
   if (result.ok) throw new Error("expected parse failure");
-  return result;
+  return result as ParseFailureResult;
 }
+
 
 describe("splitCsvRows", () => {
   it("handles quoted fields, escaped quotes and CRLF", () => {
