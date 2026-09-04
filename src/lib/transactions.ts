@@ -19,18 +19,30 @@ export type TransactionDirection = "debit" | "credit" | null | undefined;
  */
 export const INCOME_CATEGORY = "Income";
 
+/**
+ * High-confidence income descriptions used ONLY for legacy rows that have no
+ * `direction` at all. Whole-word matches only, and deliberately narrow: we do
+ * not infer income from "refund", "credit" or a positive amount.
+ */
+const LEGACY_INCOME_DESCRIPTION = /\b(salary|salaries|payroll|wages)\b/i;
+
 export interface DirectionalTransaction {
   amount: number | string;
   direction?: TransactionDirection;
   category?: string | null;
+  description?: string | null;
 }
 
 export function isCredit(t: DirectionalTransaction): boolean {
+  // Explicit direction always wins.
   if (t.direction === "credit") return true;
   if (t.direction === "debit") return false;
   // No direction column (pre-migration rows): fall back to the category tag.
-  return (t.category ?? "").trim().toLowerCase() === INCOME_CATEGORY.toLowerCase();
+  if ((t.category ?? "").trim().toLowerCase() === INCOME_CATEGORY.toLowerCase()) return true;
+  // Narrow legacy-only fallback for unmistakable income descriptions.
+  return LEGACY_INCOME_DESCRIPTION.test(t.description ?? "");
 }
+
 
 /** Legacy (null direction, non-Income) rows count as spending. */
 export function isSpending(t: DirectionalTransaction): boolean {
