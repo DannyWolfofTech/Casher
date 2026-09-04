@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { isAllowedPriceId, safeReturnOrigin } from "../_shared/stripe-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,6 +63,15 @@ serve(async (req) => {
       throw new Error("Price ID is required");
     }
 
+    // Fail closed: only prices we actually sell may be checked out.
+    if (!isAllowedPriceId(priceId)) {
+      console.error("Rejected unknown priceId");
+      return new Response(JSON.stringify({ error: "Unknown plan" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
     // Initialize Stripe with custom key
     const stripe = new Stripe(stripeKey, { 
       httpClient: Stripe.createFetchHttpClient() 
@@ -75,7 +85,10 @@ serve(async (req) => {
     console.log("Customer ID:", customerId || "none found");
 
     // Get origin for redirect URLs
-    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "") || "https://trycasher.com";
+    const origin = safeReturnOrigin(
+      req.headers.get("origin") || req.headers.get("referer"),
+      Deno.env.get("ALLOWED_REDIRECT_ORIGINS"),
+    );
     console.log("Using origin:", origin);
 
     // Create checkout session
@@ -105,8 +118,7 @@ serve(async (req) => {
       type: error.constructor.name
     });
     return new Response(JSON.stringify({ 
-      error: error.message,
-      details: error.stack 
+      error: error.message
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
