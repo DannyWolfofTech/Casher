@@ -27,11 +27,12 @@ describe("planCtaState", () => {
     expect(planCtaState("premium", true, "Premium").labelKey).toBe("currentPlan");
   });
 
-  it("offers checkout on non-current paid plans", () => {
+  it("offers checkout on non-current paid plans that are on sale", () => {
+    // Premium is intentionally not purchasable yet — see launch-readiness tests.
     expect(planCtaState("premium", true, "pro")).toEqual({
-      labelKey: "upgradeNow",
-      disabled: false,
-      action: "checkout",
+      labelKey: "comingSoonShort",
+      disabled: true,
+      action: "none",
     });
     expect(planCtaState("pro", false, null).action).toBe("checkout");
   });
