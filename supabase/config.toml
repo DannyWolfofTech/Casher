@@ -3,6 +3,8 @@ project_id = "ewnjmvxildwmbdmosasz"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
+  [functions.check-failed-webhooks]
+    verify_jwt = true
   [functions.check-subscription]
     verify_jwt = true
   [functions.create-checkout]
@@ -14,6 +16,6 @@ project_id = "ewnjmvxildwmbdmosasz"
   [functions.process-email-queue]
     verify_jwt = true
   [functions.send-welcome-email]
-    verify_jwt = false
+    verify_jwt = true
   [functions.stripe-webhook]
     verify_jwt = false
