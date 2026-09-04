@@ -26,6 +26,8 @@ const EMAIL_SUBJECTS: Record<string, string> = {
 }
 
 // Template mapping
+// Each template accepts its own props shape; the hook picks one by email type.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
   signup: SignupEmail,
   invite: InviteEmail,
@@ -142,7 +144,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   }
 
   // Verify signature + timestamp, then parse payload.
-  let payload: any
+  let payload: Record<string, unknown> & { run_id?: string }
   let run_id = ''
   try {
     const verified = await verifyWebhookRequest({
