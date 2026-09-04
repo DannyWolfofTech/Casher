@@ -2,11 +2,17 @@ export type PlanKey = "free" | "pro" | "premium";
 
 export interface PlanCtaState {
   /** Translation key for the button label. */
-  labelKey: "currentPlan" | "getStartedFree" | "upgradeNow";
+  labelKey: "currentPlan" | "getStartedFree" | "upgradeNow" | "comingSoonShort";
   disabled: boolean;
   /** What clicking the button should do. */
   action: "none" | "signup" | "checkout";
 }
+
+/**
+ * Premium is not purchasable until its differentiated features ship.
+ * Presentation-only flag: no Stripe product, price or entitlement changes.
+ */
+export const PREMIUM_PURCHASABLE = false;
 
 /**
  * Presentation-only mapping for the pricing card call to action.
@@ -28,6 +34,12 @@ export function planCtaState(
 
   if (isAuthenticated && tier === planKey) {
     return { labelKey: "currentPlan", disabled: true, action: "none" };
+  }
+
+  // Existing Premium subscribers keep their "Current plan" state above; for
+  // everyone else Premium is shown as coming soon and cannot start checkout.
+  if (planKey === "premium" && !PREMIUM_PURCHASABLE) {
+    return { labelKey: "comingSoonShort", disabled: true, action: "none" };
   }
 
   return { labelKey: "upgradeNow", disabled: false, action: "checkout" };

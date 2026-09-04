@@ -90,21 +90,22 @@ const Privacy = () => {
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-3">Cookies</h2>
             <p>
-              We use essential cookies for authentication and session management. We also use analytics 
-              cookies to improve our service. You can disable non-essential cookies in your browser settings.
+              We only use essential cookies and local browser storage for authentication and keeping you
+              signed in. Casher does not load advertising or analytics cookies, and we do not track you
+              across other websites.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-3">Contact</h2>
             <p>
-              For any privacy-related questions or requests, please contact us at privacy@casher.app
+              For any privacy-related questions or requests, please contact us at privacy@trycasher.com
             </p>
           </section>
 
           <div className="mt-8 p-4 bg-muted rounded-lg">
             <p className="text-sm">
-              <strong>Last updated:</strong> {new Date().toLocaleDateString()}
+              <strong>Last updated:</strong> 4 September 2026
             </p>
           </div>
         </div>

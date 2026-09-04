@@ -143,7 +143,7 @@ const About = () => {
 
       <footer className="border-t py-8 mt-16">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 {t("appName")}. {t("allRightsReserved")}.</p>
+          <p>&copy; {new Date().getFullYear()} {t("appName")}. {t("allRightsReserved")}.</p>
           <div className="flex gap-4 justify-center mt-2">
             <Button variant="link" onClick={() => navigate("/about")}>
               {t("about")}

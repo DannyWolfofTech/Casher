@@ -100,7 +100,9 @@ const Dashboard = () => {
           <CardHeader><CardTitle>{t("bankConnect")}</CardTitle><CardDescription>{t("bankConnectDesc")}</CardDescription></CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">{t("bankConnectPrompt")}</p>
-            <Button variant="outline">{t("joinWaitlist")}</Button>
+            <span className="inline-flex items-center rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground">
+              {t("bankConnectInDevelopment")}
+            </span>
           </CardContent>
         </Card>
       </main>

@@ -123,8 +123,8 @@ const resources = {
       // Coming Soon
       bankConnect: "Bank Connect (Coming Soon)",
       bankConnectDesc: "Connect your bank directly for automatic transaction tracking",
-      bankConnectPrompt: "Join the waitlist to get early access to automatic bank connections via Moneyhub API",
-      joinWaitlist: "Join Waitlist",
+      bankConnectPrompt: "Automatic bank connections are still in development. There is no waitlist to join yet — we will announce it here when it opens.",
+      bankConnectInDevelopment: "In development",
       
       // Table
       upgradeToProExport: "Upgrade to Pro",
@@ -296,8 +296,8 @@ const resources = {
       // Coming Soon
       bankConnect: "Conectare bancă (În curând)",
       bankConnectDesc: "Conectează-ți banca direct pentru urmărire automată a tranzacțiilor",
-      bankConnectPrompt: "Alătură-te listei de așteptare pentru acces timpuriu la conexiuni bancare automate",
-      joinWaitlist: "Alătură-te listei",
+      bankConnectPrompt: "Conexiunile bancare automate sunt încă în dezvoltare. Deocamdată nu există o listă de așteptare — vom anunța aici când se deschide.",
+      bankConnectInDevelopment: "În dezvoltare",
       
       // Table
       upgradeToProExport: "Actualizează la Pro",
@@ -469,8 +469,8 @@ const resources = {
       // Coming Soon
       bankConnect: "Conexión bancaria (Próximamente)",
       bankConnectDesc: "Conecta tu banco directamente para seguimiento automático de transacciones",
-      bankConnectPrompt: "Únete a la lista de espera para acceso temprano a conexiones bancarias automáticas",
-      joinWaitlist: "Unirse a lista",
+      bankConnectPrompt: "Las conexiones bancarias automáticas siguen en desarrollo. Todavía no hay lista de espera — lo anunciaremos aquí cuando se abra.",
+      bankConnectInDevelopment: "En desarrollo",
       
       // Table
       upgradeToProExport: "Actualizar a Pro",

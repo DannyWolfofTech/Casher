@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
-import { planCtaState, type PlanKey } from "@/lib/pricing-cta";
+import { planCtaState, PREMIUM_PURCHASABLE, type PlanKey } from "@/lib/pricing-cta";
 import { redirectToCheckout } from "@/lib/checkout-redirect";
 
 
@@ -60,18 +60,11 @@ const Pricing = () => {
 
     setLoadingTier(priceId);
     try {
-      console.log("Invoking create-checkout-session with priceId:", priceId);
-      
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
         body: { priceId },
       });
 
-      if (error) {
-        console.error("Supabase function error:", error);
-        throw error;
-      }
-
-      console.log("Checkout session response:", data);
+      if (error) throw error;
 
       // Same-tab navigation: a post-await window.open() is silently blocked as
       // an unsolicited popup, which produced a spinner-then-nothing no-op.
@@ -81,7 +74,6 @@ const Pricing = () => {
         error instanceof Error && error.message
           ? error.message
           : "We couldn't start checkout. Please try again in a moment.";
-      console.error("Checkout error:", error);
       toast({
         title: "Checkout unavailable",
         description: message,
@@ -134,6 +126,7 @@ const Pricing = () => {
       price: "£0",
       priceId: "",
       description: t("perfectForGettingStarted"),
+      comingSoon: false,
       features: [
         t("oneUploadPerMonth"),
         t("basicCategorization"),
@@ -153,6 +146,7 @@ const Pricing = () => {
       price: STRIPE_TIERS.pro.price,
       priceId: STRIPE_TIERS.pro.priceId,
       description: t("forRegularUsers"),
+      comingSoon: false,
       features: [
         t("unlimitedUploads"),
         t("advancedFiltersSearch"),
@@ -170,6 +164,7 @@ const Pricing = () => {
       price: STRIPE_TIERS.premium.price,
       priceId: STRIPE_TIERS.premium.priceId,
       description: t("forPowerUsers"),
+      comingSoon: !PREMIUM_PURCHASABLE,
       features: [
         t("allProFeatures"),
         t("aiInsights"),
@@ -206,13 +201,13 @@ const Pricing = () => {
             "@context": "https://schema.org",
             "@type": "Product",
             name: "Casher Premium",
-            description: "Everything in Pro, plus early access to upcoming AI insight features.",
+            description: "Everything in Pro, plus upcoming AI insight features. Not yet available to buy.",
             offers: {
               "@type": "Offer",
               price: "14.99",
               priceCurrency: "GBP",
               url: "https://trycasher.com/pricing",
-              availability: "https://schema.org/InStock",
+              availability: "https://schema.org/PreOrder",
             },
           },
         ]}
@@ -251,6 +246,11 @@ const Pricing = () => {
               {plan.popular && (
                   <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-semibold rounded-t-lg">
                     {t("mostPopular")}
+                  </div>
+                )}
+                {plan.comingSoon && (
+                  <div className="bg-muted text-muted-foreground text-center py-2 text-sm font-semibold rounded-t-lg">
+                    {t("comingSoonShort")}
                   </div>
                 )}
                 <CardHeader>
@@ -322,7 +322,12 @@ const Pricing = () => {
                     <th className="text-left p-3 md:p-4 font-semibold">{t("feature")}</th>
                     <th className="text-center p-3 md:p-4 font-semibold">{t("free")}</th>
                     <th className="text-center p-3 md:p-4 font-semibold bg-primary/10">{t("pro")}</th>
-                    <th className="text-center p-3 md:p-4 font-semibold">{t("premium")}</th>
+                    <th className="text-center p-3 md:p-4 font-semibold">
+                      {t("premium")}
+                      {!PREMIUM_PURCHASABLE && (
+                        <span className="block text-xs font-normal text-muted-foreground">{t("comingSoonShort")}</span>
+                      )}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
