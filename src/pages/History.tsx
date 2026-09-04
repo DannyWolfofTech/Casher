@@ -474,8 +474,8 @@ const History = () => {
           {/* Trend Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Monthly Fixed Costs Trend</CardTitle>
-              <CardDescription>Track your spending over time</CardDescription>
+              <CardTitle>Monthly Spending Trend</CardTitle>
+              <CardDescription>Total uploaded statement spending by month</CardDescription>
             </CardHeader>
             <CardContent>
               {trendData.length > 0 ? (
@@ -483,9 +483,10 @@ const History = () => {
                   <LineChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
+                    <YAxis tickFormatter={(value: number) => `£${Number(value).toLocaleString('en-GB')}`} />
+                    <Tooltip formatter={(value: number) => [`£${Number(value).toFixed(2)}`, 'Total spending']} />
                     <Legend />
+
                     <Line 
                       type="monotone" 
                       dataKey="cost" 
