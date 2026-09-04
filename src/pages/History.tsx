@@ -110,28 +110,9 @@ const History = () => {
         .order('upload_date', { ascending: true });
 
       if (uploads && uploads.length > 0) {
-        const trend = uploads.map(u => {
-          let dateObj: Date;
-          try {
-            dateObj = new Date(u.upload_date);
-            if (isNaN(dateObj.getTime()) && typeof u.upload_date === 'string' && u.upload_date.includes('/')) {
-              const parts = u.upload_date.split('/');
-              if (parts.length === 3) {
-                dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-              }
-            }
-          } catch (e) {
-            dateObj = new Date();
-          }
-          
-          return {
-            month: format(dateObj, 'MMM yyyy'),
-            cost: Number(u.total_spending),
-            date: dateObj
-          };
-        });
-        setTrendData(trend);
+        setTrendData(buildMonthlySpendingTrend(uploads));
       }
+
 
     } catch (error) {
       console.error('Error fetching history:', error);
