@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Check, ArrowLeft, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -23,7 +22,6 @@ const Pricing = () => {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [userTier, setUserTier] = useState<string>("free");
-  const [email, setEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -86,20 +84,14 @@ const Pricing = () => {
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes("@")) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
+    if (!user) {
+      navigate("/auth");
       return;
     }
 
     setEmailLoading(true);
     try {
-      const { error } = await supabase.functions.invoke("send-welcome-email", {
-        body: { email },
-      });
+      const { error } = await supabase.functions.invoke("send-welcome-email");
 
       if (error) throw error;
 
@@ -107,12 +99,10 @@ const Pricing = () => {
         title: "Success!",
         description: "Welcome email sent! Check your inbox for pro tips.",
       });
-      setEmail("");
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to subscribe";
+    } catch {
       toast({
         title: "Error",
-        description: message,
+        description: "We couldn't send that email. Please try again shortly.",
         variant: "destructive",
       });
     }
@@ -388,23 +378,19 @@ const Pricing = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleEmailSignup} className="flex flex-col sm:flex-row gap-4">
-                  <Input
-                    type="email"
-                    placeholder={t("enterYourEmail")}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="flex-grow"
-                    required
-                  />
+                <form onSubmit={handleEmailSignup} className="flex flex-col sm:flex-row gap-4 items-center">
+                  <p className="flex-grow text-sm text-muted-foreground text-center sm:text-left">
+                    {user ? `${t("tipsSendToAccount")} ${user.email}` : t("tipsSignInPrompt")}
+                  </p>
                   <Button type="submit" disabled={emailLoading} size="lg">
                     {emailLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {t("subscribe")}
+                    {user ? t("subscribe") : t("getStarted")}
                   </Button>
                 </form>
               </CardContent>
+
             </Card>
           </div>
 
