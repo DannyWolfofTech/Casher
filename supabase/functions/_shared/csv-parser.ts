@@ -344,13 +344,21 @@ export function categorizeTransaction(description: string): string {
 const SUBSCRIPTION_KEYWORDS = [
   "netflix", "spotify", "amazon prime", "disney", "apple music",
   "youtube premium", "hbo", "gym", "fitness", "subscription",
-  "monthly", "annual", "membership",
+  "membership",
 ];
 
+/** Housing costs are never subscriptions, however they are worded. */
+const NON_SUBSCRIPTION_PATTERN = /\b(rent|rental|mortgage|landlord|letting)\b/i;
+
 export function detectSubscription(description: string): boolean {
-  const lower = String(description ?? "").toLowerCase();
+  const raw = String(description ?? "");
+  // Fail closed for rent/mortgage before any keyword check.
+  if (NON_SUBSCRIPTION_PATTERN.test(raw)) return false;
+  const lower = raw.toLowerCase();
+  // Generic temporal words ("monthly", "annual") are NOT evidence on their own.
   return SUBSCRIPTION_KEYWORDS.some((k) => lower.includes(k));
 }
+
 
 export function detectFrequency(description: string): "monthly" | "annual" {
   return /\bannual|\byearly|\bper year/i.test(String(description ?? "")) ? "annual" : "monthly";
