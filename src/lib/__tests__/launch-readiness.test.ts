@@ -103,9 +103,10 @@ describe("icon-only controls have accessible names", () => {
     for (const file of files) {
       const src = read(file);
       // Match each <Button ...> opening tag that uses the icon size variant.
-      const tags = src.match(/<Button[^>]*size="icon"[^>]*>/g) ?? [];
-      for (const tag of tags) {
-        if (!/aria-label|title=/.test(tag)) offenders.push(`${file}: ${tag}`);
+      const tags = src.match(/<Button[^>]*size="icon"[\s\S]*?<\/Button>/g) ?? [];
+      for (const block of tags) {
+        // A name can come from aria-label, title, or visually hidden text.
+        if (!/aria-label|title=|sr-only/.test(block)) offenders.push(`${file}: ${block.slice(0, 120)}`);
       }
     }
     expect(offenders).toEqual([]);
