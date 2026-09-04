@@ -189,22 +189,19 @@ describe("parseTransactionsCsv", () => {
 
   it("fails with MISSING_COLUMNS when headers are unrecognisable", () => {
     const r = parseTransactionsCsv("Foo,Bar\n1,2");
-    expect(r.ok).toBe(false);
-    if (r.ok) return;
+    if (r.ok) throw new Error("expected parse failure");
     expect(r.code).toBe("MISSING_COLUMNS");
   });
 
   it("fails with EMPTY_FILE for blank input", () => {
     const r = parseTransactionsCsv("   ");
-    expect(r.ok).toBe(false);
-    if (r.ok) return;
+    if (r.ok) throw new Error("expected parse failure");
     expect(r.code).toBe("EMPTY_FILE");
   });
 
   it("fails with NO_VALID_ROWS when every row is unusable", () => {
     const r = parseTransactionsCsv("Date,Description,Amount\nzz,,\nyy,,");
-    expect(r.ok).toBe(false);
-    if (r.ok) return;
+    if (r.ok) throw new Error("expected parse failure");
     expect(r.code).toBe("NO_VALID_ROWS");
   });
 
@@ -213,8 +210,7 @@ describe("parseTransactionsCsv", () => {
       .concat(Array.from({ length: 5 }, (_, i) => `0${i + 1}/03/2024,Row ${i},-1.00`))
       .join("\n");
     const r = parseTransactionsCsv(many, { maxRows: 3 });
-    expect(r.ok).toBe(false);
-    if (r.ok) return;
+    if (r.ok) throw new Error("expected parse failure");
     expect(r.code).toBe("TOO_MANY_ROWS");
   });
 });
