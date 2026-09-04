@@ -258,9 +258,10 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
                         {new Date(transaction.date).toLocaleDateString('en-GB')}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">{transaction.description}</TableCell>
-                      <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                        £{Math.abs(transaction.amount).toFixed(2)}
+                      <TableCell className={`text-right font-medium ${isCredit(transaction) ? 'text-primary' : 'text-foreground'}`}>
+                        {formatSignedAmount(transaction)}
                       </TableCell>
+
                       <TableCell>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           transaction.category === 'Subscription' 
