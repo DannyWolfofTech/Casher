@@ -6,6 +6,7 @@ import {
   nextTransactionCategory,
   normalizeName,
   summarizeSubscriptions,
+  syncLinkedSubscriptionStatus,
   type LinkableSubscription,
 } from "@/lib/subscription-link";
 
@@ -92,5 +93,70 @@ describe("cancel toggle state mapping", () => {
   it("maps the transaction category for both directions", () => {
     expect(nextTransactionCategory(true)).toBe(CANCELED_CATEGORY);
     expect(nextTransactionCategory(false)).toBe("Subscription");
+  });
+});
+
+describe("syncLinkedSubscriptionStatus", () => {
+  const tx = { description: "NETFLIX.COM LONDON", amount: -10.99 };
+
+  it("updates exactly the linked subscription", async () => {
+    const calls: Array<[string, string]> = [];
+    const result = await syncLinkedSubscriptionStatus(tx, true, {
+      listSubscriptions: async () => subs,
+      updateSubscriptionStatus: async (id, status) => {
+        calls.push([id, status]);
+      },
+    });
+    expect(result).toEqual({ linked: true, subscriptionId: "s1" });
+    expect(calls).toEqual([["s1", "canceled"]]);
+  });
+
+  it("writes nothing when there is no unambiguous link", async () => {
+    let wrote = false;
+    const result = await syncLinkedSubscriptionStatus(
+      { description: "Tesco Stores", amount: -42 },
+      true,
+      {
+        listSubscriptions: async () => subs,
+        updateSubscriptionStatus: async () => {
+          wrote = true;
+        },
+      },
+    );
+    expect(result).toEqual({ linked: false });
+    expect(wrote).toBe(false);
+  });
+
+  it("propagates a select error instead of reporting success", async () => {
+    await expect(
+      syncLinkedSubscriptionStatus(tx, true, {
+        listSubscriptions: async () => {
+          throw new Error("select failed");
+        },
+        updateSubscriptionStatus: async () => {},
+      }),
+    ).rejects.toThrow("select failed");
+  });
+
+  it("propagates an update error instead of reporting success", async () => {
+    await expect(
+      syncLinkedSubscriptionStatus(tx, false, {
+        listSubscriptions: async () => subs,
+        updateSubscriptionStatus: async () => {
+          throw new Error("update failed");
+        },
+      }),
+    ).rejects.toThrow("update failed");
+  });
+
+  it("uncancels with the active status", async () => {
+    const calls: Array<[string, string]> = [];
+    await syncLinkedSubscriptionStatus({ description: "Spotify", amount: 9.99 }, false, {
+      listSubscriptions: async () => subs,
+      updateSubscriptionStatus: async (id, status) => {
+        calls.push([id, status]);
+      },
+    });
+    expect(calls).toEqual([["s2", "active"]]);
   });
 });

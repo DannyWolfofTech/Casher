@@ -38,16 +38,34 @@ describe("safeReturnOrigin", () => {
     expect(safeReturnOrigin("https://trycasher.com")).toBe("https://trycasher.com");
   });
 
-  it("allows lovable preview hosts", () => {
-    expect(safeReturnOrigin("https://id-preview--abc123.lovable.app")).toBe(
-      "https://id-preview--abc123.lovable.app",
-    );
+  it.each([
+    "https://id-preview--ea77ebbb-78bd-46c4-a0c9-0ab73994a416.lovable.app",
+    "https://preview--trycasher-com.lovable.app",
+    "https://ea77ebbb-78bd-46c4-a0c9-0ab73994a416.lovableproject.com",
+    "https://www.trycasher.com",
+    "http://localhost:8080",
+  ])("allows the exact Casher origin %s", (origin) => {
+    expect(safeReturnOrigin(origin)).toBe(origin);
+  });
+
+  it("rejects arbitrary Lovable projects", () => {
+    for (const origin of [
+      "https://someone-elses-app.lovable.app",
+      "https://id-preview--00000000-0000-0000-0000-000000000000.lovable.app",
+      "https://attacker.lovableproject.com",
+    ]) {
+      expect(isAllowedOrigin(origin)).toBe(false);
+      expect(safeReturnOrigin(origin)).toBe(CANONICAL_ORIGIN);
+    }
   });
 
   it("rejects a forged origin and falls back to canonical", () => {
     expect(safeReturnOrigin("https://evil.example.com")).toBe(CANONICAL_ORIGIN);
     expect(safeReturnOrigin("https://trycasher.com.evil.com")).toBe(CANONICAL_ORIGIN);
     expect(safeReturnOrigin("https://evil.lovable.app.attacker.net")).toBe(CANONICAL_ORIGIN);
+    expect(safeReturnOrigin("https://preview--trycasher-com.lovable.app.evil.net")).toBe(
+      CANONICAL_ORIGIN,
+    );
   });
 
   it("falls back on missing or malformed headers", () => {

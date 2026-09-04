@@ -98,3 +98,32 @@ export const CANCELED_CATEGORY = "Canceled Subscription";
 export function nextTransactionCategory(canceled: boolean): string {
   return canceled ? CANCELED_CATEGORY : "Subscription";
 }
+
+export type CancellationSyncResult =
+  | { linked: false }
+  | { linked: true; subscriptionId: string };
+
+export interface CancellationSyncDeps {
+  /** Load candidate subscriptions. Must throw on database errors. */
+  listSubscriptions: () => Promise<LinkableSubscription[]>;
+  /** Persist the new status for exactly one subscription. Must throw on failure. */
+  updateSubscriptionStatus: (id: string, status: string) => Promise<void>;
+}
+
+/**
+ * Flip the status of the single detected subscription linked to a transaction.
+ *
+ * Database errors are propagated (never swallowed) so the caller can compensate
+ * and report failure. When no unambiguous link exists, nothing is written.
+ */
+export async function syncLinkedSubscriptionStatus(
+  transaction: LinkableTransaction,
+  canceled: boolean,
+  deps: CancellationSyncDeps,
+): Promise<CancellationSyncResult> {
+  const subs = await deps.listSubscriptions();
+  const match = findLinkedSubscription(transaction, subs);
+  if (!match) return { linked: false };
+  await deps.updateSubscriptionStatus(match.id, canceled ? "canceled" : "active");
+  return { linked: true, subscriptionId: match.id };
+}
