@@ -160,6 +160,13 @@ serve(async (req) => {
       batchSubsCount: Number(prior.subscriptions_count ?? 0),
       batchAnnualSavings: Number(prior.potential_savings ?? 0),
       message: "You already uploaded this exact file recently — nothing was imported again.",
+      usage: {
+        uploadsUsed,
+        uploadLimit,
+        tier,
+        canUpload: uploadLimit === null || uploadsUsed < uploadLimit,
+      },
+
     }, 200);
   }
 
