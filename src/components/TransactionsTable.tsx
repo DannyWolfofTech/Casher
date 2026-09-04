@@ -94,13 +94,15 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
       return;
     }
 
-    const headers = ['Date', 'Description', 'Amount', 'Category'];
+    const headers = ['Date', 'Description', 'Amount', 'Direction', 'Category'];
     const rows = transactions.map(t => [
       t.date,
       `"${t.description.replace(/"/g, '""')}"`,
       t.amount,
+      isCredit(t) ? 'credit' : 'debit',
       t.category || 'Uncategorized'
     ]);
+
     
     const csv = [
       headers.join(','),
