@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -15,7 +15,7 @@ export const useAuth = () => {
   const navigate = useNavigate();
   const lastSubCheckRef = useRef<number>(0);
 
-  const fetchUploadUsage = async (tierHint?: string) => {
+  const fetchUploadUsage = useCallback(async (tierHint?: string) => {
     const { data: usageRows } = await supabase.rpc("get_upload_usage" as never);
     const rawUsage: unknown = usageRows;
     const usage = (Array.isArray(rawUsage) ? rawUsage[0] : rawUsage) as UploadUsage | null | undefined;
@@ -25,9 +25,9 @@ export const useAuth = () => {
     setUploadsUsed(allowance.uploadsUsed);
     setCanUpload(allowance.canUpload);
     return allowance;
-  };
+  }, []);
 
-  const checkSubscription = async () => {
+  const checkSubscription = useCallback(async () => {
     // Throttle: at most once every 60s, regardless of trigger
     const now = Date.now();
     if (now - lastSubCheckRef.current < 60_000) return;
@@ -44,7 +44,7 @@ export const useAuth = () => {
     } catch (error) {
       console.error("Error checking subscription:", error);
     }
-  };
+  }, [fetchUploadUsage]);
 
 
   useEffect(() => {
@@ -141,7 +141,7 @@ export const useAuth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [checkSubscription, navigate]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
