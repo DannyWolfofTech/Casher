@@ -171,13 +171,24 @@ serve(async (req) => {
   }
 
   // ------------------------------------------------------- reserve quota
+  //
+  // The strict path is reserve_upload_slot (row-locked, database time). Until
+  // that function exists in the database, fall back to a non-atomic read of the
+  // profile so uploads keep working; the fallback is still SERVER-side.
   let reservation: ReservationResult;
+  let usedFallbackQuota = false;
   try {
     reservation = await reserveUploadSlot(supabase, user.id);
   } catch (err) {
-    console.error("[process-csv] reserve_upload_slot failed", err);
-    return fail("QUOTA_UNAVAILABLE", "We could not verify your upload allowance. Please try again.", 500);
+    if (!isMissingDbObject(err)) {
+      console.error("[process-csv] reserve_upload_slot failed", err);
+      return fail("QUOTA_UNAVAILABLE", "We could not verify your upload allowance. Please try again.", 500);
+    }
+    console.warn("[process-csv] reserve_upload_slot missing — using fallback quota check");
+    usedFallbackQuota = true;
+    reservation = await fallbackReserve(supabase, user.id);
   }
+
 
   if (!reservation.allowed) {
     // SQL returns lowercase reasons; compare case-insensitively.
