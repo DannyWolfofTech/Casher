@@ -184,27 +184,35 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
    * subscription row in the same state. Only an unambiguous single match
    * (same amount + recognisable service name) is ever touched.
    */
-  const syncLinkedSubscription = async (transaction: Transaction, canceled: boolean) => {
-    const { data: subs, error } = await supabase
-      .from('detected_subscriptions')
-      .select('id, service_name, amount, status, estimated_annual_cost');
-
-    if (error || !subs) return;
-
-    const match = findLinkedSubscription(transaction, subs);
-    if (!match) return;
-
-    await supabase
-      .from('detected_subscriptions')
-      .update({ status: canceled ? 'canceled' : 'active' })
-      .eq('id', match.id);
-  };
+  /**
+   * Flip the linked detected subscription. Database errors are surfaced, never
+   * swallowed, so the caller can compensate and report failure.
+   */
+  const syncLinkedSubscription = (transaction: Transaction, canceled: boolean) =>
+    syncLinkedSubscriptionStatus(transaction, canceled, {
+      listSubscriptions: async () => {
+        const { data, error } = await supabase
+          .from('detected_subscriptions')
+          .select('id, service_name, amount, status, estimated_annual_cost');
+        if (error) throw error;
+        return data ?? [];
+      },
+      updateSubscriptionStatus: async (id, status) => {
+        const { error } = await supabase
+          .from('detected_subscriptions')
+          .update({ status })
+          .eq('id', id);
+        if (error) throw error;
+      },
+    });
 
   const handleMarkCanceled = async () => {
     const transaction = cancelModal.transaction;
     if (!transaction) return;
 
     const canceled = transaction.category !== CANCELED_CATEGORY;
+    const previousCategory = transaction.category;
+    let categoryChanged = false;
 
     try {
       const { error } = await supabase
@@ -213,6 +221,7 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
         .eq('id', transaction.id);
 
       if (error) throw error;
+      categoryChanged = true;
 
       await syncLinkedSubscription(transaction, canceled);
 
@@ -225,12 +234,24 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
       fetchTransactions();
       onDataChanged?.();
     } catch (error) {
+      // Compensate: the subscription write failed after the category write, so
+      // roll the transaction back rather than leaving the two out of sync.
+      if (categoryChanged) {
+        const { error: revertError } = await supabase
+          .from('transactions')
+          .update({ category: previousCategory })
+          .eq('id', transaction.id);
+        if (revertError) {
+          captureApiError(revertError, { operation: 'markSubscriptionCanceledRevert' });
+        }
+      }
       captureApiError(error, { operation: 'markSubscriptionCanceled' });
       toast({
         title: t('error'),
         description: t('failedToUpdate'),
         variant: 'destructive',
       });
+      fetchTransactions();
     }
   };
 
