@@ -96,25 +96,43 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
           body: { csv: text }
         });
 
-        if (error) throw error;
+        if (error) {
+          const structured = await readStructuredError(error);
+          if (structured) {
+            captureApiError(error, { operation: 'csvUpload', code: structured.code });
+            toast({
+              title: structured.code === 'QUOTA_EXCEEDED'
+                ? t("uploadLimitReached")
+                : "Upload failed",
+              description: structured.message,
+              variant: "destructive",
+            });
+            // Let the dashboard sync its counter with server truth.
+            if (structured.usage) onUploadComplete({ code: structured.code, usage: structured.usage });
+            return;
+          }
+          throw error;
+        }
 
-        const dupeMsg = data.duplicatesSkipped > 0 
-          ? ` (${data.duplicatesSkipped} duplicates skipped)` 
-          : '';
+        if (data?.replay) {
+          toast({
+            title: "Already uploaded",
+            description: data.message,
+          });
+        } else {
+          const dupeMsg = data.duplicatesSkipped > 0
+            ? ` (${data.duplicatesSkipped} duplicates skipped)`
+            : '';
 
-        toast({
-          title: t("successProcessed", {
-            transactions: data.transactionsCount,
-            subscriptions: data.subscriptionsCount
-          }) + dupeMsg,
-        });
+          toast({
+            title: t("successProcessed", {
+              transactions: data.transactionsCount,
+              subscriptions: data.subscriptionsCount
+            }) + dupeMsg,
+          });
+        }
 
-        onUploadComplete({
-          batchSpending: data.batchSpending,
-          batchSubsCount: data.batchSubsCount,
-          batchAnnualSavings: data.batchAnnualSavings,
-          transactionsCount: data.transactionsCount,
-        });
+        onUploadComplete(data as UploadResult);
       } catch (error: unknown) {
         captureApiError(error, { operation: 'csvUpload' });
         const message = error instanceof Error ? error.message : t("errorProcessing");
@@ -123,6 +141,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
           description: message,
           variant: "destructive",
         });
+
       } finally {
         setLoading(false);
       }
