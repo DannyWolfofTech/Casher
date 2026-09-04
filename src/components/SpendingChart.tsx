@@ -38,19 +38,23 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
 
       const { data: transactions, error } = await supabase
         .from('transactions')
-        .select('category, amount')
+        .select('*')
         .eq('user_id', user.id)
         .gte('date', startOfMonth)
         .lte('date', endOfMonthStr);
 
       if (error) throw error;
 
-      // Group by category and sum amounts
+      // Group spending by category. Credits (money in) are excluded; legacy
+      // rows with no direction remain counted as spending.
       const categoryTotals: { [key: string]: number } = {};
-      (transactions || []).forEach((t) => {
+      ((transactions ?? []) as unknown as Array<{ category: string | null } & DirectionalTransaction>).forEach((t) => {
+        const value = spendingAmount(t);
+        if (value <= 0) return;
         const category = t.category || 'Other';
-        categoryTotals[category] = (categoryTotals[category] || 0) + Math.abs(parseFloat(String(t.amount)));
+        categoryTotals[category] = (categoryTotals[category] || 0) + value;
       });
+
 
       const chartData = Object.entries(categoryTotals)
         .filter(([_, value]) => value > 0)
