@@ -91,9 +91,11 @@ const Index = () => {
           </div>
           <aside className="md:col-span-4 flex flex-col justify-end">
             <div className="border-t-4 border-primary pt-6">
-              <span className="block text-5xl font-serif mb-2 text-foreground">£420.00</span>
-              <p className="text-xs uppercase tracking-[0.2em] text-foreground/50 font-bold">
-                Average annual leak recovered
+              <p className="block text-2xl md:text-3xl font-serif mb-3 text-foreground">
+                {t("heroHighlightTitle")}
+              </p>
+              <p className="text-sm text-foreground/60 leading-relaxed">
+                {t("heroHighlightBody")}
               </p>
             </div>
           </aside>
@@ -185,7 +187,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-foreground/10 py-10">
         <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-foreground/70">
-          <p>&copy; 2025 {t("appName")}. {t("allRightsReserved")}.</p>
+          <p>&copy; {new Date().getFullYear()} {t("appName")}. {t("allRightsReserved")}.</p>
           <div className="flex gap-6">
             <button onClick={() => navigate("/about")} className="hover:text-foreground transition-colors">{t("about")}</button>
             <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">{t("privacyPolicy")}</button>
