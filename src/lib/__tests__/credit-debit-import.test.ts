@@ -28,9 +28,10 @@ const FIXTURE = [
 
 const parsed = (() => {
   const result = parseTransactionsCsv(FIXTURE);
-  if (!result.ok) throw new Error(`fixture failed to parse: ${result.message}`);
+  if (result.ok !== true) throw new Error("fixture failed to parse");
   return result;
 })();
+
 
 /** What the pre-migration database keeps: no direction column, |amount|. */
 const asLegacyRows = (): DirectionalTransaction[] =>
