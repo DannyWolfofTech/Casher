@@ -126,6 +126,7 @@ const Pricing = () => {
       price: "£0",
       priceId: "",
       description: t("perfectForGettingStarted"),
+      comingSoon: false,
       features: [
         t("oneUploadPerMonth"),
         t("basicCategorization"),
@@ -145,6 +146,7 @@ const Pricing = () => {
       price: STRIPE_TIERS.pro.price,
       priceId: STRIPE_TIERS.pro.priceId,
       description: t("forRegularUsers"),
+      comingSoon: false,
       features: [
         t("unlimitedUploads"),
         t("advancedFiltersSearch"),
