@@ -10,6 +10,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import logoFull from "@/assets/logo-full.png";
 import { format } from "date-fns";
+import { buildMonthlySpendingTrend, type MonthlySpendingPoint } from "@/lib/monthly-spending";
+
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,11 +19,8 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-interface HistoricalData {
-  month: string;
-  cost: number;
-  date: Date;
-}
+type HistoricalData = MonthlySpendingPoint;
+
 
 interface CategoryData {
   name: string;
