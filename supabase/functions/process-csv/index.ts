@@ -180,7 +180,8 @@ serve(async (req) => {
   }
 
   if (!reservation.allowed) {
-    if (reservation.reason === "PROFILE_NOT_FOUND") {
+    // SQL returns lowercase reasons; compare case-insensitively.
+    if ((reservation.reason ?? "").toLowerCase() === "profile_not_found") {
       return fail("PROFILE_NOT_FOUND", "We could not find your account profile.", 403, {
         usage: usagePayload(reservation),
       });
@@ -189,6 +190,7 @@ serve(async (req) => {
       usage: usagePayload(reservation),
     });
   }
+
 
   // ----------------------------------------------------------- do the work
   try {
