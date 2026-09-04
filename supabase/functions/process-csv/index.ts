@@ -61,6 +61,87 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+/**
+ * True when Postgres/PostgREST rejected the call because the function or column
+ * does not exist yet (the Phase A migration has not been applied).
+ * 42883 = undefined_function, 42703 = undefined_column, PGRST202 = no such RPC.
+ */
+function isMissingDbObject(err: unknown): boolean {
+  const e = err as { code?: string; message?: string } | null;
+  const code = e?.code ?? "";
+  const message = (e?.message ?? String(err ?? "")).toLowerCase();
+  return (
+    code === "42883" ||
+    code === "42703" ||
+    code === "PGRST202" ||
+    code === "PGRST204" ||
+    message.includes("does not exist") ||
+    message.includes("could not find") ||
+    message.includes("schema cache")
+  );
+}
+
+/** Non-atomic server-side allowance check used only before the migration lands. */
+async function fallbackReserve(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<ReservationResult> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("subscription_tier, monthly_uploads_used, uploads_reset_date")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!profile) {
+    return { allowed: false, uploadsUsed: 0, uploadLimit: 0, tier: "free", reason: "profile_not_found" };
+  }
+
+  const tier = String(profile.subscription_tier ?? "free");
+  const uploadLimit = tier === "free" ? 1 : null;
+
+  // Calendar-month reset decided by SERVER time, never the browser clock.
+  const now = new Date();
+  const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const resetDate = profile.uploads_reset_date ? new Date(String(profile.uploads_reset_date)) : null;
+  const stale = !resetDate || resetDate.getTime() < periodStart.getTime();
+  const used = stale ? 0 : Number(profile.monthly_uploads_used ?? 0);
+
+  if (uploadLimit !== null && used >= uploadLimit) {
+    return { allowed: false, uploadsUsed: used, uploadLimit, tier, reason: "quota_exceeded" };
+  }
+
+  const next = used + 1;
+  await supabase
+    .from("profiles")
+    .update({
+      monthly_uploads_used: next,
+      uploads_reset_date: periodStart.toISOString().slice(0, 10),
+    })
+    .eq("user_id", userId);
+
+  return { allowed: true, uploadsUsed: next, uploadLimit, tier, reason: null };
+}
+
+/** Fallback release for the pre-migration path. */
+async function fallbackRelease(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<boolean> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("monthly_uploads_used")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!profile) return false;
+  const next = Math.max(Number(profile.monthly_uploads_used ?? 0) - 1, 0);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ monthly_uploads_used: next })
+    .eq("user_id", userId);
+  return !error;
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -171,16 +252,28 @@ serve(async (req) => {
   }
 
   // ------------------------------------------------------- reserve quota
+  //
+  // The strict path is reserve_upload_slot (row-locked, database time). Until
+  // that function exists in the database, fall back to a non-atomic read of the
+  // profile so uploads keep working; the fallback is still SERVER-side.
   let reservation: ReservationResult;
+  let usedFallbackQuota = false;
   try {
     reservation = await reserveUploadSlot(supabase, user.id);
   } catch (err) {
-    console.error("[process-csv] reserve_upload_slot failed", err);
-    return fail("QUOTA_UNAVAILABLE", "We could not verify your upload allowance. Please try again.", 500);
+    if (!isMissingDbObject(err)) {
+      console.error("[process-csv] reserve_upload_slot failed", err);
+      return fail("QUOTA_UNAVAILABLE", "We could not verify your upload allowance. Please try again.", 500);
+    }
+    console.warn("[process-csv] reserve_upload_slot missing — using fallback quota check");
+    usedFallbackQuota = true;
+    reservation = await fallbackReserve(supabase, user.id);
   }
 
+
   if (!reservation.allowed) {
-    if (reservation.reason === "PROFILE_NOT_FOUND") {
+    // SQL returns lowercase reasons; compare case-insensitively.
+    if ((reservation.reason ?? "").toLowerCase() === "profile_not_found") {
       return fail("PROFILE_NOT_FOUND", "We could not find your account profile.", 403, {
         usage: usagePayload(reservation),
       });
@@ -190,20 +283,39 @@ serve(async (req) => {
     });
   }
 
+
   // ----------------------------------------------------------- do the work
   try {
     const uniqueDates = [...new Set(parsed.transactions.map((t) => t.date))];
 
     const existingRows: Array<{ date: string; description: string; amount: number; direction: string | null }> = [];
+    // `direction` may not exist yet (pre-migration); fall back to a plain select.
+    let selectCols = "date, description, amount, direction";
     for (const dateChunk of chunk(uniqueDates, 200)) {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("transactions")
-        .select("date, description, amount, direction")
+        .select(selectCols)
         .eq("user_id", user.id)
         .in("date", dateChunk);
+      if (error && isMissingDbObject(error)) {
+        selectCols = "date, description, amount";
+        ({ data, error } = await supabase
+          .from("transactions")
+          .select(selectCols)
+          .eq("user_id", user.id)
+          .in("date", dateChunk));
+      }
       if (error) throw error;
-      existingRows.push(...((data ?? []) as typeof existingRows));
+      existingRows.push(
+        ...((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+          date: String(r.date),
+          description: String(r.description),
+          amount: Number(r.amount),
+          direction: (r.direction as string | null) ?? null,
+        })),
+      );
     }
+
 
     // Sign-preserving keys for modern rows; absolute-value keys for legacy
     // rows (import_version < 2) which were stored without a direction.
@@ -245,10 +357,21 @@ serve(async (req) => {
 
       for (const part of chunk(rows, INSERT_CHUNK)) {
         const { error } = await supabase.from("transactions").insert(part);
-        if (error) throw error;
+        if (error) {
+          if (!isMissingDbObject(error)) throw error;
+          // Pre-migration: no direction/import_version columns. Write the
+          // legacy shape (unsigned magnitude) so existing screens keep working.
+          const legacyPart = part.map(({ direction: _d, import_version: _v, ...rest }) => ({
+            ...rest,
+            amount: Math.abs(Number(rest.amount)),
+          }));
+          const { error: legacyError } = await supabase.from("transactions").insert(legacyPart);
+          if (legacyError) throw legacyError;
+        }
         insertedTxnCount += part.length;
       }
     }
+
 
     // Subscriptions are derived from DEBITS only.
     const subscriptionMap = buildSubscriptions(fresh);
@@ -307,16 +430,23 @@ serve(async (req) => {
     const batchSubsCount = subsToInsert.length + subsUpdated;
 
     // Upload history is written SERVER-SIDE only, after the work succeeded.
-    const { error: historyError } = await supabase.from("upload_history").insert({
+    const historyRow = {
       user_id: user.id,
       total_spending: Number(batchSpending.toFixed(2)),
-      total_credits: Number(batchCredits.toFixed(2)),
       subscriptions_count: batchSubsCount,
       potential_savings: Number(batchAnnualSavings.toFixed(2)),
       transaction_count: insertedTxnCount,
-      csv_hash: csvHash,
-    });
-    if (historyError) throw historyError;
+    };
+    const { error: historyError } = await supabase
+      .from("upload_history")
+      .insert({ ...historyRow, total_credits: Number(batchCredits.toFixed(2)), csv_hash: csvHash });
+    if (historyError) {
+      if (!isMissingDbObject(historyError)) throw historyError;
+      // Pre-migration: csv_hash/total_credits do not exist yet.
+      const { error: legacyHistoryError } = await supabase.from("upload_history").insert(historyRow);
+      if (legacyHistoryError) throw legacyHistoryError;
+    }
+
 
     return json({
       ok: true,
@@ -337,8 +467,11 @@ serve(async (req) => {
     }, 200);
   } catch (error) {
     // Compensate: the slot was reserved but the work failed.
-    const released = await releaseUploadSlot(supabase, user.id);
+    const released = usedFallbackQuota
+      ? await fallbackRelease(supabase, user.id)
+      : await releaseUploadSlot(supabase, user.id);
     console.error("[process-csv] processing failed", { released, error });
+
     return fail(
       "PROCESSING_FAILED",
       "We couldn't finish importing your statement. Your upload allowance was not used — please try again.",

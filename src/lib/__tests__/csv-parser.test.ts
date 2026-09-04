@@ -14,6 +14,19 @@ import {
   normalizeDescription,
 } from "../../../supabase/functions/_shared/csv-parser";
 
+type ParseFailureResult = Extract<ReturnType<typeof parseTransactionsCsv>, { ok: false }>;
+
+/**
+ * Narrow a parse result to its failure branch, throwing if it unexpectedly
+ * succeeded. The cast is explicit because the preview typechecker does not
+ * narrow the union through the `throw` above.
+ */
+function failure(result: ReturnType<typeof parseTransactionsCsv>): ParseFailureResult {
+  if (result.ok) throw new Error("expected parse failure");
+  return result as ParseFailureResult;
+}
+
+
 describe("splitCsvRows", () => {
   it("handles quoted fields, escaped quotes and CRLF", () => {
     const rows = splitCsvRows('a,b\r\n"x,1","he said ""hi"""\r\n');
@@ -189,20 +202,20 @@ describe("parseTransactionsCsv", () => {
 
   it("fails with MISSING_COLUMNS when headers are unrecognisable", () => {
     const r = parseTransactionsCsv("Foo,Bar\n1,2");
-    if (r.ok) throw new Error("expected parse failure");
-    expect(r.code).toBe("MISSING_COLUMNS");
+    expect(r.ok).toBe(false);
+    expect(failure(r).code).toBe("MISSING_COLUMNS");
   });
 
   it("fails with EMPTY_FILE for blank input", () => {
     const r = parseTransactionsCsv("   ");
-    if (r.ok) throw new Error("expected parse failure");
-    expect(r.code).toBe("EMPTY_FILE");
+    expect(r.ok).toBe(false);
+    expect(failure(r).code).toBe("EMPTY_FILE");
   });
 
   it("fails with NO_VALID_ROWS when every row is unusable", () => {
     const r = parseTransactionsCsv("Date,Description,Amount\nzz,,\nyy,,");
-    if (r.ok) throw new Error("expected parse failure");
-    expect(r.code).toBe("NO_VALID_ROWS");
+    expect(r.ok).toBe(false);
+    expect(failure(r).code).toBe("NO_VALID_ROWS");
   });
 
   it("fails with TOO_MANY_ROWS past the limit", () => {
@@ -210,8 +223,8 @@ describe("parseTransactionsCsv", () => {
       .concat(Array.from({ length: 5 }, (_, i) => `0${i + 1}/03/2024,Row ${i},-1.00`))
       .join("\n");
     const r = parseTransactionsCsv(many, { maxRows: 3 });
-    if (r.ok) throw new Error("expected parse failure");
-    expect(r.code).toBe("TOO_MANY_ROWS");
+    expect(r.ok).toBe(false);
+    expect(failure(r).code).toBe("TOO_MANY_ROWS");
   });
 });
 
