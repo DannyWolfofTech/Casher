@@ -430,16 +430,23 @@ serve(async (req) => {
     const batchSubsCount = subsToInsert.length + subsUpdated;
 
     // Upload history is written SERVER-SIDE only, after the work succeeded.
-    const { error: historyError } = await supabase.from("upload_history").insert({
+    const historyRow = {
       user_id: user.id,
       total_spending: Number(batchSpending.toFixed(2)),
-      total_credits: Number(batchCredits.toFixed(2)),
       subscriptions_count: batchSubsCount,
       potential_savings: Number(batchAnnualSavings.toFixed(2)),
       transaction_count: insertedTxnCount,
-      csv_hash: csvHash,
-    });
-    if (historyError) throw historyError;
+    };
+    const { error: historyError } = await supabase
+      .from("upload_history")
+      .insert({ ...historyRow, total_credits: Number(batchCredits.toFixed(2)), csv_hash: csvHash });
+    if (historyError) {
+      if (!isMissingDbObject(historyError)) throw historyError;
+      // Pre-migration: csv_hash/total_credits do not exist yet.
+      const { error: legacyHistoryError } = await supabase.from("upload_history").insert(historyRow);
+      if (legacyHistoryError) throw legacyHistoryError;
+    }
+
 
     return json({
       ok: true,
