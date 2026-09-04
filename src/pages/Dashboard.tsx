@@ -96,7 +96,7 @@ const Dashboard = () => {
         <UploadHistory userId={user?.id} refreshKey={refreshKey} />
         <TransactionsTable refreshKey={refreshKey} userTier={userTier} onDataChanged={() => setRefreshKey(prev => prev + 1)} />
         <SavingsGoals />
-        <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+        <Card className="border-primary/30 bg-card shadow-sm">
           <CardHeader><CardTitle>{t("bankConnect")}</CardTitle><CardDescription>{t("bankConnectDesc")}</CardDescription></CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">{t("bankConnectPrompt")}</p>
