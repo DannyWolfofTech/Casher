@@ -1,84 +1,64 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import {
+  buildSubscriptions,
+  dedupKey,
+  IMPORT_VERSION,
+  legacyDedupKey,
+  parseTransactionsCsv,
+  type NormalizedTransaction,
+} from "../_shared/csv-parser.ts";
+import {
+  quotaExceededMessage,
+  releaseUploadSlot,
+  reserveUploadSlot,
+  type ReservationResult,
+} from "../_shared/quota.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Input limits
 const MAX_CSV_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_ROWS = 10_000;
+const INSERT_CHUNK = 500;
+/** A re-upload of the identical file inside this window is treated as a replay. */
+const IDEMPOTENCY_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-// Parse a UK-format date string (DD/MM/YYYY or DD-MM-YYYY) into ISO YYYY-MM-DD.
-// Also supports YYYY-MM-DD pass-through. Returns null if unparseable.
-function parseUkDate(input: string): string | null {
-  if (!input) return null;
-  const s = input.trim();
+type Json = Record<string, unknown>;
 
-  // Already ISO YYYY-MM-DD
-  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (iso) {
-    const y = iso[1], m = iso[2].padStart(2, "0"), d = iso[3].padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
-
-  // UK DD/MM/YYYY or DD-MM-YYYY (also handles single-digit day/month, 2-digit year)
-  const uk = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
-  if (uk) {
-    let [, d, m, y] = uk;
-    if (y.length === 2) y = (parseInt(y, 10) >= 70 ? "19" : "20") + y;
-    const dd = d.padStart(2, "0");
-    const mm = m.padStart(2, "0");
-    // Validate ranges
-    const dn = parseInt(dd, 10), mn = parseInt(mm, 10);
-    if (dn < 1 || dn > 31 || mn < 1 || mn > 12) return null;
-    return `${y}-${mm}-${dd}`;
-  }
-
-  return null;
+function json(body: Json, status: number) {
+  return new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
 }
 
-// Parse currency amount that may include £/$/€ symbols, thousands separators,
-// and either UK (1,234.56) or European (1.234,56) decimal conventions.
-function parseAmount(input: string): number {
-  if (!input) return NaN;
-  let s = String(input).trim();
-  // Strip currency symbols and spaces
-  s = s.replace(/[£$€\s]/g, "");
-  // Handle parentheses as negative: (123.45) -> -123.45
-  const negParen = /^\((.*)\)$/.exec(s);
-  if (negParen) s = "-" + negParen[1];
-
-  const hasComma = s.includes(",");
-  const hasDot = s.includes(".");
-
-  if (hasComma && hasDot) {
-    // Whichever appears LAST is the decimal separator
-    if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
-      // European: 1.234,56 -> 1234.56
-      s = s.replace(/\./g, "").replace(",", ".");
-    } else {
-      // UK/US: 1,234.56 -> 1234.56
-      s = s.replace(/,/g, "");
-    }
-  } else if (hasComma) {
-    // Only commas. If exactly one comma followed by 1-2 digits => decimal. Otherwise thousands.
-    const parts = s.split(",");
-    if (parts.length === 2 && parts[1].length <= 2) {
-      s = parts[0] + "." + parts[1];
-    } else {
-      s = s.replace(/,/g, "");
-    }
-  }
-  // Strip any remaining non-numeric chars except sign and dot
-  s = s.replace(/[^0-9.\-]/g, "");
-  const n = parseFloat(s);
-  return isNaN(n) ? NaN : n;
+function fail(code: string, message: string, status: number, extra: Json = {}) {
+  return json({ ok: false, code, error: message, message, ...extra }, status);
 }
 
-function normalizeDescription(d: string): string {
-  return (d || "").trim().toLowerCase().replace(/\s+/g, " ");
+function usagePayload(r: ReservationResult) {
+  return {
+    uploadsUsed: r.uploadsUsed,
+    uploadLimit: r.uploadLimit,
+    tier: r.tier,
+    canUpload: r.uploadLimit === null || r.uploadsUsed < r.uploadLimit,
+  };
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 serve(async (req) => {
@@ -86,177 +66,192 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } },
+  );
+
+  // ---------------------------------------------------------------- auth
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace("Bearer ", "").trim();
+  if (!token) {
+    return fail("UNAUTHORIZED", "You must be signed in to upload a statement.", 401);
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser(token);
+  const user = userData?.user;
+  if (userError || !user) {
+    return fail("UNAUTHORIZED", "Your session has expired. Please sign in again.", 401);
+  }
+
+  // ------------------------------------------------------------- payload
+  let payload: unknown;
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    payload = await req.json();
+  } catch {
+    return fail("INVALID_PAYLOAD", "The request body was not valid JSON.", 422);
+  }
+
+  const csv = (payload as { csv?: unknown })?.csv;
+  if (typeof csv !== "string" || csv.trim() === "") {
+    return fail("INVALID_PAYLOAD", "No CSV content was received.", 422);
+  }
+
+  const csvBytes = new TextEncoder().encode(csv).byteLength;
+  if (csvBytes > MAX_CSV_BYTES) {
+    return fail(
+      "FILE_TOO_LARGE",
+      `This file is ${(csvBytes / (1024 * 1024)).toFixed(1)} MB, over the ${
+        MAX_CSV_BYTES / (1024 * 1024)
+      } MB limit. Please split it into smaller files.`,
+      413,
+      { details: { bytes: csvBytes, maxBytes: MAX_CSV_BYTES } },
     );
+  }
 
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !user) throw new Error("Unauthorized");
+  // --------------------------------------------------------------- parse
+  const parsed = parseTransactionsCsv(csv, { maxRows: MAX_ROWS });
+  if (!parsed.ok) {
+    const status = parsed.code === "TOO_MANY_ROWS" ? 413 : 422;
+    return fail(parsed.code, parsed.message, status, { details: parsed.details ?? {} });
+  }
 
-    const { csv } = await req.json();
+  // --------------------------------------------------------- idempotency
+  const csvHash = await sha256Hex(csv);
+  const since = new Date(Date.now() - IDEMPOTENCY_WINDOW_MS).toISOString();
+  const { data: priorUploads } = await supabase
+    .from("upload_history")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("csv_hash", csvHash)
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-    if (typeof csv !== "string") {
-      return new Response(JSON.stringify({ error: "Invalid CSV payload." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
+  const prior = priorUploads?.[0];
+  if (prior) {
+    // Same file, same user, recently processed: do NOT consume another slot
+    // and do NOT write a second history row.
+    const { data: usageRows } = await supabase.rpc("reserve_upload_slot_noop_placeholder" as never, {})
+      .then((r) => r)
+      .catch(() => ({ data: null }));
+    void usageRows;
+
+    return json({
+      ok: true,
+      code: "REPLAY",
+      replay: true,
+      transactionsCount: 0,
+      subscriptionsCount: 0,
+      subscriptionsUpdated: 0,
+      duplicatesSkipped: parsed.transactions.length,
+      duplicatesInFile: parsed.duplicatesInFile,
+      skippedRows: parsed.skipped.length,
+      batchSpending: Number(prior.total_spending ?? 0),
+      batchCredits: Number(prior.total_credits ?? 0),
+      batchSubsCount: Number(prior.subscriptions_count ?? 0),
+      batchAnnualSavings: Number(prior.potential_savings ?? 0),
+      message: "You already uploaded this exact file recently — nothing was imported again.",
+    }, 200);
+  }
+
+  // ------------------------------------------------------- reserve quota
+  let reservation: ReservationResult;
+  try {
+    reservation = await reserveUploadSlot(supabase, user.id);
+  } catch (err) {
+    console.error("[process-csv] reserve_upload_slot failed", err);
+    return fail("QUOTA_UNAVAILABLE", "We could not verify your upload allowance. Please try again.", 500);
+  }
+
+  if (!reservation.allowed) {
+    if (reservation.reason === "PROFILE_NOT_FOUND") {
+      return fail("PROFILE_NOT_FOUND", "We could not find your account profile.", 403, {
+        usage: usagePayload(reservation),
       });
     }
+    return fail("QUOTA_EXCEEDED", quotaExceededMessage(reservation), 429, {
+      usage: usagePayload(reservation),
+    });
+  }
 
-    // Size limit (UTF-8 byte length)
-    const csvBytes = new TextEncoder().encode(csv).byteLength;
-    if (csvBytes > MAX_CSV_BYTES) {
-      return new Response(
-        JSON.stringify({
-          error: `CSV exceeds the ${Math.round(MAX_CSV_BYTES / (1024 * 1024))} MB limit. Please split your file.`,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 413 }
-      );
+  // ----------------------------------------------------------- do the work
+  try {
+    const uniqueDates = [...new Set(parsed.transactions.map((t) => t.date))];
+
+    const existingRows: Array<{ date: string; description: string; amount: number; direction: string | null }> = [];
+    for (const dateChunk of chunk(uniqueDates, 200)) {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("date, description, amount, direction")
+        .eq("user_id", user.id)
+        .in("date", dateChunk);
+      if (error) throw error;
+      existingRows.push(...((data ?? []) as typeof existingRows));
     }
 
-    // Parse CSV with PapaParse (Deno-compatible)
-    const { default: Papa } = await import("https://esm.sh/papaparse@5.4.1");
-    const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
-    const df = parsed.data as any[];
-
-    if (df.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error: "Could not find headers. Please ensure your CSV has 'Date', 'Description', and 'Amount' columns.",
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-      );
-    }
-
-    if (df.length > MAX_ROWS) {
-      return new Response(
-        JSON.stringify({ error: `CSV has too many rows (max ${MAX_ROWS}). Please split your file.` }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 413 }
-      );
-    }
-
-    const getFieldValue = (row: any, fieldNames: string[]): string => {
-      for (const field of fieldNames) {
-        if (row[field] !== undefined) return String(row[field]);
-        const lowerField = field.toLowerCase();
-        for (const key of Object.keys(row)) {
-          if (key.toLowerCase() === lowerField) return String(row[key]);
-        }
+    // Sign-preserving keys for modern rows; absolute-value keys for legacy
+    // rows (import_version < 2) which were stored without a direction.
+    const existingSigned = new Set<string>();
+    const existingLegacyAbs = new Set<string>();
+    for (const row of existingRows) {
+      existingSigned.add(dedupKey(row.date, row.description, Number(row.amount)));
+      if (row.direction === null || row.direction === undefined) {
+        existingLegacyAbs.add(legacyDedupKey(row.date, row.description, Number(row.amount)));
       }
-      return "";
-    };
+    }
 
-    const transactions: any[] = [];
-    const subscriptionMap = new Map<string, any>();
-
-    df.forEach((transaction: any, index: number) => {
-      try {
-        const date = getFieldValue(transaction, ["date", "transaction date", "posted date", "trans date"]);
-        const description = getFieldValue(transaction, [
-          "description", "transaction description", "memo", "narrative", "details", "reference",
-        ]);
-        const rawAmount = getFieldValue(transaction, [
-          "amount", "cost", "value", "debit amount", "credit amount", "sum",
-        ]);
-
-        const amount = parseAmount(rawAmount);
-        if (!description || isNaN(amount) || amount === 0) return;
-
-        const dateStr = parseUkDate(date);
-        if (!dateStr) return;
-
-        const category = categorizeTransaction(description);
-        const isSubscription = detectSubscription(description);
-        const merchant = extractMerchant(description);
-        const absAmount = Math.abs(amount);
-
-        transactions.push({
-          user_id: user.id,
-          date: dateStr,
-          description,
-          amount: absAmount,
-          category,
-          is_recurring: isSubscription,
-          recurring_frequency: isSubscription ? "monthly" : null,
-          merchant,
-        });
-
-        if (isSubscription) {
-          if (!subscriptionMap.has(merchant)) {
-            subscriptionMap.set(merchant, {
-              service_name: merchant,
-              amount: absAmount,
-              frequency: "monthly",
-              last_charged: dateStr,
-              estimated_annual_cost: absAmount * 12,
-              cancellation_url: null,
-              status: "active",
-            });
-          }
-        }
-      } catch (rowError) {
-        console.log(`Row ${index} error: ${rowError}`);
-      }
+    const fresh: NormalizedTransaction[] = parsed.transactions.filter((t) => {
+      if (existingSigned.has(dedupKey(t.date, t.description, t.amount))) return false;
+      // A legacy row stored as +12.99 represents the same debit as -12.99 now.
+      if (
+        t.direction === "debit" &&
+        existingLegacyAbs.has(legacyDedupKey(t.date, t.description, t.amount))
+      ) return false;
+      return true;
     });
 
-    if (transactions.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error: "Could not find headers. Please ensure your CSV has 'Date', 'Description', and 'Amount' columns.",
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-      );
-    }
-
-    // Deduplicate using normalized keys (date | normalized description | abs amount)
-    const uniqueDates = [...new Set(transactions.map((t) => t.date))];
-    const { data: existingTxns, error: fetchError } = await supabaseClient
-      .from("transactions")
-      .select("date, description, amount")
-      .eq("user_id", user.id)
-      .in("date", uniqueDates);
-
-    if (fetchError) throw fetchError;
-
-    const dedupKey = (date: string, desc: string, amt: number | string) =>
-      `${date}|${normalizeDescription(String(desc))}|${Math.abs(Number(amt)).toFixed(2)}`;
-
-    const existingKeys = new Set(
-      (existingTxns || []).map((t) => dedupKey(t.date, t.description, t.amount))
-    );
-
-    const newTransactions = transactions.filter(
-      (t) => !existingKeys.has(dedupKey(t.date, t.description, t.amount))
-    );
-
-    const skippedCount = transactions.length - newTransactions.length;
-    if (skippedCount > 0) console.log(`Skipped ${skippedCount} duplicate transactions`);
+    const duplicatesSkipped = parsed.transactions.length - fresh.length;
 
     let insertedTxnCount = 0;
-    if (newTransactions.length > 0) {
-      const { error: transError } = await supabaseClient
-        .from("transactions")
-        .insert(newTransactions);
-      if (transError) throw transError;
-      insertedTxnCount = newTransactions.length;
+    if (fresh.length > 0) {
+      const rows = fresh.map((t) => ({
+        user_id: user.id,
+        date: t.date,
+        description: t.description,
+        amount: t.amount, // signed
+        direction: t.direction,
+        import_version: IMPORT_VERSION,
+        category: t.category,
+        is_recurring: t.isSubscription,
+        recurring_frequency: t.isSubscription ? "monthly" : null,
+        merchant: t.merchant,
+      }));
+
+      for (const part of chunk(rows, INSERT_CHUNK)) {
+        const { error } = await supabase.from("transactions").insert(part);
+        if (error) throw error;
+        insertedTxnCount += part.length;
+      }
     }
 
-    // Subscriptions: upsert when amount changed, insert when new
+    // Subscriptions are derived from DEBITS only.
+    const subscriptionMap = buildSubscriptions(fresh);
     const subNames = Array.from(subscriptionMap.keys());
-    const { data: existingSubs } = await supabaseClient
+
+    const { data: existingSubs, error: subFetchError } = await supabase
       .from("detected_subscriptions")
       .select("id, service_name, amount")
       .eq("user_id", user.id)
       .in("service_name", subNames.length > 0 ? subNames : ["__none__"]);
+    if (subFetchError) throw subFetchError;
 
     const existingSubByName = new Map(
-      (existingSubs || []).map((s) => [s.service_name, s])
+      (existingSubs ?? []).map((s: { id: string; service_name: string; amount: number }) => [s.service_name, s]),
     );
 
-    const subsToInsert: any[] = [];
+    const subsToInsert: Array<Record<string, unknown>> = [];
     let subsUpdated = 0;
 
     for (const sub of subscriptionMap.values()) {
@@ -264,8 +259,7 @@ serve(async (req) => {
       if (!existing) {
         subsToInsert.push({ ...sub, user_id: user.id });
       } else if (Math.abs(Number(existing.amount) - Number(sub.amount)) > 0.005) {
-        // Amount changed — update price + annual cost + last charged
-        const { error: updErr } = await supabaseClient
+        const { error: updErr } = await supabase
           .from("detected_subscriptions")
           .update({
             amount: sub.amount,
@@ -279,68 +273,63 @@ serve(async (req) => {
     }
 
     if (subsToInsert.length > 0) {
-      const { error: subError } = await supabaseClient
+      const { error: subError } = await supabase
         .from("detected_subscriptions")
         .insert(subsToInsert);
       if (subError) throw subError;
     }
 
-    // Compute per-batch totals for the just-uploaded data (used by upload_history)
-    const batchSpending = newTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
-    const batchAnnualSavings =
-      subsToInsert.reduce((sum, s) => sum + Number(s.estimated_annual_cost || 0), 0);
+    // Per-batch totals: spending is the magnitude of debits only.
+    const batchSpending = fresh
+      .filter((t) => t.direction === "debit")
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    const batchCredits = fresh
+      .filter((t) => t.direction === "credit")
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    const batchAnnualSavings = subsToInsert.reduce(
+      (sum, s) => sum + Number(s.estimated_annual_cost ?? 0),
+      0,
+    );
     const batchSubsCount = subsToInsert.length + subsUpdated;
 
-    return new Response(
-      JSON.stringify({
-        transactionsCount: insertedTxnCount,
-        subscriptionsCount: subsToInsert.length,
-        subscriptionsUpdated: subsUpdated,
-        duplicatesSkipped: skippedCount,
-        batchSpending,
-        batchSubsCount,
-        batchAnnualSavings,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-    );
-  } catch (error: any) {
-    console.error("Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+    // Upload history is written SERVER-SIDE only, after the work succeeded.
+    const { error: historyError } = await supabase.from("upload_history").insert({
+      user_id: user.id,
+      total_spending: Number(batchSpending.toFixed(2)),
+      total_credits: Number(batchCredits.toFixed(2)),
+      subscriptions_count: batchSubsCount,
+      potential_savings: Number(batchAnnualSavings.toFixed(2)),
+      transaction_count: insertedTxnCount,
+      csv_hash: csvHash,
     });
+    if (historyError) throw historyError;
+
+    return json({
+      ok: true,
+      code: "OK",
+      replay: false,
+      transactionsCount: insertedTxnCount,
+      subscriptionsCount: subsToInsert.length,
+      subscriptionsUpdated: subsUpdated,
+      duplicatesSkipped,
+      duplicatesInFile: parsed.duplicatesInFile,
+      skippedRows: parsed.skipped.length,
+      skippedSample: parsed.skipped.slice(0, 5),
+      batchSpending: Number(batchSpending.toFixed(2)),
+      batchCredits: Number(batchCredits.toFixed(2)),
+      batchSubsCount,
+      batchAnnualSavings: Number(batchAnnualSavings.toFixed(2)),
+      usage: usagePayload(reservation),
+    }, 200);
+  } catch (error) {
+    // Compensate: the slot was reserved but the work failed.
+    const released = await releaseUploadSlot(supabase, user.id);
+    console.error("[process-csv] processing failed", { released, error });
+    return fail(
+      "PROCESSING_FAILED",
+      "We couldn't finish importing your statement. Your upload allowance was not used — please try again.",
+      500,
+      { released },
+    );
   }
 });
-
-function categorizeTransaction(description: string): string {
-  const lower = description.toLowerCase();
-  if (
-    lower.includes("netflix") || lower.includes("spotify") || lower.includes("disney") ||
-    lower.includes("prime") || lower.includes("youtube premium") || lower.includes("apple music") ||
-    lower.includes("hbo") || lower.includes("subscription")
-  ) return "Subscription";
-  if (lower.includes("rent") || lower.includes("mortgage")) return "Rent";
-  if (lower.includes("grocery") || lower.includes("tesco") || lower.includes("sainsbury") || lower.includes("asda")) return "Groceries";
-  if (lower.includes("gym") || lower.includes("fitness")) return "Fitness";
-  if (lower.includes("restaurant") || lower.includes("cafe") || lower.includes("takeaway")) return "Dining";
-  if (lower.includes("transport") || lower.includes("uber") || lower.includes("train")) return "Transport";
-  return "Other";
-}
-
-function detectSubscription(description: string): boolean {
-  const subscriptionKeywords = [
-    "netflix", "spotify", "amazon prime", "disney", "apple music",
-    "youtube premium", "hbo", "gym", "fitness", "subscription",
-    "monthly", "annual", "membership",
-  ];
-  const lower = description.toLowerCase();
-  return subscriptionKeywords.some((keyword) => lower.includes(keyword));
-}
-
-function extractMerchant(description: string): string {
-  const cleaned = description
-    .replace(/\d{2}\/\d{2}\/\d{2,4}/g, "")
-    .replace(/[A-Z]{2,3}\s\d+/g, "")
-    .trim();
-  return cleaned.substring(0, 50);
-}
