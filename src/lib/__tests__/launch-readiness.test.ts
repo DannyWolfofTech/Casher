@@ -112,3 +112,59 @@ describe("icon-only controls have accessible names", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+
+describe("footers and honest copy", () => {
+  /** Any file that renders a copyright footer for a public page. */
+  function footerFiles(): string[] {
+    return globSourceFiles().filter((f) => /&copy;|©/.test(read(f)));
+  }
+
+  it("finds the known public footers", () => {
+    const files = footerFiles();
+    expect(files).toContain("src/pages/Index.tsx");
+    expect(files).toContain("src/pages/About.tsx");
+  });
+
+  it("renders the year dynamically in every footer", () => {
+    const offenders: string[] = [];
+    for (const file of footerFiles()) {
+      for (const line of read(file).split("\n")) {
+        if (!/&copy;|©/.test(line)) continue;
+        if (!line.includes("new Date().getFullYear()")) offenders.push(`${file}: ${line.trim()}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("has no hard-coded year anywhere in the interface copy", () => {
+    const offenders = globSourceFiles().filter((f) => /(&copy;|©)\s*20\d\d/.test(read(f)));
+    expect(offenders).toEqual([]);
+  });
+
+  it("makes no unsupported average or measured-outcome money claims", () => {
+    const banned = [
+      /£\s?\d[\d,.]*\s*(average|avg)/i,
+      /average annual/i,
+      /average (saving|savings|recovered|leak)/i,
+      /users save/i,
+      /hundreds of pounds/i,
+      /customers (save|saved|recover)/i,
+    ];
+    const offenders: string[] = [];
+    for (const file of [...globSourceFiles(), "src/contexts/LanguageContext.tsx"]) {
+      const src = read(file);
+      for (const rule of banned) {
+        const hit = src.match(rule);
+        if (hit) offenders.push(`${file}: ${hit[0]}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the homepage highlight translated in all seven languages", () => {
+    const langs = read("src/contexts/LanguageContext.tsx");
+    expect(langs.match(/heroHighlightTitle:/g) ?? []).toHaveLength(7);
+    expect(langs.match(/heroHighlightBody:/g) ?? []).toHaveLength(7);
+  });
+});
