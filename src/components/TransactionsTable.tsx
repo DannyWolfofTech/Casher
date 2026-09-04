@@ -75,7 +75,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
 
       if (error) throw error;
 
-      setTransactions(data || []);
+      setTransactions((data ?? []) as unknown as Transaction[]);
       setTotalPages(Math.ceil((count || 0) / itemsPerPage));
     } catch (err) {
       console.error('Error fetching transactions:', err);
