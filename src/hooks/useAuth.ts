@@ -49,7 +49,9 @@ export const useAuth = () => {
       // (and resets) it using server time via get_upload_usage(); the browser
       // never writes monthly_uploads_used or uploads_reset_date.
       const { data: usageRows } = await supabase.rpc("get_upload_usage" as never);
-      const usage = (Array.isArray(usageRows) ? usageRows[0] : usageRows) as
+      const rawUsage: unknown = usageRows;
+      const usage = (Array.isArray(rawUsage) ? rawUsage[0] : rawUsage) as
+
         | { uploads_used: number; upload_limit: number | null; tier: string }
         | null
         | undefined;
