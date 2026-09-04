@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { PRICE_ID_TO_TIER } from "../_shared/stripe-tiers.ts";
+import { entitlementForSubscription } from "../_shared/stripe-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,6 +78,39 @@ serve(async (req) => {
       payload: { metadata: (event.data.object as any)?.metadata },
     });
 
+    /** Apply entitlement to the profile identified by user_id or customer id. */
+    const applyEntitlement = async (
+      subscription: Stripe.Subscription,
+      userId?: string | null,
+    ) => {
+      const priceId = subscription.items.data[0]?.price?.id;
+      const entitlement = entitlementForSubscription(
+        subscription.status,
+        priceId,
+        PRICE_ID_TO_TIER,
+      );
+      const currentPeriodEnd = subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000).toISOString()
+        : null;
+
+      const patch = {
+        ...entitlement,
+        current_period_end: currentPeriodEnd,
+        stripe_customer_id: subscription.customer as string,
+      };
+
+      const query = supabaseAdmin.from("profiles").update(patch);
+      const { error: updateError } = userId
+        ? await query.eq("user_id", userId)
+        : await query.eq("stripe_customer_id", subscription.customer as string);
+
+      if (updateError) {
+        console.error("Error updating profile:", updateError);
+        throw updateError;
+      }
+      console.log("Entitlement applied", { status: entitlement.subscription_status });
+    };
+
     // Handle the checkout.session.completed event
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -90,31 +124,46 @@ serve(async (req) => {
 
       const subscriptionId = session.subscription as string;
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      await applyEntitlement(subscription, userId);
+    }
 
-      const priceId = subscription.items.data[0].price.id;
-      console.log("Price ID:", priceId);
+    // Lifecycle: upgrades, downgrades, cancellations, expiries.
+    if (
+      event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.deleted"
+    ) {
+      const subscription = event.data.object as Stripe.Subscription;
+      const effective =
+        event.type === "customer.subscription.deleted"
+          ? ({ ...subscription, status: "canceled" } as Stripe.Subscription)
+          : subscription;
+      await applyEntitlement(effective, subscription.metadata?.user_id ?? null);
+    }
 
-      let tier = PRICE_ID_TO_TIER[priceId] || "free";
-      console.log("Determined tier:", tier);
-
-      const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
-
-      const { error: updateError } = await supabaseAdmin
-        .from("profiles")
-        .update({
-          subscription_tier: tier,
-          subscription_status: "active",
-          current_period_end: currentPeriodEnd,
-          stripe_customer_id: session.customer as string,
-        })
-        .eq("user_id", userId);
-
-      if (updateError) {
-        console.error("Error updating profile:", updateError);
-        throw updateError;
+    // Failed payments must not leave a paid entitlement in place.
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subscriptionId = (invoice as any).subscription as string | null;
+      if (subscriptionId) {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        await applyEntitlement(subscription, subscription.metadata?.user_id ?? null);
+      } else if (invoice.customer) {
+        const { error: failError } = await supabaseAdmin
+          .from("profiles")
+          .update({ subscription_tier: "free", subscription_status: "past_due" })
+          .eq("stripe_customer_id", invoice.customer as string);
+        if (failError) throw failError;
       }
+    }
 
-      console.log("Profile updated successfully for user:", userId);
+    // A recovered payment restores entitlement from the live subscription.
+    if (event.type === "invoice.payment_succeeded") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subscriptionId = (invoice as any).subscription as string | null;
+      if (subscriptionId) {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        await applyEntitlement(subscription, subscription.metadata?.user_id ?? null);
+      }
     }
 
     // Mark event as succeeded
