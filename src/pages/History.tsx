@@ -257,18 +257,18 @@ const History = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+    <div className="min-h-screen bg-background">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" onClick={() => navigate("/dashboard")} />
+        <div className="container mx-auto flex max-w-full flex-wrap items-center justify-between gap-2 px-4 py-4 md:py-6">
+          <div className="flex items-center gap-2">
+            <img src={logoFull} alt="Casher" className="h-10 cursor-pointer md:h-14" onClick={() => navigate("/dashboard")} />
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <LanguageSelector />
             <ThemeToggle />
-            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
+            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} aria-label="Back to Dashboard">
+              <ArrowLeft className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Back to Dashboard</span>
             </Button>
           </div>
         </div>

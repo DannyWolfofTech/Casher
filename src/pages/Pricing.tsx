@@ -12,6 +12,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
+import { planCtaState, type PlanKey } from "@/lib/pricing-cta";
 
 // Hardcoded Stripe Publishable Key (Test Mode)
 const STRIPE_PK = "pk_test_51SCrpvJMS012Ip2AFxn0fgxc5MFSSQ21FKjTQzMWcY67b1XrTC0JaW7zMQ8DXUsHRd0BQa07qzsfgHNv0O3EQWRu00bHXyvXld";
@@ -19,6 +20,7 @@ const STRIPE_PK = "pk_test_51SCrpvJMS012Ip2AFxn0fgxc5MFSSQ21FKjTQzMWcY67b1XrTC0J
 const Pricing = () => {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [userTier, setUserTier] = useState<string>("free");
   const [email, setEmail] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
   const navigate = useNavigate();
@@ -30,7 +32,15 @@ const Pricing = () => {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("subscription_tier")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        setUserTier(profile?.subscription_tier || "free");
+      }
     };
     checkUser();
   }, []);
@@ -171,7 +181,7 @@ const Pricing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+    <div className="min-h-screen bg-background">
       <SEO
         title="Pricing — Casher subscription tracker plans"
         description="Free, Pro (£9.99/mo) and Premium (£14.99/mo) plans for CSV-based subscription tracking. Pick the plan that fits your savings goals."
@@ -273,18 +283,26 @@ const Pricing = () => {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button
-                    className="w-full"
-                    size="lg"
-                    variant={plan.popular ? "default" : "outline"}
-                    onClick={() => plan.nameKey === "free" ? navigate("/auth") : handleSubscribe(plan.priceId)}
-                    disabled={loadingTier !== null && plan.nameKey !== "free"}
-                  >
-                    {loadingTier === plan.priceId ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    {plan.nameKey === "free" ? t("getStartedFree") : t("upgradeNow")}
-                  </Button>
+                  {(() => {
+                    const cta = planCtaState(plan.nameKey as PlanKey, !!user, userTier);
+                    return (
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        variant={cta.action === "none" ? "outline" : plan.popular ? "default" : "outline"}
+                        onClick={() => {
+                          if (cta.action === "signup") navigate("/auth");
+                          if (cta.action === "checkout") handleSubscribe(plan.priceId);
+                        }}
+                        disabled={cta.disabled || (loadingTier !== null && cta.action === "checkout")}
+                      >
+                        {loadingTier === plan.priceId ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        {t(cta.labelKey)}
+                      </Button>
+                    );
+                  })()}
                 </CardFooter>
               </Card>
             ))}
@@ -355,7 +373,7 @@ const Pricing = () => {
 
           {/* Email Signup */}
           <div className="max-w-2xl mx-auto mb-12 md:mb-16">
-            <Card className="bg-gradient-to-br from-primary/5 to-secondary/5">
+            <Card className="border-border/70 bg-card shadow-sm">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl md:text-3xl">{t("getWeeklyProTips")}</CardTitle>
                 <CardDescription className="text-base">

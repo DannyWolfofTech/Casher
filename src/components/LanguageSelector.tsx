@@ -23,7 +23,7 @@ export function LanguageSelector() {
 
   return (
     <Select value={language} onValueChange={handleLanguageChange}>
-      <SelectTrigger className="w-[140px]">
+      <SelectTrigger className="w-[120px] sm:w-[140px]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
