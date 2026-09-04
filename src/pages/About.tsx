@@ -38,11 +38,11 @@ const About = () => {
         path="/about"
       />
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-4 flex flex-wrap gap-3 justify-between items-center">
           <Link to={user ? "/dashboard" : "/"}>
             <img src={logoFull} alt="Casher" className="h-14 cursor-pointer" />
           </Link>
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
             <LanguageSelector />
             <ThemeToggle />
             <Button variant="ghost" onClick={() => navigate("/about")}>

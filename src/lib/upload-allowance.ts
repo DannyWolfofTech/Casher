@@ -1,10 +1,6 @@
 /**
- * Upload allowance resolution shared by the auth hook and its tests.
- *
- * The server (get_upload_usage) is the authority. When a tier change lands
- * before the usage RPC has been re-read, paid tiers are optimistically treated
- * as upload-capable so the UI is never stuck disabled after an upgrade; the
- * next RPC result reconciles it.
+ * The server usage response is the authority. A missing response must never
+ * look like an available allowance; the account view provides a retry action.
  */
 
 export const PAID_TIERS = ["pro", "premium"] as const;
@@ -37,7 +33,7 @@ export function resolveUploadAllowance(
 ): UploadAllowance {
   if (!usage) {
     const tier = String(fallbackTier ?? "free");
-    return { tier, uploadsUsed: 0, canUpload: true };
+    return { tier, uploadsUsed: 0, canUpload: false };
   }
   const tier = String(usage.tier || fallbackTier || "free");
   const uploadsUsed = Number(usage.uploads_used ?? 0);
@@ -45,7 +41,5 @@ export function resolveUploadAllowance(
     usage.upload_limit === null || usage.upload_limit === undefined
       ? Infinity
       : Number(usage.upload_limit);
-  // A paid tier reported by Stripe outranks a stale free-tier limit row.
-  const effectiveLimit = isPaidTier(fallbackTier) && limit <= 1 ? Infinity : limit;
-  return { tier, uploadsUsed, canUpload: uploadsUsed < effectiveLimit };
+  return { tier, uploadsUsed, canUpload: uploadsUsed >= 0 && uploadsUsed < limit };
 }

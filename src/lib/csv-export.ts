@@ -48,7 +48,7 @@ export function toCsvRow(t: ExportableTransaction): string {
   return [
     escapeCsvCell(t.date),
     escapeCsvCell(t.description),
-    escapeCsvCell(t.amount),
+    escapeCsvCell((isCredit(t) ? 1 : -1) * Math.abs(Number(t.amount))),
     escapeCsvCell(isCredit(t) ? "credit" : "debit"),
     escapeCsvCell(t.category || "Uncategorized"),
   ].join(",");

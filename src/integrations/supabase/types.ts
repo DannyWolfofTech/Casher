@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       detected_subscriptions: {
         Row: {
+          details_locked: boolean
+          reviewed_at: string | null
           amount: number
           cancellation_url: string | null
           created_at: string
@@ -28,6 +30,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          details_locked?: boolean
+          reviewed_at?: string | null
           amount: number
           cancellation_url?: string | null
           created_at?: string
@@ -40,6 +44,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          details_locked?: boolean
+          reviewed_at?: string | null
           amount?: number
           cancellation_url?: string | null
           created_at?: string
@@ -310,6 +316,9 @@ export type Database = {
       }
       transactions: {
         Row: {
+          direction_override: string | null
+          category_override: string | null
+          reviewed_at: string | null
           amount: number
           category: string | null
           created_at: string
@@ -324,6 +333,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          direction_override?: string | null
+          category_override?: string | null
+          reviewed_at?: string | null
           amount: number
           category?: string | null
           created_at?: string
@@ -338,6 +350,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          direction_override?: string | null
+          category_override?: string | null
+          reviewed_at?: string | null
           amount?: number
           category?: string | null
           created_at?: string
@@ -524,6 +539,14 @@ export type Database = {
       }
     }
     Functions: {
+      review_transaction: {
+        Args: { _id: string; _direction: string; _category: string; _expected_reviewed_at?: string | null }
+        Returns: Json
+      }
+      review_subscription: {
+        Args: { _id: string; _status: string; _amount: number; _frequency: string; _expected_reviewed_at?: string | null }
+        Returns: Json
+      }
       current_request_role: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }

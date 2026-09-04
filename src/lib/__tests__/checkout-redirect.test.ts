@@ -13,6 +13,8 @@ describe("isValidCheckoutUrl", () => {
     expect(isValidCheckoutUrl("not a url")).toBe(false);
     expect(isValidCheckoutUrl("http://checkout.stripe.com/c/pay/1")).toBe(false);
     expect(isValidCheckoutUrl("https://checkout.stripe.com.evil.test/c/pay/1")).toBe(false);
+    expect(isValidCheckoutUrl("https://someone:password@checkout.stripe.com/c/pay/1")).toBe(false);
+    expect(isValidCheckoutUrl("https://checkout.stripe.com:8080/c/pay/1")).toBe(false);
   });
 });
 

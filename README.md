@@ -1,99 +1,44 @@
-# Welcome to your Lovable project
+# Casher
 
-## Recent Updates (Latest Build)
+Casher imports GBP statements, shows spending by transaction month, and identifies possible recurring payments. It uses React, TypeScript, Vite, Supabase and Stripe. Bank connections and Premium features remain in development.
 
-### ✅ Fixed Issues
+## Start with the audit
 
-1. **Full Transaction Table** - Added responsive table showing all CSV transactions with pagination (50 rows/page), category badges, and export to CSV (Pro/Premium only)
-2. **Welcome Email** - Fixed Resend integration to send welcome email on every sign-in to natanaeltest@gmail.com 
-3. **Stripe Subscriptions** - Activated Subscribe buttons for Pro (£9.99/mo) and Premium (£14.99/mo) with test card 4242 4242 4242 4242
-4. **i18n Full Coverage** - Implemented react-i18next for complete translations (English/Romanian/Spanish) across dashboard, tables, and UI
+The [September 2026 audit](docs/design-audit/README.md) contains findings, screenshots, verification evidence and release gates. Passing local checks does not certify the live backend, billing or email service.
 
-### 🧪 Testing
+## Install and verify
 
-- **CSV Upload**: Use HSBC format with columns "Transaction Description", "Amount", "Date" - Netflix/Spotify auto-categorized as "Subscription"
-- **Email**: Test with natanaeltest@gmail.com - welcome email sent via Resend on signup
-- **Stripe**: Use test card `4242 4242 4242 4242` for Pro/Premium checkout
-- **Languages**: Switch between EN/RO/ES - all UI elements translate
+Use npm and package-lock.json for the reproducible verification workflow. Node 26.4 / npm 11.17 were used here; CI uses Node 26. The Bun lock is maintained for Lovable compatibility; npm is the tested install path.
 
-### 🔧 Environment Variables Required
+    npm ci
+    npm run check
+    npx playwright install chromium
+    npm run test:browser
 
-Add these to `.env.local` for local development:
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
-RESEND_API_KEY=your_resend_key
-STRIPE_SECRET_KEY=sk_test_your_stripe_key
-```
+The check script runs TypeScript, ESLint, unit/PostgreSQL tests and the production build. Browser tests start an isolated local backend with invented records.
 
-## Project info
+## Safe local preview
 
-**URL**: https://lovable.dev/projects/ea77ebbb-78bd-46c4-a0c9-0ab73994a416
+    npm run dev:audit
 
-## How can I edit this code?
+Open http://127.0.0.1:8080 and sign in as audit@example.test using any test password of at least 6 characters. Data is synthetic and resets when the server restarts. Ports 8080 and 54329 must be free. This loopback-only server must never be deployed.
 
-There are several ways of editing your application.
+To use a real development backend, copy .env.example to .env.local, enter a staging Supabase URL and public key, then run npm run dev. Keep backend secrets in Supabase Edge Function secrets; never put them in VITE_ variables. Lovable may overwrite its generated client.
 
-**Use Lovable**
+## Backend deployment
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ea77ebbb-78bd-46c4-a0c9-0ab73994a416) and start prompting.
+Apply supabase/migrations/20260904220000_atomic_statement_import.sql and then supabase/migrations/20260904230000_statement_corrections.sql after all earlier migrations, first to staging. Deploy process-csv, check-subscription, create-checkout-session, customer-portal and stripe-webhook with their shared modules and function configuration. Publish the frontend after staging acceptance. If the atomic import function is absent, the importer fails safely.
 
-Changes made via Lovable will be committed automatically to this repo.
+Billing requires STRIPE_SECRET_KEY_CUSTOM, STRIPE_WEBHOOK_SECRET and a configured Stripe customer portal with cancellation enabled. Supabase provides SUPABASE_URL and server-role credentials. ALLOWED_REDIRECT_ORIGINS must contain only trusted exact origins. Reconcile legacy Stripe customers before rollout: an email match alone no longer grants billing access.
 
-**Use your preferred IDE**
+With Deno 2, check the changed edge functions:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+    deno check --frozen supabase/functions/process-csv/index.ts supabase/functions/check-subscription/index.ts supabase/functions/create-checkout-session/index.ts supabase/functions/customer-portal/index.ts supabase/functions/stripe-webhook/index.ts
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Correcting records
 
-Follow these steps:
+In the transaction table, use **Correct** to confirm payment direction and category against the original statement. The review-only filter identifies legacy rows with unknown direction. Corrections update dashboard/history totals and exports while preserving the imported amount, date and description. Correction history is private to the account; stale concurrent edits are rejected.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Subscription review supports correcting payment amount/frequency, dismissing false detections, marking confirmed cancellations and restoring records. New imports keep explicit payment corrections and inactive statuses. These actions do not cancel a provider contract.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/ea77ebbb-78bd-46c4-a0c9-0ab73994a416) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+The source is connected to DannyWolfofTech/Casher and changes are prepared on codex/production-hardening. Review the [release checklist](docs/design-audit/README.md#release-gates) before publishing. Production migrations and billing/email acceptance must precede frontend rollout.

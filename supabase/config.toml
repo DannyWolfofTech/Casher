@@ -11,6 +11,8 @@ project_id = "ewnjmvxildwmbdmosasz"
     verify_jwt = true
   [functions.create-checkout-session]
     verify_jwt = true
+  [functions.customer-portal]
+    verify_jwt = true
   [functions.process-csv]
     verify_jwt = true
   [functions.process-email-queue]

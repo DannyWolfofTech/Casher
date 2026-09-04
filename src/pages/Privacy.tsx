@@ -81,9 +81,11 @@ const Privacy = () => {
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-3">Third-Party Services</h2>
             <p>
-              We use Stripe for payment processing. Stripe has their own privacy policy and we do not 
-              store your credit card information on our servers. No transaction data is shared with 
-              Stripe or any other third party.
+              We use Supabase to authenticate accounts and store imported transaction records, and
+              Stripe to process subscription payments. Bank statement contents are not sent to Stripe.
+              Sentry receives technical error reports to help us fix faults; session recording is disabled,
+              and request bodies and account details are excluded from those reports. Payment card details
+              are handled by Stripe.
             </p>
           </section>
 

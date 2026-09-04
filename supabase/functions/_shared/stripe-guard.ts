@@ -49,6 +49,11 @@ export function isAllowedPriceId(priceId: unknown): priceId is string {
   return typeof priceId === "string" && ALLOWED_PRICE_IDS.includes(priceId);
 }
 
+/** Premium remains unavailable even when a client calls checkout directly. */
+export function isPurchasablePriceId(priceId: unknown): priceId is string {
+  return priceId === STRIPE_TIERS.pro.priceId;
+}
+
 export function isAllowedOrigin(origin: string, extraRaw?: string | null): boolean {
   const normalized = origin.replace(/\/$/, "");
   if (STATIC_ALLOWED_ORIGINS.includes(normalized)) return true;

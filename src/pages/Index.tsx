@@ -36,7 +36,7 @@ const Index = () => {
 
       {/* Navigation */}
       <nav className="w-full border-b border-foreground/10">
-        <div className="max-w-7xl mx-auto py-5 px-6 md:px-8 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto py-4 px-4 md:px-8 flex flex-wrap gap-3 items-center justify-between">
           <div className="flex items-center gap-10">
             <Link to={user ? "/dashboard" : "/"} className="font-serif italic text-3xl tracking-tight text-foreground">
               Casher
@@ -47,11 +47,11 @@ const Index = () => {
               <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">{t("privacy")}</button>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2">
             <LanguageSelector />
             <button
               onClick={() => navigate("/auth")}
-              className="bg-primary text-primary-foreground px-5 py-2.5 rounded-full font-semibold text-sm hover:brightness-110 transition-all"
+              className="bg-primary text-primary-foreground px-3 py-2.5 rounded-full font-semibold text-sm hover:brightness-110 transition-all"
             >
               {t("getStarted")}
             </button>
@@ -136,7 +136,7 @@ const Index = () => {
               </div>
               <h3 className="text-2xl font-semibold mb-3 tracking-tight text-foreground">03. Save</h3>
               <p className="text-foreground/70 leading-relaxed">
-                Get a clear cancel list with direct links and email templates for every subscription you no longer need.
+                Review possible subscriptions, cancel unwanted services with the provider, then keep track of your decisions in Casher.
               </p>
             </div>
           </div>
@@ -148,7 +148,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-16 grid grid-cols-1 md:grid-cols-12 gap-8">
           <div className="md:col-span-4">
             <Shield className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-serif text-3xl md:text-4xl tracking-tight text-foreground">Your data, <span className="italic">untouched.</span></h3>
+            <h3 className="font-serif text-3xl md:text-4xl tracking-tight text-foreground">Your data, <span className="italic">your choice.</span></h3>
           </div>
           <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[

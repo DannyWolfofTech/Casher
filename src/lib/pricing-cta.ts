@@ -2,10 +2,10 @@ export type PlanKey = "free" | "pro" | "premium";
 
 export interface PlanCtaState {
   /** Translation key for the button label. */
-  labelKey: "currentPlan" | "getStartedFree" | "upgradeNow" | "comingSoonShort";
+  labelKey: "currentPlan" | "getStartedFree" | "upgradeNow" | "comingSoonShort" | "manageBilling";
   disabled: boolean;
   /** What clicking the button should do. */
-  action: "none" | "signup" | "checkout";
+  action: "none" | "signup" | "checkout" | "billing";
 }
 
 /**
@@ -29,12 +29,14 @@ export function planCtaState(
     if (isAuthenticated && tier === "free") {
       return { labelKey: "currentPlan", disabled: true, action: "none" };
     }
+    if (isAuthenticated) return { labelKey: 'manageBilling', disabled: false, action: 'billing' };
     return { labelKey: "getStartedFree", disabled: false, action: "signup" };
   }
 
   if (isAuthenticated && tier === planKey) {
     return { labelKey: "currentPlan", disabled: true, action: "none" };
   }
+  if (isAuthenticated && tier === 'premium' && planKey === 'pro') return { labelKey: 'manageBilling', disabled: false, action: 'billing' };
 
   // Existing Premium subscribers keep their "Current plan" state above; for
   // everyone else Premium is shown as coming soon and cannot start checkout.

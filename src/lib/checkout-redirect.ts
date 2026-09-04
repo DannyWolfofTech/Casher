@@ -22,7 +22,7 @@ export function isValidCheckoutUrl(url: unknown): url is string {
   } catch {
     return false;
   }
-  if (parsed.protocol !== "https:") return false;
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.port) return false;
   return ALLOWED_CHECKOUT_HOSTS.includes(parsed.hostname);
 }
 

@@ -1,255 +1,100 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet";
-import { z } from "zod";
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import SEO from '@/components/SEO';
 
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
-import { lovable } from "@/integrations/lovable/index";
-
-const credentialsSchema = z.object({
-  email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
-});
-
-const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState<null | "signup" | "signin">(null);
+type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
+export default function Auth() {
+  const recoveryLink = new URLSearchParams(window.location.search).get('mode') === 'recovery' || /type=recovery/.test(window.location.hash);
+  const [linkFailed] = useState(() => [window.location.search, window.location.hash.replace(/^#/, '?')].some(value => new URLSearchParams(value).has('error')));
+  const [recoveryReady, setRecoveryReady] = useState(false);
+  const [mode, setMode] = useState<Mode>(recoveryLink ? 'recovery' : 'signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { toast } = useToast();
-
   useEffect(() => {
-    let isMounted = true;
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!isMounted) return;
-      if (session) {
-        navigate("/dashboard");
-      }
+    let active = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') { setMode('recovery'); setRecoveryReady(true); setError(''); return; }
+      if (session && !recoveryLink && mode !== 'recovery') navigate('/dashboard', { replace: true });
     });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!isMounted) return;
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
-
-  const validate = () => {
-    const result = credentialsSchema.safeParse({ email, password });
-    if (!result.success) {
-      const message = result.error.issues[0]?.message ?? "Please check your details and try again.";
-      toast({
-        title: "Invalid details",
-        description: message,
-        variant: "destructive",
-      });
-      return false;
-    }
-    return true;
-  };
-
-  const handleSignUp = async () => {
-    if (!validate()) return;
-
-    setLoading("signup");
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!active) return;
+      if (mode === 'recovery') {
+        setRecoveryReady(!!session && !error && !linkFailed);
+        if (!session || error || linkFailed) setError('This reset link is invalid or has expired. Request a new link to reset your password.');
+      } else if (linkFailed && mode === 'signin') setError('This sign-in link is invalid or has expired. Sign in with your password or request a new reset link.');
+      if (session && !recoveryLink && mode !== 'recovery') navigate('/dashboard', { replace: true });
+    }).catch(() => { if (active) setError('We could not check this link. Please reload and try again.'); });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, [navigate, recoveryLink, mode, linkFailed]);
+  const switchMode = (value: Mode) => { setMode(value); setMessage(''); setError(''); setPassword(''); setConfirmPassword(''); };
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault(); if (busy) return;
+    if (mode === 'recovery' && !recoveryReady) return;
+    setError(''); setMessage('');
+    if (mode !== 'recovery' && !z.string().email().safeParse(email.trim()).success) { setError('Enter a valid email address.'); return; }
+    if (mode !== 'forgot' && password.length < (mode === 'signin' ? 1 : 8)) { setError('Use a password with at least 8 characters.'); return; }
+    if (mode === 'recovery' && password !== confirmPassword) { setError('Your passwords do not match.'); return; }
+    setBusy(true);
     try {
-      const redirectUrl = `${window.location.origin}/dashboard`;
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-        },
-      });
-
-      if (error) {
-        console.error("Sign up error:", error);
-        toast({
-          title: "Sign up failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
+      if (mode === 'forgot') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/auth?mode=recovery` });
+        if (error) throw error;
+        setMessage('If an account exists for this email, you will receive a password reset link.');
+      } else if (mode === 'recovery') {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+        navigate('/dashboard', { replace: true });
+      } else if (mode === 'signup') {
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${window.location.origin}/auth` } });
+        if (error) throw error;
+        if (data.session) navigate('/dashboard', { replace: true });
+        else setMessage('Check your email to confirm your account before signing in.');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+        navigate('/dashboard', { replace: true });
       }
-
-      toast({
-        title: "Account created",
-        description: "Your account has been created and you're now signed in.",
-      });
-      navigate("/dashboard");
-    } catch (err: unknown) {
-      console.error("Sign up network error:", err);
-      const message = err instanceof Error ? err.message : "Network error. Please check your connection and try again.";
-      toast({
-        title: "Sign up failed",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(null);
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'We could not connect. Please try again.'); }
+    finally { setBusy(false); }
   };
-
-  const handleSignIn = async () => {
-    if (!validate()) return;
-
-    setLoading("signin");
+  const signInWithGoogle = async () => {
+    if (busy) return; setBusy(true); setError('');
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error("Sign in error:", error);
-        toast({
-          title: "Sign in failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Signed in",
-        description: "Welcome back!",
-      });
-      navigate("/dashboard");
-    } catch (err: unknown) {
-      console.error("Sign in network error:", err);
-      const message = err instanceof Error ? err.message : "Network error. Please check your connection and try again.";
-      toast({
-        title: "Sign in failed",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(null);
-    }
+      const { error } = await lovable.auth.signInWithOAuth('google', { redirect_uri: `${window.location.origin}/dashboard` });
+      if (error) throw error;
+    } catch { setError('Google sign-in could not be started. Please try email sign-in.'); }
+    finally { setBusy(false); }
   };
-
-  return (
-    <>
-      <Helmet>
-        <title>Casher Login | Email & Password Access</title>
-        <meta
-          name="description"
-          content="Sign in or create your Casher account using email and password to analyze your freelance finances."
-        />
-        <link rel="canonical" href={`${window.location.origin}/auth`} />
-      </Helmet>
-      <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Sign up or sign in</CardTitle>
-            <CardDescription className="text-center">
-              Use your email and password to access your Casher dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Password (min 6 characters)"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                <Button
-                  type="button"
-                  className="w-full"
-                  disabled={loading !== null}
-                  onClick={handleSignUp}
-                >
-                  {loading === "signup" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Account
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={loading !== null}
-                  onClick={handleSignIn}
-                >
-                  {loading === "signin" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign In
-                </Button>
-              </div>
-            </div>
-
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full gap-2"
-              type="button"
-              onClick={async () => {
-                const { error } = await lovable.auth.signInWithOAuth("google", {
-                  redirect_uri: window.location.origin,
-                });
-                if (error) {
-                  toast({
-                    title: "Google sign-in failed",
-                    description: error.message,
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              Sign in with Google
-            </Button>
-
-          </CardContent>
-        </Card>
-      </div>
-    </>
-  );
-};
-
-export default Auth;
+  const heading = { signin: 'Welcome back', signup: 'Create your account', forgot: 'Reset your password', recovery: 'Choose a new password' }[mode];
+  return <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+    <SEO title={`${heading} — Casher`} description="Access your Casher account." path="/auth" noindex />
+    <Link to="/" className="font-serif text-4xl italic">Casher</Link>
+    <main className="w-full max-w-md"><Card><CardHeader><h1 className="text-2xl font-semibold">{heading}</h1><CardDescription>{mode === 'signin' ? 'Sign in to review your statements and subscriptions.' : mode === 'signup' ? 'Start with one free CSV upload each month.' : 'Use your email to securely regain access to your account.'}</CardDescription></CardHeader>
+      <CardContent><form onSubmit={submit} className="space-y-4">
+        {mode !== 'recovery' && <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={busy} /></div>}
+        {mode !== 'forgot' && <div className="space-y-2"><Label htmlFor="password">{mode === 'recovery' ? 'New password' : 'Password'}</Label><Input id="password" type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={mode === 'signin' ? 1 : 8} value={password} onChange={e => setPassword(e.target.value)} required disabled={busy} />{mode === 'signup' && <p className="text-xs text-muted-foreground">At least 8 characters.</p>}</div>}
+        {mode === 'recovery' && <div className="space-y-2"><Label htmlFor="confirm-password">Confirm new password</Label><Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required disabled={busy} /></div>}
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        {message && <p role="status" className="rounded-md bg-muted p-3 text-sm">{message}</p>}
+        <Button type="submit" className="w-full" disabled={busy || (mode === 'recovery' && !recoveryReady)}>{busy ? 'Please wait…' : { signin: 'Sign in', signup: 'Create account', forgot: 'Send reset link', recovery: 'Save new password' }[mode]}</Button>
+      </form>
+      {mode === 'signin' && <Button variant="link" className="mt-2 px-0" onClick={() => switchMode('forgot')} disabled={busy}>Forgot password?</Button>}
+      {(mode === 'signin' || mode === 'signup') && <><div className="my-5 border-t" /><Button variant="outline" className="w-full" disabled={busy} onClick={signInWithGoogle}>Continue with Google</Button><p className="mt-5 text-center text-sm">{mode === 'signin' ? 'New to Casher?' : 'Already have an account?'} <button className="underline underline-offset-4" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} disabled={busy}>{mode === 'signin' ? 'Create an account' : 'Sign in'}</button></p></>}
+      {mode === 'forgot' && <Button variant="link" onClick={() => switchMode('signin')} disabled={busy}>Back to sign in</Button>}
+      {mode === 'recovery' && !recoveryReady && <Button variant="link" onClick={() => switchMode('forgot')} disabled={busy}>Request a new reset link</Button>}
+      <p className="mt-5 text-xs text-muted-foreground">Read how we handle your data in our <Link to="/privacy" className="underline">privacy policy</Link>.</p>
+    </CardContent></Card></main>
+  </div>;
+}
