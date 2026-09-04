@@ -8,14 +8,58 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 
-interface CSVUploadProps {
-  onUploadComplete: (result?: {
-    batchSpending?: number;
-    batchSubsCount?: number;
-    batchAnnualSavings?: number;
-    transactionsCount?: number;
-  }) => void;
+export interface UploadResult {
+  code?: string;
+  replay?: boolean;
+  batchSpending?: number;
+  batchCredits?: number;
+  batchSubsCount?: number;
+  batchAnnualSavings?: number;
+  transactionsCount?: number;
+  subscriptionsCount?: number;
+  duplicatesSkipped?: number;
+  usage?: {
+    uploadsUsed: number;
+    uploadLimit: number | null;
+    tier: string;
+    canUpload: boolean;
+  };
 }
+
+interface CSVUploadProps {
+  onUploadComplete: (result?: UploadResult) => void;
+}
+
+interface StructuredFunctionError {
+  code: string;
+  message: string;
+  usage?: UploadResult["usage"];
+}
+
+/**
+ * supabase.functions.invoke() surfaces non-2xx responses as a
+ * FunctionsHttpError whose `context` is the raw Response. Read the structured
+ * body from it so the user sees the real reason instead of
+ * "Edge Function returned a non-2xx status code".
+ */
+async function readStructuredError(error: unknown): Promise<StructuredFunctionError | null> {
+  const context = (error as { context?: unknown })?.context;
+  if (!context || typeof (context as Response).json !== "function") return null;
+  try {
+    const body = await (context as Response).clone().json();
+    if (body && typeof body === "object" && (body.message || body.error)) {
+      return {
+        code: String(body.code ?? "UNKNOWN"),
+        message: String(body.message ?? body.error),
+        usage: body.usage,
+      };
+    }
+  } catch {
+    /* body was not JSON */
+  }
+  return null;
+}
+
 
 const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
