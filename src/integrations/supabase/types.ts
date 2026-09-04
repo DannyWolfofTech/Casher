@@ -315,7 +315,9 @@ export type Database = {
           created_at: string
           date: string
           description: string
+          direction: string | null
           id: string
+          import_version: number | null
           is_recurring: boolean | null
           merchant: string | null
           recurring_frequency: string | null
@@ -327,7 +329,9 @@ export type Database = {
           created_at?: string
           date: string
           description: string
+          direction?: string | null
           id?: string
+          import_version?: number | null
           is_recurring?: boolean | null
           merchant?: string | null
           recurring_frequency?: string | null
@@ -339,7 +343,9 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string
+          direction?: string | null
           id?: string
+          import_version?: number | null
           is_recurring?: boolean | null
           merchant?: string | null
           recurring_frequency?: string | null
@@ -350,9 +356,11 @@ export type Database = {
       upload_history: {
         Row: {
           created_at: string
+          csv_hash: string | null
           id: string
           potential_savings: number
           subscriptions_count: number
+          total_credits: number | null
           total_spending: number
           transaction_count: number
           upload_date: string
@@ -360,9 +368,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          csv_hash?: string | null
           id?: string
           potential_savings?: number
           subscriptions_count?: number
+          total_credits?: number | null
           total_spending: number
           transaction_count?: number
           upload_date?: string
@@ -370,9 +380,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          csv_hash?: string | null
           id?: string
           potential_savings?: number
           subscriptions_count?: number
+          total_credits?: number | null
           total_spending?: number
           transaction_count?: number
           upload_date?: string
@@ -512,6 +524,7 @@ export type Database = {
       }
     }
     Functions: {
+      current_request_role: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -520,6 +533,16 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      entitlement_writes_allowed: { Args: never; Returns: boolean }
+      get_upload_usage: {
+        Args: never
+        Returns: {
+          period_start: string
+          tier: string
+          upload_limit: number
+          uploads_used: number
+        }[]
       }
       has_role: {
         Args: {
@@ -551,6 +574,19 @@ export type Database = {
           read_ct: number
         }[]
       }
+      release_upload_slot: { Args: { _user_id: string }; Returns: number }
+      reserve_upload_slot: {
+        Args: { _user_id: string }
+        Returns: {
+          allowed: boolean
+          period_start: string
+          reason: string
+          tier: string
+          upload_limit: number
+          uploads_used: number
+        }[]
+      }
+      upload_limit_for_tier: { Args: { _tier: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "user"
