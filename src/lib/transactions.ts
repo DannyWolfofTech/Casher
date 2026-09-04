@@ -12,19 +12,31 @@
 
 export type TransactionDirection = "debit" | "credit" | null | undefined;
 
+/**
+ * Category written for money-in rows by the importer. It is the fallback
+ * direction signal on databases where `transactions.direction` does not exist
+ * yet, so a row categorised as Income is always a credit.
+ */
+export const INCOME_CATEGORY = "Income";
+
 export interface DirectionalTransaction {
   amount: number | string;
   direction?: TransactionDirection;
+  category?: string | null;
 }
 
 export function isCredit(t: DirectionalTransaction): boolean {
-  return t.direction === "credit";
+  if (t.direction === "credit") return true;
+  if (t.direction === "debit") return false;
+  // No direction column (pre-migration rows): fall back to the category tag.
+  return (t.category ?? "").trim().toLowerCase() === INCOME_CATEGORY.toLowerCase();
 }
 
-/** Legacy (null direction) rows count as spending. */
+/** Legacy (null direction, non-Income) rows count as spending. */
 export function isSpending(t: DirectionalTransaction): boolean {
   return !isCredit(t);
 }
+
 
 /** Positive magnitude of money out, or 0 for credits. */
 export function spendingAmount(t: DirectionalTransaction): number {
