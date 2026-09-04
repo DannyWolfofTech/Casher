@@ -86,20 +86,14 @@ const Pricing = () => {
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes("@")) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
+    if (!user) {
+      navigate("/auth");
       return;
     }
 
     setEmailLoading(true);
     try {
-      const { error } = await supabase.functions.invoke("send-welcome-email", {
-        body: { email },
-      });
+      const { error } = await supabase.functions.invoke("send-welcome-email");
 
       if (error) throw error;
 
@@ -107,12 +101,10 @@ const Pricing = () => {
         title: "Success!",
         description: "Welcome email sent! Check your inbox for pro tips.",
       });
-      setEmail("");
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to subscribe";
+    } catch {
       toast({
         title: "Error",
-        description: message,
+        description: "We couldn't send that email. Please try again shortly.",
         variant: "destructive",
       });
     }
