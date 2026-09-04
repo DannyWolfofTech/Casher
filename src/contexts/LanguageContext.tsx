@@ -1,6 +1,5 @@
-import { createContext, useContext, useState, useEffect } from "react";
-
-type Language = "en" | "fr" | "es" | "ro" | "de" | "it" | "pl";
+import { useState, useEffect } from "react";
+import { LanguageContext, type Language } from "./language-context";
 
 interface Translations {
   [key: string]: {
@@ -886,13 +885,6 @@ const translations: Translations = {
   },
 };
 
-interface LanguageContextType {
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
-}
-
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>(() => {
@@ -921,10 +913,3 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useLanguage() {
-  const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error("useLanguage must be used within LanguageProvider");
-  }
-  return context;
-}

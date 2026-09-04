@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Upload, ArrowUpRight, BarChart3, Check, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/contexts/language-context";
 import SEO from "@/components/SEO";
 
 const Index = () => {

@@ -10,7 +10,7 @@ import { Check, ArrowLeft, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/contexts/language-context";
 import SEO from "@/components/SEO";
 import { planCtaState, PREMIUM_PURCHASABLE, type PlanKey } from "@/lib/pricing-cta";
 import { redirectToCheckout } from "@/lib/checkout-redirect";
