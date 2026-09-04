@@ -61,6 +61,87 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+/**
+ * True when Postgres/PostgREST rejected the call because the function or column
+ * does not exist yet (the Phase A migration has not been applied).
+ * 42883 = undefined_function, 42703 = undefined_column, PGRST202 = no such RPC.
+ */
+function isMissingDbObject(err: unknown): boolean {
+  const e = err as { code?: string; message?: string } | null;
+  const code = e?.code ?? "";
+  const message = (e?.message ?? String(err ?? "")).toLowerCase();
+  return (
+    code === "42883" ||
+    code === "42703" ||
+    code === "PGRST202" ||
+    code === "PGRST204" ||
+    message.includes("does not exist") ||
+    message.includes("could not find") ||
+    message.includes("schema cache")
+  );
+}
+
+/** Non-atomic server-side allowance check used only before the migration lands. */
+async function fallbackReserve(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<ReservationResult> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("subscription_tier, monthly_uploads_used, uploads_reset_date")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!profile) {
+    return { allowed: false, uploadsUsed: 0, uploadLimit: 0, tier: "free", reason: "profile_not_found" };
+  }
+
+  const tier = String(profile.subscription_tier ?? "free");
+  const uploadLimit = tier === "free" ? 1 : null;
+
+  // Calendar-month reset decided by SERVER time, never the browser clock.
+  const now = new Date();
+  const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const resetDate = profile.uploads_reset_date ? new Date(String(profile.uploads_reset_date)) : null;
+  const stale = !resetDate || resetDate.getTime() < periodStart.getTime();
+  const used = stale ? 0 : Number(profile.monthly_uploads_used ?? 0);
+
+  if (uploadLimit !== null && used >= uploadLimit) {
+    return { allowed: false, uploadsUsed: used, uploadLimit, tier, reason: "quota_exceeded" };
+  }
+
+  const next = used + 1;
+  await supabase
+    .from("profiles")
+    .update({
+      monthly_uploads_used: next,
+      uploads_reset_date: periodStart.toISOString().slice(0, 10),
+    })
+    .eq("user_id", userId);
+
+  return { allowed: true, uploadsUsed: next, uploadLimit, tier, reason: null };
+}
+
+/** Fallback release for the pre-migration path. */
+async function fallbackRelease(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<boolean> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("monthly_uploads_used")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!profile) return false;
+  const next = Math.max(Number(profile.monthly_uploads_used ?? 0) - 1, 0);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ monthly_uploads_used: next })
+    .eq("user_id", userId);
+  return !error;
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
