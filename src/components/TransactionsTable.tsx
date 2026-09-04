@@ -16,6 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatSignedAmount, isCredit } from "@/lib/transactions";
+import { buildTransactionsCsv, exportFileName } from "@/lib/csv-export";
+import { CANCELED_CATEGORY, findLinkedSubscription, nextTransactionCategory } from "@/lib/subscription-link";
 
 
 interface Transaction {
@@ -32,9 +34,11 @@ interface Transaction {
 interface TransactionsTableProps {
   refreshKey: number;
   userTier: string;
+  /** Notifies the dashboard so subscription counts/savings stay in sync. */
+  onDataChanged?: () => void;
 }
 
-const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => {
+const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: TransactionsTableProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -52,26 +56,31 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
     fetchTransactions();
   }, [refreshKey, currentPage, searchQuery]);
 
+  /**
+   * Single source of truth for the current search/sort so that the export
+   * matches exactly what the table is showing (minus pagination).
+   */
+  const buildQuery = (options?: { count?: 'exact' }) => {
+    let query = supabase
+      .from('transactions')
+      .select('*', options?.count ? { count: options.count } : undefined)
+      .order('date', { ascending: false });
+
+    // Sanitize and apply search filter
+    const sanitized = searchQuery.trim().replace(/[%_\\]/g, '');
+    if (sanitized) {
+      query = query.or(`description.ilike.%${sanitized}%,category.ilike.%${sanitized}%`);
+    }
+    return query;
+  };
+
   const fetchTransactions = async () => {
     try {
       setError(false);
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
-      let query = supabase
-        .from('transactions')
-        .select('*', { count: 'exact' })
-        .order('date', { ascending: false });
-
-      // Sanitize and apply search filter
-      if (searchQuery.trim()) {
-        const sanitized = searchQuery.replace(/[%_\\]/g, '');
-        if (sanitized) {
-          query = query.or(`description.ilike.%${sanitized}%,category.ilike.%${sanitized}%`);
-        }
-      }
-
-      const { data, error, count } = await query.range(from, to);
+      const { data, error, count } = await buildQuery({ count: 'exact' }).range(from, to);
 
       if (error) throw error;
 
@@ -84,7 +93,23 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
     }
   };
 
-  const handleExport = () => {
+  const [exporting, setExporting] = useState(false);
+
+  /** Fetch every row matching the current filter/sort, not just this page. */
+  const fetchAllMatchingTransactions = async (): Promise<Transaction[]> => {
+    const pageSize = 1000;
+    const all: Transaction[] = [];
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await buildQuery().range(offset, offset + pageSize - 1);
+      if (error) throw error;
+      const batch = (data ?? []) as unknown as Transaction[];
+      all.push(...batch);
+      if (batch.length < pageSize) break;
+    }
+    return all;
+  };
+
+  const handleExport = async () => {
     if (userTier === 'free') {
       toast({
         title: t("upgradeToProExport"),
@@ -94,33 +119,33 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
       return;
     }
 
-    const headers = ['Date', 'Description', 'Amount', 'Direction', 'Category'];
-    const rows = transactions.map(t => [
-      t.date,
-      `"${t.description.replace(/"/g, '""')}"`,
-      t.amount,
-      isCredit(t) ? 'credit' : 'debit',
-      t.category || 'Uncategorized'
-    ]);
+    setExporting(true);
+    try {
+      const rows = await fetchAllMatchingTransactions();
+      const csv = buildTransactionsCsv(rows);
 
-    
-    const csv = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = exportFileName();
+      a.click();
+      window.URL.revokeObjectURL(url);
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `casher-transactions-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: t("exportSuccessful"),
-      description: t("exportedTransactions"),
-    });
+      toast({
+        title: t("exportSuccessful"),
+        description: t("exportedTransactions"),
+      });
+    } catch (err) {
+      captureApiError(err, { operation: 'exportTransactions' });
+      toast({
+        title: t('error'),
+        description: t('failedToLoadData'),
+        variant: 'destructive',
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   const getCancellationInstructions = (category: string, description: string) => {
@@ -155,16 +180,42 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
     setCancelModal({ open: true, transaction });
   };
 
+  /**
+   * Marks a transaction as canceled/uncanceled and keeps the linked detected
+   * subscription row in the same state. Only an unambiguous single match
+   * (same amount + recognisable service name) is ever touched.
+   */
+  const syncLinkedSubscription = async (transaction: Transaction, canceled: boolean) => {
+    const { data: subs, error } = await supabase
+      .from('detected_subscriptions')
+      .select('id, service_name, amount, status, estimated_annual_cost');
+
+    if (error || !subs) return;
+
+    const match = findLinkedSubscription(transaction, subs);
+    if (!match) return;
+
+    await supabase
+      .from('detected_subscriptions')
+      .update({ status: canceled ? 'canceled' : 'active' })
+      .eq('id', match.id);
+  };
+
   const handleMarkCanceled = async () => {
-    if (!cancelModal.transaction) return;
+    const transaction = cancelModal.transaction;
+    if (!transaction) return;
+
+    const canceled = transaction.category !== CANCELED_CATEGORY;
 
     try {
       const { error } = await supabase
         .from('transactions')
-        .update({ category: 'Canceled Subscription' })
-        .eq('id', cancelModal.transaction.id);
+        .update({ category: nextTransactionCategory(canceled) })
+        .eq('id', transaction.id);
 
       if (error) throw error;
+
+      await syncLinkedSubscription(transaction, canceled);
 
       toast({
         title: t('success'),
@@ -173,7 +224,9 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
 
       setCancelModal({ open: false, transaction: null });
       fetchTransactions();
+      onDataChanged?.();
     } catch (error) {
+      captureApiError(error, { operation: 'markSubscriptionCanceled' });
       toast({
         title: t('error'),
         description: t('failedToUpdate'),
@@ -214,7 +267,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
             <CardTitle>{t('allTransactions')}</CardTitle>
             <CardDescription>{t('transactionsDescription')}</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={userTier === 'free'}>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={userTier === 'free' || exporting}>
             <Download className="mr-2 h-4 w-4" />
             {t('export')}
           </Button>
@@ -274,7 +327,7 @@ const TransactionsTable = ({ refreshKey, userTier }: TransactionsTableProps) => 
                         </span>
                       </TableCell>
                       <TableCell>
-                        {transaction.category === 'Subscription' && (
+                        {(transaction.category === 'Subscription' || transaction.category === CANCELED_CATEGORY) && (
                           <Button variant="ghost" size="sm" onClick={() => handleCancelSubscription(transaction)}>
                             <X className="h-4 w-4 mr-1" />
                             {t('cancel')}
