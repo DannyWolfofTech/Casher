@@ -57,7 +57,7 @@ const Dashboard = () => {
       />
       <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <DashboardHeader isAdmin={isAdmin} userTier={userTier} hasUser={!!user} onSignOut={handleSignOut} />
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto w-full max-w-full overflow-x-hidden px-4 py-8 space-y-8">
         <DashboardSummaryCards monthlySpending={monthlySpending} subscriptionCount={subscriptionCount} potentialSavings={potentialSavings} />
         <ProgressTracker userId={user?.id} currentMonthSpending={monthlySpending} refreshKey={refreshKey} />
         {!showUpload ? (
@@ -89,7 +89,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         ) : <CSVUpload onUploadComplete={handleUploadComplete} />}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid min-w-0 gap-6 md:grid-cols-2 [&>*]:min-w-0">
           <SpendingChart refreshKey={refreshKey} />
           <SubscriptionsList refreshKey={refreshKey} userId={user?.id} />
         </div>

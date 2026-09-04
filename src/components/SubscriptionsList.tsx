@@ -80,7 +80,7 @@ const SubscriptionsList = ({ refreshKey = 0, userId }: SubscriptionsListProps) =
   };
 
   return (
-    <Card>
+    <Card className="min-w-0 overflow-hidden">
       <CardHeader>
         <CardTitle>{t("detectedSubscriptions")}</CardTitle>
         <CardDescription>{t("recurringPayments")}</CardDescription>

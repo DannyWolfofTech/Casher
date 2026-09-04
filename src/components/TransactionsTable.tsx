@@ -261,7 +261,7 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
 
   if (error && transactions.length === 0) {
     return (
-      <Card>
+      <Card className="min-w-0 overflow-hidden">
         <CardHeader>
           <CardTitle>{t('allTransactions')}</CardTitle>
         </CardHeader>
@@ -306,8 +306,8 @@ const TransactionsTable = ({ refreshKey, userTier, onDataChanged }: Transactions
             />
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="w-full max-w-full overflow-x-auto">
+            <Table className="min-w-[640px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('date')}</TableHead>
