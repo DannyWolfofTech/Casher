@@ -357,10 +357,21 @@ serve(async (req) => {
 
       for (const part of chunk(rows, INSERT_CHUNK)) {
         const { error } = await supabase.from("transactions").insert(part);
-        if (error) throw error;
+        if (error) {
+          if (!isMissingDbObject(error)) throw error;
+          // Pre-migration: no direction/import_version columns. Write the
+          // legacy shape (unsigned magnitude) so existing screens keep working.
+          const legacyPart = part.map(({ direction: _d, import_version: _v, ...rest }) => ({
+            ...rest,
+            amount: Math.abs(Number(rest.amount)),
+          }));
+          const { error: legacyError } = await supabase.from("transactions").insert(legacyPart);
+          if (legacyError) throw legacyError;
+        }
         insertedTxnCount += part.length;
       }
     }
+
 
     // Subscriptions are derived from DEBITS only.
     const subscriptionMap = buildSubscriptions(fresh);
