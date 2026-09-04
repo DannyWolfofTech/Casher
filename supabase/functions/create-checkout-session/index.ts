@@ -81,7 +81,7 @@ serve(async (req) => {
     // Check for existing customer
     console.log("Checking for existing customer");
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
+    const customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
     console.log("Customer ID:", customerId || "none found");
 
     // Get origin for redirect URLs

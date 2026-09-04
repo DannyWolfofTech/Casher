@@ -143,7 +143,7 @@ serve(async (req) => {
     // Failed payments must not leave a paid entitlement in place.
     if (event.type === "invoice.payment_failed") {
       const invoice = event.data.object as Stripe.Invoice;
-      const subscriptionId = (invoice as any).subscription as string | null;
+      const subscriptionId = (invoice as unknown as { subscription?: string | null }).subscription ?? null;
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         await applyEntitlement(subscription, subscription.metadata?.user_id ?? null);
@@ -159,7 +159,7 @@ serve(async (req) => {
     // A recovered payment restores entitlement from the live subscription.
     if (event.type === "invoice.payment_succeeded") {
       const invoice = event.data.object as Stripe.Invoice;
-      const subscriptionId = (invoice as any).subscription as string | null;
+      const subscriptionId = (invoice as unknown as { subscription?: string | null }).subscription ?? null;
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         await applyEntitlement(subscription, subscription.metadata?.user_id ?? null);
