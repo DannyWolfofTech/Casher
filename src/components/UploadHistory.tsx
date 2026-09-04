@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, TrendingDown, FileText } from "lucide-react";
@@ -25,11 +25,7 @@ const UploadHistory = ({ userId, refreshKey = 0 }: UploadHistoryProps) => {
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
-  useEffect(() => {
-    fetchHistory();
-  }, [userId, refreshKey]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       if (!userId) {
         setHistory([]);
@@ -50,7 +46,12 @@ const UploadHistory = ({ userId, refreshKey = 0 }: UploadHistoryProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchHistory();
+    // refreshKey forces a refetch after a new upload.
+  }, [fetchHistory, refreshKey]);
 
   if (loading) {
     return (
