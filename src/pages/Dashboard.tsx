@@ -94,7 +94,7 @@ const Dashboard = () => {
           <SubscriptionsList refreshKey={refreshKey} userId={user?.id} />
         </div>
         <UploadHistory userId={user?.id} refreshKey={refreshKey} />
-        <TransactionsTable refreshKey={refreshKey} userTier={userTier} />
+        <TransactionsTable refreshKey={refreshKey} userTier={userTier} onDataChanged={() => setRefreshKey(prev => prev + 1)} />
         <SavingsGoals />
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardHeader><CardTitle>{t("bankConnect")}</CardTitle><CardDescription>{t("bankConnectDesc")}</CardDescription></CardHeader>

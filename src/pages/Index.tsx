@@ -125,7 +125,7 @@ const Index = () => {
               </div>
               <h3 className="text-2xl font-semibold mb-3 tracking-tight text-foreground">02. Analyze</h3>
               <p className="text-foreground/70 leading-relaxed">
-                We cross-reference thousands of UK merchants to surface recurring payments hiding in plain sight.
+                We match your transactions against known UK merchant patterns to surface recurring payments hiding in plain sight.
               </p>
             </div>
             <div className="p-10 md:p-12 rounded-3xl bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors">
@@ -150,8 +150,8 @@ const Index = () => {
           </div>
           <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { title: "GDPR compliant", body: "Stored in EU regions and removable on request." },
-              { title: "Encrypted at rest", body: "Files and tables encrypted with industry standards." },
+              { title: "GDPR-aligned", body: "Handled under UK/EU data protection principles and removable on request." },
+              { title: "Encrypted in transit and at rest", body: "HTTPS everywhere, and managed database encryption for stored results." },
               { title: "No bank login", body: "We never see your banking credentials. Ever." },
             ].map((item) => (
               <div key={item.title} className="border-t border-foreground/15 pt-4">
@@ -177,7 +177,7 @@ const Index = () => {
             <ArrowUpRight className="w-5 h-5" />
           </button>
           <p className="mt-10 text-white/70 text-xs uppercase tracking-[0.25em] font-semibold">
-            Simple CSV Upload &middot; UK Centric &middot; Secure
+            Simple CSV Upload &middot; UK Centric &middot; No Bank Login
           </p>
         </div>
       </section>

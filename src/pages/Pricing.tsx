@@ -194,7 +194,7 @@ const Pricing = () => {
             "@context": "https://schema.org",
             "@type": "Product",
             name: "Casher Premium",
-            description: "Everything in Pro plus AI insights and savings recommendations.",
+            description: "Everything in Pro, plus early access to upcoming AI insight features.",
             offers: {
               "@type": "Offer",
               price: "14.99",
@@ -219,7 +219,7 @@ const Pricing = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 md:py-16">
+      <main className="container mx-auto w-full max-w-full overflow-x-hidden px-4 py-8 md:py-16">
           <div className="text-center mb-8 md:mb-12">
             <h1 className="text-3xl md:text-5xl font-bold mb-4">
               {t("chooseYourPlan")}
@@ -230,11 +230,11 @@ const Pricing = () => {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto mb-12 md:mb-16">
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto mb-12 md:mb-16 md:pt-4">
             {plans.map((plan) => (
               <Card
                 key={plan.name}
-                className={`flex flex-col ${plan.popular ? "border-primary shadow-lg scale-105" : ""}`}
+                className={`flex flex-col ${plan.popular ? "border-primary shadow-lg md:scale-105" : ""}`}
               >
               {plan.popular && (
                   <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-semibold rounded-t-lg">
@@ -295,58 +295,58 @@ const Pricing = () => {
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-6 md:mb-8">
               {t("featureComparison")}
             </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse bg-card rounded-lg overflow-hidden">
+            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <table className="w-full min-w-[36rem] border-collapse bg-card rounded-lg overflow-hidden text-sm md:text-base">
                 <thead>
                   <tr className="bg-muted">
-                    <th className="text-left p-4 font-semibold">{t("feature")}</th>
-                    <th className="text-center p-4 font-semibold">{t("free")}</th>
-                    <th className="text-center p-4 font-semibold bg-primary/10">{t("pro")}</th>
-                    <th className="text-center p-4 font-semibold">{t("premium")}</th>
+                    <th className="text-left p-3 md:p-4 font-semibold">{t("feature")}</th>
+                    <th className="text-center p-3 md:p-4 font-semibold">{t("free")}</th>
+                    <th className="text-center p-3 md:p-4 font-semibold bg-primary/10">{t("pro")}</th>
+                    <th className="text-center p-3 md:p-4 font-semibold">{t("premium")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   <tr>
-                    <td className="p-4">{t("csvUploads")}</td>
-                    <td className="text-center p-4">{t("onePerMonth")}</td>
-                    <td className="text-center p-4 bg-primary/5">{t("unlimited")}</td>
-                    <td className="text-center p-4">{t("unlimited")}</td>
+                    <td className="p-3 md:p-4">{t("csvUploads")}</td>
+                    <td className="text-center p-3 md:p-4">{t("onePerMonth")}</td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5">{t("unlimited")}</td>
+                    <td className="text-center p-3 md:p-4">{t("unlimited")}</td>
                   </tr>
                   <tr>
-                    <td className="p-4">{t("transactionCategorization")}</td>
-                    <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="p-3 md:p-4">{t("transactionCategorization")}</td>
+                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">{t("subscriptionDetection")}</td>
-                    <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="p-3 md:p-4">{t("subscriptionDetection")}</td>
+                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">{t("advancedFilters")}</td>
-                    <td className="text-center p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="p-3 md:p-4">{t("advancedFilters")}</td>
+                    <td className="text-center p-3 md:p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">{t("csvExports")}</td>
-                    <td className="text-center p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="p-3 md:p-4">{t("csvExports")}</td>
+                    <td className="text-center p-3 md:p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
-                    <td className="p-4">{t("aiPoweredInsights")}</td>
-                    <td className="text-center p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-4 bg-primary/5"><X className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="p-3 md:p-4">{t("aiPoweredInsights")}</td>
+                    <td className="text-center p-3 md:p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><X className="inline h-5 w-5 text-muted-foreground" /></td>
+                    <td className="text-center p-3 md:p-4 text-xs md:text-sm text-muted-foreground">{t("comingSoonShort")}</td>
                   </tr>
                   <tr>
-                    <td className="p-4">{t("support")}</td>
-                    <td className="text-center p-4">{t("community")}</td>
-                    <td className="text-center p-4 bg-primary/5">{t("email")}</td>
-                    <td className="text-center p-4">{t("priorityChat")}</td>
+                    <td className="p-3 md:p-4">{t("support")}</td>
+                    <td className="text-center p-3 md:p-4">{t("community")}</td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5">{t("email")}</td>
+                    <td className="text-center p-3 md:p-4">{t("priorityChat")}</td>
                   </tr>
                 </tbody>
               </table>

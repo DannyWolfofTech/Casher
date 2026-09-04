@@ -12,7 +12,7 @@ const Privacy = () => {
     <div className="min-h-screen bg-background">
       <SEO
         title="Privacy Policy — Casher"
-        description="How Casher collects, processes, and protects your data. GDPR-compliant CSV processing with encrypted storage and auto-deletion."
+        description="How Casher collects, processes, and protects your data: CSV-only processing, encrypted storage, and how to request deletion."
         path="/privacy"
       />
       <header className="border-b">
@@ -41,21 +41,22 @@ const Privacy = () => {
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-3">Data Storage</h2>
             <p>
-              All uploaded transaction data is temporarily stored for analysis purposes and is automatically 
-              deleted after processing. We do not permanently store your raw bank statements. Detected 
-              subscriptions and analysis results are stored securely in our encrypted database. 
-              You can delete your data at any time via your dashboard.
+              Uploaded CSV files are processed in memory and are not retained as files after processing —
+              we do not store your raw bank statements. The transactions, detected subscriptions and upload
+              history produced from them are stored in our managed database so your dashboard can display
+              them, and remain there until you ask us to remove them. To have your data deleted, email us
+              and we will action the request; in-app one-click deletion is not available yet.
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-3">GDPR Compliance</h2>
             <p>
-              Casher is fully compliant with GDPR regulations and UK data protection laws. As a UK/EU user, you have the right to:
+              Casher is built around UK GDPR principles. As a UK/EU user, you can exercise the following rights by contacting us:
             </p>
             <ul className="list-disc list-inside mt-2 space-y-1">
               <li>Request a copy of your data</li>
-              <li>Request deletion of your data at any time</li>
+              <li>Request deletion of your data</li>
               <li>Opt out of data collection</li>
               <li>Export your data in a portable format</li>
               <li>Withdraw consent for data processing</li>
@@ -69,10 +70,11 @@ const Privacy = () => {
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-3">Data Security</h2>
             <p>
-              We use industry-standard encryption and security measures to protect your data. 
-              All data transmission is encrypted using HTTPS, and stored data is encrypted at rest. 
-              We do not store banking credentials or login information. Only anonymized transaction 
-              descriptions are retained for subscription detection.
+              All data transmission is encrypted using HTTPS, and stored data sits in a managed database
+              with encryption at rest and row-level access rules so each account can only read its own
+              records. We never store banking credentials or login information. Transaction descriptions
+              are stored as they appear in your CSV and are not anonymised, so avoid uploading statements
+              containing details you do not want stored.
             </p>
           </section>
 
