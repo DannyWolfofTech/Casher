@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface HistoricalData {
   month: string;
@@ -66,6 +67,7 @@ const History = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   
+  const isMobile = useIsMobile();
   const exportRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -274,7 +276,7 @@ const History = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8" ref={exportRef}>
+      <main className="container mx-auto w-full max-w-full overflow-x-hidden px-4 py-8 space-y-8" ref={exportRef}>
         {/* Filters */}
         <Card>
           <CardHeader>
@@ -488,7 +490,7 @@ const History = () => {
         )}
 
         {/* Charts */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid min-w-0 gap-6 md:grid-cols-2 [&>*]:min-w-0 [&>*]:overflow-hidden">
           {/* Trend Chart */}
           <Card>
             <CardHeader>
@@ -535,18 +537,24 @@ const History = () => {
                       data={categoryData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
+                      innerRadius={isMobile ? 45 : 60}
+                      outerRadius={isMobile ? 75 : 100}
                       fill="#8884d8"
                       paddingAngle={5}
                       dataKey="value"
-                      label={(entry) => `${entry.name}: £${entry.value}`}
+                      labelLine={!isMobile}
+                      label={isMobile ? false : (entry) => `${entry.name}: £${entry.value}`}
                     >
                       {categoryData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip
+                      wrapperStyle={{ maxWidth: '60vw', zIndex: 20 }}
+                      allowEscapeViewBox={{ x: false, y: false }}
+                      formatter={(value: number, name: string) => [`£${Number(value).toFixed(2)}`, name]}
+                    />
+                    {isMobile && <Legend verticalAlign="bottom" height={48} />}
                   </PieChart>
                 </ResponsiveContainer>
               ) : (

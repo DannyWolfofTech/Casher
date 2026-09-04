@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { spendingAmount, type DirectionalTransaction } from "@/lib/transactions";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -21,6 +22,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchSpendingData();
@@ -76,7 +78,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
   };
 
   return (
-    <Card>
+    <Card className="min-w-0 overflow-hidden">
       <CardHeader>
         <CardTitle>{t("spendingByCategory")}</CardTitle>
         <CardDescription>{t("overallSpendingBreakdown")}</CardDescription>
@@ -100,15 +102,15 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
             {t("noDataAvailable")}
           </div>
         ) : (
-          <ChartContainer config={{}} className="h-[400px]">
+          <ChartContainer config={{}} className="aspect-auto h-[320px] w-full min-w-0 md:h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={data}
                   cx="50%"
                   cy="45%"
-                  labelLine={true}
-                  label={({ name, value, cx, cy, midAngle, outerRadius }) => {
+                  labelLine={!isMobile}
+                  label={isMobile ? false : ({ name, value, cx, cy, midAngle, outerRadius }) => {
                     const RADIAN = Math.PI / 180;
                     const radius = outerRadius + 30;
                     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -126,7 +128,7 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
                       </text>
                     );
                   }}
-                  outerRadius={80}
+                  outerRadius={isMobile ? 70 : 80}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -134,7 +136,11 @@ const SpendingChart = ({ refreshKey = 0 }: SpendingChartProps) => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => [`£${value.toFixed(2)}`, 'Amount']} />
+                <Tooltip
+                  formatter={(value: number) => [`£${value.toFixed(2)}`, 'Amount']}
+                  wrapperStyle={{ maxWidth: '60vw', zIndex: 20 }}
+                  allowEscapeViewBox={{ x: false, y: false }}
+                />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
