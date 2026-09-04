@@ -13,6 +13,8 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import SEO from "@/components/SEO";
 import { planCtaState, type PlanKey } from "@/lib/pricing-cta";
+import { redirectToCheckout } from "@/lib/checkout-redirect";
+
 
 // Hardcoded Stripe Publishable Key (Test Mode)
 const STRIPE_PK = "pk_test_51SCrpvJMS012Ip2AFxn0fgxc5MFSSQ21FKjTQzMWcY67b1XrTC0JaW7zMQ8DXUsHRd0BQa07qzsfgHNv0O3EQWRu00bHXyvXld";
