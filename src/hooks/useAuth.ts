@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { isPaidTier, resolveUploadAllowance, type UploadUsage } from "@/lib/upload-allowance";
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -14,6 +15,18 @@ export const useAuth = () => {
   const navigate = useNavigate();
   const lastSubCheckRef = useRef<number>(0);
 
+  const fetchUploadUsage = async (tierHint?: string) => {
+    const { data: usageRows } = await supabase.rpc("get_upload_usage" as never);
+    const rawUsage: unknown = usageRows;
+    const usage = (Array.isArray(rawUsage) ? rawUsage[0] : rawUsage) as UploadUsage | null | undefined;
+    if (!usage) return null;
+    const allowance = resolveUploadAllowance(usage, tierHint);
+    setUserTier(allowance.tier);
+    setUploadsUsed(allowance.uploadsUsed);
+    setCanUpload(allowance.canUpload);
+    return allowance;
+  };
+
   const checkSubscription = async () => {
     // Throttle: at most once every 60s, regardless of trigger
     const now = Date.now();
@@ -22,12 +35,17 @@ export const useAuth = () => {
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (!error && data) {
-        setUserTier(data.tier || "free");
+        const tier = data.tier || "free";
+        setUserTier(tier);
+        // A paid tier is immediately upload-capable; reconcile with the server.
+        if (isPaidTier(tier)) setCanUpload(true);
+        await fetchUploadUsage(tier);
       }
     } catch (error) {
       console.error("Error checking subscription:", error);
     }
   };
+
 
   useEffect(() => {
     const checkUser = async () => {
