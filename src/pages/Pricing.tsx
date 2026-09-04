@@ -194,7 +194,7 @@ const Pricing = () => {
             "@context": "https://schema.org",
             "@type": "Product",
             name: "Casher Premium",
-            description: "Everything in Pro plus AI insights and savings recommendations.",
+            description: "Everything in Pro, plus early access to upcoming AI insight features.",
             offers: {
               "@type": "Offer",
               price: "14.99",
@@ -340,7 +340,7 @@ const Pricing = () => {
                     <td className="p-3 md:p-4">{t("aiPoweredInsights")}</td>
                     <td className="text-center p-3 md:p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
                     <td className="text-center p-3 md:p-4 bg-primary/5"><X className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4 text-xs md:text-sm text-muted-foreground">{t("comingSoonShort")}</td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("support")}</td>
