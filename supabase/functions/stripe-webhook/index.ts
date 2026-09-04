@@ -76,7 +76,7 @@ serve(async (req) => {
       event_id: eventId,
       event_type: eventType,
       processing_status: "processing",
-      payload: { metadata: (event.data.object as any)?.metadata },
+      payload: { metadata: (event.data.object as { metadata?: Record<string, string> })?.metadata },
     });
 
     /** Apply entitlement to the profile identified by user_id or customer id. */
