@@ -16,43 +16,43 @@ export type Database = {
     Tables: {
       detected_subscriptions: {
         Row: {
-          details_locked: boolean
-          reviewed_at: string | null
           amount: number
           cancellation_url: string | null
           created_at: string
+          details_locked: boolean
           estimated_annual_cost: number | null
           frequency: string
           id: string
           last_charged: string | null
+          reviewed_at: string | null
           service_name: string
           status: string | null
           user_id: string
         }
         Insert: {
-          details_locked?: boolean
-          reviewed_at?: string | null
           amount: number
           cancellation_url?: string | null
           created_at?: string
+          details_locked?: boolean
           estimated_annual_cost?: number | null
           frequency: string
           id?: string
           last_charged?: string | null
+          reviewed_at?: string | null
           service_name: string
           status?: string | null
           user_id: string
         }
         Update: {
-          details_locked?: boolean
-          reviewed_at?: string | null
           amount?: number
           cancellation_url?: string | null
           created_at?: string
+          details_locked?: boolean
           estimated_annual_cost?: number | null
           frequency?: string
           id?: string
           last_charged?: string | null
+          reviewed_at?: string | null
           service_name?: string
           status?: string | null
           user_id?: string
@@ -263,6 +263,36 @@ export type Database = {
         }
         Relationships: []
       }
+      statement_reviews: {
+        Row: {
+          created_at: string
+          id: number
+          new_values: Json
+          previous_values: Json
+          record_id: string
+          record_kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          new_values: Json
+          previous_values: Json
+          record_id: string
+          record_kind: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          new_values?: Json
+          previous_values?: Json
+          record_id?: string
+          record_kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           created_at: string
@@ -316,54 +346,54 @@ export type Database = {
       }
       transactions: {
         Row: {
-          direction_override: string | null
-          category_override: string | null
-          reviewed_at: string | null
           amount: number
           category: string | null
+          category_override: string | null
           created_at: string
           date: string
           description: string
           direction: string | null
+          direction_override: string | null
           id: string
           import_version: number | null
           is_recurring: boolean | null
           merchant: string | null
           recurring_frequency: string | null
+          reviewed_at: string | null
           user_id: string
         }
         Insert: {
-          direction_override?: string | null
-          category_override?: string | null
-          reviewed_at?: string | null
           amount: number
           category?: string | null
+          category_override?: string | null
           created_at?: string
           date: string
           description: string
           direction?: string | null
+          direction_override?: string | null
           id?: string
           import_version?: number | null
           is_recurring?: boolean | null
           merchant?: string | null
           recurring_frequency?: string | null
+          reviewed_at?: string | null
           user_id: string
         }
         Update: {
-          direction_override?: string | null
-          category_override?: string | null
-          reviewed_at?: string | null
           amount?: number
           category?: string | null
+          category_override?: string | null
           created_at?: string
           date?: string
           description?: string
           direction?: string | null
+          direction_override?: string | null
           id?: string
           import_version?: number | null
           is_recurring?: boolean | null
           merchant?: string | null
           recurring_frequency?: string | null
+          reviewed_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -539,14 +569,6 @@ export type Database = {
       }
     }
     Functions: {
-      review_transaction: {
-        Args: { _id: string; _direction: string; _category: string; _expected_reviewed_at?: string | null }
-        Returns: Json
-      }
-      review_subscription: {
-        Args: { _id: string; _status: string; _amount: number; _frequency: string; _expected_reviewed_at?: string | null }
-        Returns: Json
-      }
       current_request_role: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -566,6 +588,15 @@ export type Database = {
           upload_limit: number
           uploads_used: number
         }[]
+      }
+      import_statement_atomic: {
+        Args: {
+          _csv_hash: string
+          _subscriptions: Json
+          _transactions: Json
+          _user_id: string
+        }
+        Returns: Json
       }
       increment_monthly_uploads: {
         Args: { _user_id: string }
@@ -601,6 +632,25 @@ export type Database = {
           upload_limit: number
           uploads_used: number
         }[]
+      }
+      review_subscription: {
+        Args: {
+          _amount: number
+          _expected_reviewed_at?: string
+          _frequency: string
+          _id: string
+          _status: string
+        }
+        Returns: Json
+      }
+      review_transaction: {
+        Args: {
+          _category: string
+          _direction: string
+          _expected_reviewed_at?: string
+          _id: string
+        }
+        Returns: Json
       }
       upload_limit_for_tier: { Args: { _tier: string }; Returns: number }
     }
