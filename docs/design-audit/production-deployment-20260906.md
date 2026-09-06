@@ -58,7 +58,7 @@ All six relevant real payment/cancellation deliveries succeeded in the connected
 
 The live webhook check was a signed integration probe for an unpaid synthetic customer, **not a live payment**. No real card was charged. The live checkout was expired and its synthetic customer deleted afterward.
 
-Email confirmation is required; secure email changes and compromised-password checking are enabled. The server password minimum was set to eight characters. Google is enabled in configuration; a new end-to-end Google consent/login was not completed in this pass. The owner's recovery email was delivered without replacing their password.
+Email confirmation is required; secure email changes and compromised-password checking are enabled. Casher's form requires eight-character passwords. Lovable's server-minimum field did not retain an attempted explicit value, so no server-minimum change is claimed. Google is enabled in configuration; a new end-to-end Google consent/login was not completed in this pass. The owner's recovery email was delivered without replacing their password.
 
 ![Published dashboard with synthetic data and an intact chart](production-dashboard-20260906.png)
 
