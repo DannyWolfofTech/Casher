@@ -19,7 +19,7 @@ All colors MUST be HSL.
     --popover-foreground: 234 66% 30%;
 
     /* Primary stays green for CTAs (matches banner's "Review all subscriptions" button) */
-    --primary: 145 100% 39%;
+    --primary: 151 62% 28%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary = navy ink for serious surfaces */
@@ -69,7 +69,7 @@ All colors MUST be HSL.
     --popover-foreground: 210 40% 98%;
 
     --primary: 145 100% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 222 45% 10%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -104,5 +104,12 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    margin: 0;
+    min-width: 320px;
+  }
+
+  :focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   }
 }

@@ -177,10 +177,10 @@ describe("parseTransactionsCsv", () => {
     expect(salary.direction).toBe("credit");
   });
 
-  it("deduplicates identical rows within the same file", () => {
+  it("preserves identical-looking purchases within the same file", () => {
     if (!result.ok) return;
     expect(result.duplicatesInFile).toBe(1);
-    expect(result.transactions.filter((t) => t.description === "NETFLIX.COM")).toHaveLength(1);
+    expect(result.transactions.filter((t) => t.description === "NETFLIX.COM")).toHaveLength(2);
   });
 
   it("reports skipped rows with reasons instead of failing", () => {

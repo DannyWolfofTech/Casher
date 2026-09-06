@@ -1,0 +1,86 @@
+{
+  "runId": "8cc2e001-5b9c-47be-9d80-d55ea6a3e9c8",
+  "time": "2026-09-06T20:49:55.666Z",
+  "account": "acct_1SCrpvJMS012Ip2A",
+  "mode": "test",
+  "database": "isolated in-memory Auth/PostgREST adapter",
+  "interactive": true,
+  "results": [
+    {
+      "test": "Unauthenticated billing is rejected",
+      "result": "passed"
+    },
+    {
+      "test": "Premium and forged checkout requests are rejected",
+      "result": "passed"
+    },
+    {
+      "test": "A new account has no paid access",
+      "result": "passed"
+    },
+    {
+      "test": "Repeated and concurrent requests reuse one Stripe Checkout session",
+      "result": "passed"
+    },
+    {
+      "test": "Hosted Checkout accepts a Stripe test card and completes payment",
+      "result": "passed"
+    },
+    {
+      "test": "Invalid webhook signatures are rejected without audit writes",
+      "result": "passed"
+    },
+    {
+      "test": "Signed events from the wrong account or mode are rejected",
+      "result": "passed"
+    },
+    {
+      "test": "A real Stripe event verifies in Deno and grants access only to its owner",
+      "result": "passed"
+    },
+    {
+      "test": "Duplicate delivery is idempotent",
+      "result": "passed"
+    },
+    {
+      "test": "An existing subscriber goes to the portal without a second checkout",
+      "result": "passed"
+    },
+    {
+      "test": "The configured Stripe portal opens only for the linked customer",
+      "result": "passed"
+    },
+    {
+      "test": "Successful renewal preserves Pro and advances the billing period",
+      "result": "passed"
+    },
+    {
+      "test": "Failed renewal removes paid access and overdue checkout opens billing",
+      "result": "passed"
+    },
+    {
+      "test": "Payment recovery restores Pro and replaying an old failure cannot revoke it",
+      "result": "passed"
+    },
+    {
+      "test": "A database failure returns a retryable error and replay recovers",
+      "result": "passed"
+    },
+    {
+      "test": "Hosted billing portal schedules cancellation",
+      "result": "passed"
+    },
+    {
+      "test": "Scheduled cancellation preserves the already-paid period",
+      "result": "passed"
+    },
+    {
+      "test": "Cancellation removes Pro and old subscription events cannot re-grant it",
+      "result": "passed"
+    },
+    {
+      "test": "Webhook metadata cannot overwrite an established billing identity",
+      "result": "passed"
+    }
+  ]
+}

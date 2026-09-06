@@ -11,6 +11,16 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
+test-results/
+.audit-results/
+supabase/.branches/
+supabase/.temp/
+playwright-report/
+docs/design-audit/changes.patch
+docs/design-audit/changed-files.txt
 
 # Editor directories and files
 .vscode/*

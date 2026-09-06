@@ -18,6 +18,7 @@ export interface UploadResult {
   transactionsCount?: number;
   subscriptionsCount?: number;
   duplicatesSkipped?: number;
+  skippedRows?: number;
   usage?: {
     uploadsUsed: number;
     uploadLimit: number | null;
@@ -64,12 +65,14 @@ async function readStructuredError(error: unknown): Promise<StructuredFunctionEr
 const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fileError, setFileError] = useState('');
   const { toast } = useToast();
   const { t } = useTranslation();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0]);
+      setFileError('');
     }
   }, []);
 
@@ -79,12 +82,19 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
       'text/csv': ['.csv'],
     },
     maxFiles: 1,
+    maxSize: 5 * 1024 * 1024,
+    disabled: loading,
+    onDropRejected: (rejections) => {
+      setFile(null);
+      setFileError(rejections.some(r => r.errors.some(e => e.code === 'file-too-large')) ? 'Choose a CSV smaller than 5 MB.' : 'Choose one CSV file. Other file types are not supported.');
+    },
   });
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || loading) return;
 
     setLoading(true);
+    setFileError('');
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -99,6 +109,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         if (error) {
           const structured = await readStructuredError(error);
           if (structured) {
+            setFileError(structured.message);
             captureApiError(error, { operation: 'csvUpload', code: structured.code });
             toast({
               title: structured.code === 'QUOTA_EXCEEDED'
@@ -136,6 +147,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
       } catch (error: unknown) {
         captureApiError(error, { operation: 'csvUpload' });
         const message = error instanceof Error ? error.message : t("errorProcessing");
+        setFileError(message);
         toast({
           title: "Error",
           description: message,
@@ -148,6 +160,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
     };
 
     reader.onerror = () => {
+      setFileError(t('errorReading'));
       toast({
         title: "Error",
         description: t("errorReading"),
@@ -169,22 +182,24 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div
-          {...getRootProps()}
+          {...getRootProps({ role: 'button', 'aria-label': 'Choose bank statement CSV' })}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
             isDragActive
               ? "border-primary bg-primary/5"
               : "border-muted-foreground/25 hover:border-primary/50"
           }`}
         >
-          <input {...getInputProps()} />
+          <input {...getInputProps({ 'aria-label': 'Bank statement CSV' })} />
           <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           {file ? (
             <div className="flex items-center justify-center gap-2">
               <FileText className="h-5 w-5" />
-              <span>{file.name}</span>
+              <span className="min-w-0 break-all">{file.name}</span>
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Remove selected CSV"
+                disabled={loading}
                 onClick={(e) => {
                   e.stopPropagation();
                   setFile(null);
@@ -206,6 +221,9 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
             </>
           )}
         </div>
+        <p className="text-xs text-muted-foreground">GBP statements only · CSV up to 5 MB · 10,000 rows maximum. Signed amounts: negative for money out, positive for money in; or use separate debit and credit columns.</p>
+        <p className="text-xs text-muted-foreground">Use statements from one bank account. Identical transactions across different accounts cannot yet be distinguished.</p>
+        {fileError && <p role="alert" className="text-sm text-destructive">{fileError}</p>}
 
         {file && (
           <Button onClick={handleUpload} disabled={loading} className="w-full">

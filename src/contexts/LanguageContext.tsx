@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import i18n from "@/i18n/config";
 import { LanguageContext, type Language } from "./language-context";
 
 interface Translations {
@@ -917,7 +918,7 @@ const translations: Translations = {
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem("language");
-    if (saved) return saved as Language;
+    if (saved && ['en', 'fr', 'es', 'ro', 'de', 'it', 'pl'].includes(saved)) return saved as Language;
     
     const browserLang = navigator.language.split("-")[0];
     if (["fr", "es", "ro", "de", "it", "pl"].includes(browserLang)) {
@@ -928,10 +929,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem("language", language);
+    document.documentElement.lang = language;
+    void i18n.changeLanguage(language);
   }, [language]);
 
   const t = (key: string): string => {
-    return translations[language][key] || translations.en[key] || key;
+    return translations[language]?.[key] || translations.en[key] || key;
   };
 
   return (
@@ -940,4 +943,3 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     </LanguageContext.Provider>
   );
 }
-

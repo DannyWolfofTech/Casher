@@ -18,8 +18,8 @@ describe("planCtaState", () => {
     });
   });
 
-  it("keeps Free actionable for a paid user", () => {
-    expect(planCtaState("free", true, "pro").labelKey).toBe("getStartedFree");
+  it("routes paid-to-free changes through billing cancellation", () => {
+    expect(planCtaState("free", true, "pro")).toEqual({ labelKey: 'manageBilling', disabled: false, action: 'billing' });
   });
 
   it("marks the matching paid plan as current", () => {

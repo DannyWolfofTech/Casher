@@ -24,9 +24,9 @@ describe("upload allowance", () => {
     expect(a.uploadsUsed).toBe(1);
   });
 
-  it("unblocks immediately after upgrading, even if the usage row is still stale free", () => {
+  it("keeps the server allowance authoritative until the upgrade is confirmed", () => {
     const a = resolveUploadAllowance({ uploads_used: 1, upload_limit: 1, tier: "free" }, "pro");
-    expect(a.canUpload).toBe(true);
+    expect(a.canUpload).toBe(false);
   });
 
   it("reconciles with the server once it reports the paid tier", () => {
@@ -36,6 +36,6 @@ describe("upload allowance", () => {
   });
 
   it("falls back safely when the server returns nothing", () => {
-    expect(resolveUploadAllowance(null, "pro")).toEqual({ tier: "pro", uploadsUsed: 0, canUpload: true });
+    expect(resolveUploadAllowance(null, "pro")).toEqual({ tier: "pro", uploadsUsed: 0, canUpload: false });
   });
 });

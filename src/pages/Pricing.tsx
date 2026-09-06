@@ -15,14 +15,16 @@ import { planCtaState, PREMIUM_PURCHASABLE, type PlanKey } from "@/lib/pricing-c
 import { redirectToCheckout } from "@/lib/checkout-redirect";
 
 
-// Hardcoded Stripe Publishable Key (Test Mode)
-const STRIPE_PK = "pk_test_51SCrpvJMS012Ip2AFxn0fgxc5MFSSQ21FKjTQzMWcY67b1XrTC0JaW7zMQ8DXUsHRd0BQa07qzsfgHNv0O3EQWRu00bHXyvXld";
 
 const Pricing = () => {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [userTier, setUserTier] = useState<string>("free");
-  const [emailLoading, setEmailLoading] = useState(false);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [accountLoading, setAccountLoading] = useState(true);
+  const [accountError, setAccountError] = useState('');
+  const [hasBillingAccount, setHasBillingAccount] = useState(false);
+  const [accountRetry, setAccountRetry] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -30,22 +32,38 @@ const Pricing = () => {
   // SEO handled by <SEO /> component below
 
   useEffect(() => {
+    let active = true;
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      setAccountLoading(true); setAccountError('');
+      try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!active) return;
+      if (error) throw error;
       setUser(session?.user ?? null);
+      setHasBillingAccount(false); setUserTier('free');
       if (session?.user) {
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from("profiles")
-          .select("subscription_tier")
+          .select("subscription_tier, stripe_customer_id")
           .eq("user_id", session.user.id)
-          .maybeSingle();
-        setUserTier(profile?.subscription_tier || "free");
+          .maybeSingle().retry(false);
+        if (!active) return;
+        if (error || !profile) throw error || new Error('Profile unavailable');
+        setUserTier(profile.subscription_tier || "free");
+        setHasBillingAccount(!!profile.stripe_customer_id || profile.subscription_tier !== 'free');
       }
+      } catch { if (active) setAccountError('Your current plan could not be checked. Retry before starting checkout.'); }
+      finally { if (active) setAccountLoading(false); }
     };
-    checkUser();
-  }, []);
+    void checkUser();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') setAccountRetry(value => value + 1);
+    });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, [accountRetry]);
 
-  const handleSubscribe = async (priceId: string) => {
+  const handleSubscribe = async (tier: string) => {
+    if (loadingTier || accountLoading || accountError) return;
     if (!user) {
       toast({
         title: "Please sign in",
@@ -56,10 +74,10 @@ const Pricing = () => {
       return;
     }
 
-    setLoadingTier(priceId);
+    setLoadingTier(tier);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-        body: { priceId },
+        body: { tier },
       });
 
       if (error) throw error;
@@ -82,31 +100,17 @@ const Pricing = () => {
 
   };
 
-  const handleEmailSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-
-    setEmailLoading(true);
+  const handleBilling = async () => {
+    if (billingLoading || accountLoading || accountError) return;
+    setBillingLoading(true);
     try {
-      const { error } = await supabase.functions.invoke("send-welcome-email");
-
+      const { data, error } = await supabase.functions.invoke("customer-portal");
       if (error) throw error;
-
-      toast({
-        title: "Success!",
-        description: "Welcome email sent! Check your inbox for pro tips.",
-      });
+      redirectToCheckout(data?.url);
     } catch {
-      toast({
-        title: "Error",
-        description: "We couldn't send that email. Please try again shortly.",
-        variant: "destructive",
-      });
+      toast({ title: "Billing unavailable", description: "We couldn't open billing. Please try again shortly.", variant: "destructive" });
+      setBillingLoading(false);
     }
-    setEmailLoading(false);
   };
 
   const plans = [
@@ -114,7 +118,6 @@ const Pricing = () => {
       name: t("free"),
       nameKey: "free",
       price: "£0",
-      priceId: "",
       description: t("perfectForGettingStarted"),
       comingSoon: false,
       features: [
@@ -126,15 +129,12 @@ const Pricing = () => {
       ],
       limits: [
         t("noExports"),
-        t("noAdvancedFilters"),
-        t("limitedDashboard"),
       ],
     },
     {
       name: t("pro"),
       nameKey: "pro",
       price: STRIPE_TIERS.pro.price,
-      priceId: STRIPE_TIERS.pro.priceId,
       description: t("forRegularUsers"),
       comingSoon: false,
       features: [
@@ -143,7 +143,6 @@ const Pricing = () => {
         t("csvExportsFeature"),
         t("detailedReports"),
         t("priorityEmailSupport"),
-        t("monthlySavingsSummary"),
       ],
       limits: [],
       popular: true,
@@ -152,7 +151,6 @@ const Pricing = () => {
       name: t("premium"),
       nameKey: "premium",
       price: STRIPE_TIERS.premium.price,
-      priceId: STRIPE_TIERS.premium.priceId,
       description: t("forPowerUsers"),
       comingSoon: !PREMIUM_PURCHASABLE,
       features: [
@@ -203,12 +201,11 @@ const Pricing = () => {
         ]}
       />
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t("back")}
+        <div className="container mx-auto px-4 py-4 flex flex-wrap gap-3 justify-between items-center">
+          <Button variant="ghost" size="icon" aria-label={t("back")} onClick={() => navigate(user ? "/dashboard" : "/")}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold text-primary">Casher</h1>
+          <span className="font-serif text-2xl italic">Casher</span>
           <div className="flex items-center gap-2">
             <LanguageSelector />
             <ThemeToggle />
@@ -224,6 +221,8 @@ const Pricing = () => {
             <p className="text-lg md:text-xl text-muted-foreground">
               {t("startSavingToday")}
             </p>
+            {accountError && <div role="alert" className="mt-4 space-y-2 text-sm"><p>{accountError}</p><Button variant="outline" onClick={() => setAccountRetry(value => value + 1)}>Retry plan check</Button></div>}
+            {user && hasBillingAccount && <Button className="mt-4" variant="outline" disabled={billingLoading || accountLoading || !!accountError} onClick={handleBilling}>{billingLoading ? "Opening billing…" : "Manage billing and cancellation"}</Button>}
           </div>
 
           {/* Pricing Cards */}
@@ -235,7 +234,7 @@ const Pricing = () => {
               >
               {plan.popular && (
                   <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-semibold rounded-t-lg">
-                    {t("mostPopular")}
+                    {t("forRegularUsers")}
                   </div>
                 )}
                 {plan.comingSoon && (
@@ -284,14 +283,15 @@ const Pricing = () => {
                         variant={cta.action === "none" ? "outline" : plan.popular ? "default" : "outline"}
                         onClick={() => {
                           if (cta.action === "signup") navigate("/auth");
-                          if (cta.action === "checkout") handleSubscribe(plan.priceId);
+                          if (cta.action === "checkout") handleSubscribe(plan.nameKey);
+                          if (cta.action === 'billing') handleBilling();
                         }}
-                        disabled={cta.disabled || (loadingTier !== null && cta.action === "checkout")}
+                        disabled={accountLoading || !!accountError || cta.disabled || billingLoading || (loadingTier !== null && cta.action === "checkout")}
                       >
-                        {loadingTier === plan.priceId ? (
+                        {loadingTier === plan.nameKey ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
-                        {t(cta.labelKey)}
+                        {cta.action === 'billing' ? 'Manage in billing' : t(cta.labelKey)}
                       </Button>
                     );
                   })()}
@@ -305,7 +305,7 @@ const Pricing = () => {
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-6 md:mb-8">
               {t("featureComparison")}
             </h2>
-            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="region" aria-label="Plan comparison" tabIndex={0}>
               <table className="w-full min-w-[36rem] border-collapse bg-card rounded-lg overflow-hidden text-sm md:text-base">
                 <thead>
                   <tr className="bg-muted">
@@ -329,32 +329,32 @@ const Pricing = () => {
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("transactionCategorization")}</td>
-                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("subscriptionDetection")}</td>
-                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("advancedFilters")}</td>
-                    <td className="text-center p-3 md:p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("csvExports")}</td>
-                    <td className="text-center p-3 md:p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4"><Check className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><X role="img" aria-label="Not included" className="inline h-5 w-5 text-muted-foreground" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
+                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("aiPoweredInsights")}</td>
-                    <td className="text-center p-3 md:p-4"><X className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-3 md:p-4 bg-primary/5"><X className="inline h-5 w-5 text-muted-foreground" /></td>
+                    <td className="text-center p-3 md:p-4"><X role="img" aria-label="Not included" className="inline h-5 w-5 text-muted-foreground" /></td>
+                    <td className="text-center p-3 md:p-4 bg-primary/5"><X role="img" aria-label="Not included" className="inline h-5 w-5 text-muted-foreground" /></td>
                     <td className="text-center p-3 md:p-4 text-xs md:text-sm text-muted-foreground">{t("comingSoonShort")}</td>
                   </tr>
                   <tr>
@@ -368,34 +368,8 @@ const Pricing = () => {
             </div>
           </div>
 
-          {/* Email Signup */}
-          <div className="max-w-2xl mx-auto mb-12 md:mb-16">
-            <Card className="border-border/70 bg-card shadow-sm">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl md:text-3xl">{t("getWeeklyProTips")}</CardTitle>
-                <CardDescription className="text-base">
-                  {t("subscribeForTips")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleEmailSignup} className="flex flex-col sm:flex-row gap-4 items-center">
-                  <p className="flex-grow text-sm text-muted-foreground text-center sm:text-left">
-                    {user ? `${t("tipsSendToAccount")} ${user.email}` : t("tipsSignInPrompt")}
-                  </p>
-                  <Button type="submit" disabled={emailLoading} size="lg">
-                    {emailLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    {user ? t("subscribe") : t("getStarted")}
-                  </Button>
-                </form>
-              </CardContent>
-
-            </Card>
-          </div>
-
         <div className="text-center text-sm text-muted-foreground space-y-2">
-          <p>{t("gdprCompliance")}</p>
+          <p>CSV uploads support GBP statements. Bank connections and Premium features are still in development.</p>
           <p>{t("cancelAnytime")}</p>
         </div>
       </main>

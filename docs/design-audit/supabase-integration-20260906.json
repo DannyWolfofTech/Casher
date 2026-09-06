@@ -1,0 +1,82 @@
+{
+  "time": "2026-09-06T21:09:17.124Z",
+  "environment": "full local Supabase with all migrations and actual edge functions",
+  "results": [
+    {
+      "test": "Real Supabase login creates private profiles for three independent users",
+      "result": "passed"
+    },
+    {
+      "test": "The edge gateway rejects anonymous imports",
+      "result": "passed"
+    },
+    {
+      "test": "A real edge import preserves repeated purchases, credits, exact spending and history",
+      "result": "passed"
+    },
+    {
+      "test": "Replay is harmless and quota denial leaves transactions and usage unchanged",
+      "result": "passed"
+    },
+    {
+      "test": "Concurrent real edge requests cannot exceed the free upload limit",
+      "result": "passed"
+    },
+    {
+      "test": "Authenticated users cannot read other accounts or bypass server-owned import writes",
+      "result": "passed"
+    },
+    {
+      "test": "Browser profile writes cannot grant Premium, replace billing identity or reset quota",
+      "result": "passed"
+    },
+    {
+      "test": "Correction RPCs enforce ownership, stale-edit protection and immutable source values",
+      "result": "passed"
+    },
+    {
+      "test": "Later overlapping imports preserve corrected subscriptions and repeated-purchase counts",
+      "result": "passed"
+    },
+    {
+      "test": "Malformed input produces a useful error and consumes no quota",
+      "result": "passed"
+    },
+    {
+      "test": "The real database resets monthly quota at a new month",
+      "result": "passed"
+    },
+    {
+      "test": "Goals persist with positive targets and account isolation",
+      "result": "passed"
+    },
+    {
+      "test": "All six actual email templates render with Casher branding",
+      "result": "passed"
+    },
+    {
+      "test": "The signed email hook rejects missing fields and queues the correct branded message",
+      "result": "passed"
+    },
+    {
+      "test": "Ordinary accounts cannot invoke the privileged email dispatcher",
+      "result": "passed"
+    },
+    {
+      "test": "Both deployed checkout URLs share one authenticated Stripe session",
+      "result": "passed"
+    },
+    {
+      "test": "The deployed webhook verifies real Stripe events and persists one owner-scoped entitlement",
+      "result": "passed"
+    },
+    {
+      "test": "Deployed billing refresh, portal, cancellation and old-event replay agree with PostgreSQL",
+      "result": "passed"
+    },
+    {
+      "test": "Recovery email, one-use link and password replacement work through real local Auth",
+      "result": "passed"
+    }
+  ]
+}

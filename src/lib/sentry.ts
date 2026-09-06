@@ -1,36 +1,25 @@
-import * as Sentry from "@sentry/react";
+import * as Sentry from '@sentry/react';
 
 export const initSentry = () => {
+  if (!import.meta.env.PROD) return;
   Sentry.init({
-    dsn: "https://15d3d8c574e8359c17ac46bd95caea78@o4511223518330880.ingest.de.sentry.io/4511223530258512",
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration(),
-    ],
-    tracesSampleRate: 0.3,
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
+    dsn: import.meta.env.VITE_SENTRY_DSN || 'https://15d3d8c574e8359c17ac46bd95caea78@o4511223518330880.ingest.de.sentry.io/4511223530258512',
     environment: import.meta.env.MODE,
+    sendDefaultPii: false,
+    // Financial screens must not be recorded or included in network breadcrumbs.
+    integrations: integrations => integrations.filter(integration => !['BrowserSession', 'Breadcrumbs'].includes(integration.name)),
+    tracesSampleRate: 0,
     beforeSend(event) {
-      // Don't send events in development
-      if (import.meta.env.DEV) {
-        console.warn("[Sentry] Event captured (dev mode, not sent):", event);
-        return null;
-      }
+      delete event.user;
+      delete event.request;
+      delete event.extra;
+      event.breadcrumbs = [];
       return event;
     },
   });
 };
-
-/**
- * Capture an error with optional context for API/edge function failures.
- */
-export const captureApiError = (
-  error: unknown,
-  context: { operation: string; [key: string]: unknown }
-) => {
-  Sentry.captureException(error, {
-    tags: { operation: context.operation },
-    extra: context,
-  });
+export const captureApiError = (error: unknown, context: { operation: string; [key: string]: unknown }) => {
+  if (!import.meta.env.PROD) return;
+  // Database errors can embed transaction contents: report the operation, not the payload.
+  Sentry.captureException(new Error(`Request failed: ${context.operation}`), { tags: { operation: context.operation } });
 };

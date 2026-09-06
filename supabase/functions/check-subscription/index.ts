@@ -1,131 +1,16 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { PRICE_ID_TO_TIER } from "../_shared/stripe-tiers.ts";
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
+import { billingContext, billingErrorResponse, corsHeaders, json, syncCustomer } from '../_shared/billing.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const logStep = (step: string, details?: unknown) => {
-  console.log(`[CHECK-SUBSCRIPTION] ${step}${details ? ` - ${JSON.stringify(details)}` : ''}`);
-};
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
-
+serve(async req => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
-    logStep("Function started");
-
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_CUSTOM");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY_CUSTOM not set");
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Auth error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated");
-    
-    logStep("User authenticated", { userId: user.id, email: user.email });
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
-    if (customers.data.length === 0) {
-      logStep("No Stripe customer found");
-      // Update profile to free tier
-      await supabaseClient
-        .from("profiles")
-        .update({ subscription_tier: "free" })
-        .eq("user_id", user.id);
-      
-      return new Response(JSON.stringify({ 
-        subscribed: false, 
-        tier: "free",
-        customerId: null 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+    const { stripe, admin, user, customerId } = await billingContext(req);
+    if (!customerId) {
+      const { error } = await admin.from('profiles').update({ subscription_tier: 'free', subscription_status: 'inactive', current_period_end: null }).eq('user_id', user.id);
+      if (error) throw error;
+      return json({ subscribed: false, tier: 'free', customerId: null });
     }
-
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
-
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-
-    const hasActiveSub = subscriptions.data.length > 0;
-    let tier = "free";
-    let subscriptionEnd = null;
-
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      
-      // Handle current_period_end - check subscription level first, then item level
-      const periodEnd = subscription.current_period_end 
-        ?? subscription.items?.data?.[0]?.current_period_end;
-      if (typeof periodEnd === "number") {
-        subscriptionEnd = new Date(periodEnd * 1000).toISOString();
-      } else if (typeof periodEnd === "string") {
-        subscriptionEnd = periodEnd;
-      } else {
-        subscriptionEnd = null;
-      }
-      
-      const priceId = subscription.items.data[0].price.id;
-      
-      // Determine tier from price ID
-      tier = PRICE_ID_TO_TIER[priceId] || "pro"; // Default to pro if unknown paid price
-      
-      logStep("Active subscription found", { tier, endDate: subscriptionEnd });
-
-      // Update profile with subscription info
-      await supabaseClient
-        .from("profiles")
-        .update({ 
-          subscription_tier: tier,
-          stripe_customer_id: customerId 
-        })
-        .eq("user_id", user.id);
-    } else {
-      logStep("No active subscription");
-      await supabaseClient
-        .from("profiles")
-        .update({ subscription_tier: "free" })
-        .eq("user_id", user.id);
-    }
-
-    return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      tier,
-      subscription_end: subscriptionEnd,
-      customerId
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
-  }
+    const state = await syncCustomer(stripe, admin, customerId, user.id);
+    return json({ subscribed: state.subscription_tier !== 'free', tier: state.subscription_tier, subscription_end: state.current_period_end, customerId });
+  } catch (error) { return billingErrorResponse(error); }
 });

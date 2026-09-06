@@ -1,0 +1,55 @@
+name: Verify Casher
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: synthetic-ci-key
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm audit --audit-level=high
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check changed edge functions
+        run: deno check --frozen supabase/functions/process-csv/index.ts supabase/functions/check-subscription/index.ts supabase/functions/create-checkout/index.ts supabase/functions/create-checkout-session/index.ts supabase/functions/customer-portal/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/check-failed-webhooks/index.ts supabase/functions/send-welcome-email/index.ts
+      - name: Check email rendering and dispatch functions
+        run: deno check --frozen supabase/functions/auth-email-hook/index.ts supabase/functions/process-email-queue/index.ts
+  supabase-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+          cache: npm
+      - run: npm ci
+      - name: Start a clean Supabase database with every migration
+        run: |
+          mkdir -p .audit-results
+          npx --yes supabase@2.116.0 start -x studio,imgproxy,logflare,vector,supavisor > .audit-results/supabase-start.log
+          npx --yes supabase@2.116.0 status -o json > .audit-results/local-supabase.json
+      - name: Exercise real Auth, database policies, imports and recovery mail
+        run: |
+          node -e "require('fs').writeFileSync('.audit-results/edge-test.env', 'LOVABLE_API_KEY=casher-local-email-fixture\n')"
+          npx --yes supabase@2.116.0 functions serve --env-file .audit-results/edge-test.env > .audit-results/edge.log 2>&1 &
+          node tools/billing-sandbox/verify-supabase.mjs
+      - name: Show function startup diagnostics on failure
+        if: failure()
+        run: tail -n 80 .audit-results/edge.log || true
+      - name: Stop local services
+        if: always()
+        run: npx --yes supabase@2.116.0 stop

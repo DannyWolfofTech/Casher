@@ -48,7 +48,7 @@ describe("toCsvRow", () => {
   it("labels direction and defaults the category", () => {
     expect(
       toCsvRow({ date: "2026-01-02", description: "Netflix", amount: 12.99, category: null }),
-    ).toBe('"2026-01-02","Netflix","12.99","debit","Uncategorized"');
+    ).toBe(`"2026-01-02","Netflix","'-12.99","debit","Uncategorized"`);
   });
 
   it("marks credits", () => {
@@ -61,6 +61,9 @@ describe("toCsvRow", () => {
         category: "Income",
       }),
     ).toBe('"2026-01-02","Salary","2000","credit","Income"');
+  });
+  it("exports a corrected direction with a matching signed amount", () => {
+    expect(toCsvRow({ date: '2026-09-02', description: 'Refund', amount: -12, direction: 'credit' })).toContain('"12","credit"');
   });
 
   it("treats legacy null-direction rows as debits", () => {

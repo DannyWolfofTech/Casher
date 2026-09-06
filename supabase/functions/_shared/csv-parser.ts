@@ -55,7 +55,7 @@ export interface ParseSuccess {
 
 export interface ParseFailure {
   ok: false;
-  code: "EMPTY_FILE" | "MISSING_COLUMNS" | "NO_VALID_ROWS" | "TOO_MANY_ROWS";
+  code: "EMPTY_FILE" | "MISSING_COLUMNS" | "NO_VALID_ROWS" | "TOO_MANY_ROWS" | "UNSUPPORTED_CURRENCY" | "INVALID_CSV";
   message: string;
   details?: Record<string, unknown>;
 }
@@ -119,6 +119,7 @@ export function splitCsvRows(text: string): string[][] {
     sawAnyChar = true;
   }
 
+  if (inQuotes) throw new SyntaxError('A quoted field was not closed.');
   row.push(field);
   if (row.some((c) => c.trim() !== "")) rows.push(row);
 
@@ -285,16 +286,18 @@ export function parseAmount(input: string | number | null | undefined): number {
 
   const negParen = /^\((.*)\)$/.exec(s);
   if (negParen) {
-    sign *= -1;
+    sign = -1;
     s = negParen[1];
   }
 
   if (s.startsWith("-")) {
-    sign *= -1;
+    sign = -1;
     s = s.slice(1);
   } else if (s.startsWith("+")) {
     s = s.slice(1);
   }
+  if (s.endsWith('-')) { sign = -1; s = s.slice(0, -1); }
+  else if (s.endsWith('+')) s = s.slice(0, -1);
 
   const hasComma = s.includes(",");
   const hasDot = s.includes(".");
@@ -311,11 +314,10 @@ export function parseAmount(input: string | number | null | undefined): number {
     else s = s.replace(/,/g, "");
   }
 
-  s = s.replace(/[^0-9.]/g, "");
-  if (!s || !/\d/.test(s)) return NaN;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(s)) return NaN;
 
-  const n = parseFloat(s);
-  return isNaN(n) ? NaN : sign * n;
+  const n = Number(s);
+  return Number.isFinite(n) && n < 100_000_000 ? sign * n : NaN;
 }
 
 /* ------------------------------------------------------------------ */
@@ -379,7 +381,7 @@ export function extractMerchant(description: string): string {
 /** Sign-preserving dedupe key: a debit and a credit never collapse. */
 export function dedupKey(date: string, description: string, amount: number | string): string {
   const n = Number(amount);
-  const signed = (n < 0 ? -1 : 1) * Math.abs(Number(n.toFixed ? n : n));
+  const signed = n;
   return `${date}|${normalizeDescription(String(description))}|${signed.toFixed(2)}`;
 }
 
@@ -421,6 +423,10 @@ export function resolveAmount(
 ): ResolvedAmount | null {
   const debit = parseAmount(debitRaw);
   const credit = parseAmount(creditRaw);
+  // Ambiguous rows must be reviewed, never silently choose one side.
+  if (debitRaw.trim() && Number.isNaN(debit)) return null;
+  if (creditRaw.trim() && Number.isNaN(credit)) return null;
+  if (debit !== 0 && credit !== 0 && !Number.isNaN(debit) && !Number.isNaN(credit)) return null;
 
   if (!isNaN(debit) && debit !== 0) {
     return { amount: -Math.abs(debit), direction: "debit" };
@@ -452,7 +458,9 @@ export interface ParseOptions {
 
 export function parseTransactionsCsv(csvText: string, options: ParseOptions = {}): ParseResult {
   const maxRows = options.maxRows ?? 10_000;
-  const rows = splitCsvRows(csvText);
+  let rows: string[][];
+  try { rows = splitCsvRows(csvText); }
+  catch { return { ok: false, code: 'INVALID_CSV', message: 'The CSV contains an unfinished quoted field. Export it again from your bank.' }; }
 
   if (rows.length === 0) {
     return { ok: false, code: "EMPTY_FILE", message: "The file is empty." };
@@ -471,6 +479,10 @@ export function parseTransactionsCsv(csvText: string, options: ParseOptions = {}
 
   const headerRow = rows[header.index];
   const dataRows = rows.slice(header.index + 1);
+  const currencyIndex = headerRow.findIndex(name => normalizeHeader(name) === 'currency');
+  if (dataRows.some(row => (currencyIndex >= 0 && row[currencyIndex]?.trim() && !/^(GBP|£)$/i.test(row[currencyIndex].trim())) || [header.columns.amount, header.columns.debit, header.columns.credit].some(name => /[$€]/.test(cell(row, headerRow, name))))) {
+    return { ok: false, code: 'UNSUPPORTED_CURRENCY', message: 'Only GBP statements are supported. Please export a GBP account statement; currencies are not converted.' };
+  }
 
   if (dataRows.length > maxRows) {
     return {
@@ -513,8 +525,9 @@ export function parseTransactionsCsv(csvText: string, options: ParseOptions = {}
 
     const key = dedupKey(date, description, resolved.amount);
     if (seenInFile.has(key)) {
+      // Equal-looking rows can be separate purchases. Keep their multiplicity;
+      // the database compares occurrence counts when statements overlap.
       duplicatesInFile += 1;
-      return;
     }
     seenInFile.add(key);
 
@@ -567,7 +580,8 @@ export function buildSubscriptions(transactions: NormalizedTransaction[]) {
 
   for (const t of transactions) {
     if (!t.isSubscription || t.direction !== "debit") continue;
-    if (map.has(t.merchant)) continue;
+    const previous = map.get(t.merchant);
+    if (previous && previous.last_charged >= t.date) continue;
     const amount = Math.abs(t.amount);
     const frequency = detectFrequency(t.description);
     map.set(t.merchant, {

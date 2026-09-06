@@ -1,156 +1,92 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
-import { isPaidTier, resolveUploadAllowance, type UploadUsage } from "@/lib/upload-allowance";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
+import { resolveUploadAllowance, type UploadUsage } from '@/lib/upload-allowance';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [userTier, setUserTier] = useState<string>("free");
+  const [userTier, setUserTier] = useState('free');
   const [uploadsUsed, setUploadsUsed] = useState(0);
-  const [canUpload, setCanUpload] = useState(true);
+  const [canUpload, setCanUpload] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [accountError, setAccountError] = useState('');
+  const [refreshingAccount, setRefreshingAccount] = useState(false);
   const navigate = useNavigate();
-  const lastSubCheckRef = useRef<number>(0);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const identity = useRef<string | null>(null);
+  const generation = useRef(0);
 
-  const fetchUploadUsage = useCallback(async (tierHint?: string) => {
-    const { data: usageRows } = await supabase.rpc("get_upload_usage" as never);
-    const rawUsage: unknown = usageRows;
-    const usage = (Array.isArray(rawUsage) ? rawUsage[0] : rawUsage) as UploadUsage | null | undefined;
-    if (!usage) return null;
-    const allowance = resolveUploadAllowance(usage, tierHint);
-    setUserTier(allowance.tier);
-    setUploadsUsed(allowance.uploadsUsed);
-    setCanUpload(allowance.canUpload);
-    return allowance;
+  const loadAccount = useCallback(async (id: string, syncBilling = false) => {
+    const request = ++generation.current;
+    const current = () => generation.current === request && identity.current === id;
+    setRefreshingAccount(true);
+    try {
+      let billingFailed = false;
+      if (syncBilling) {
+        try { const result = await supabase.functions.invoke('check-subscription'); billingFailed = !!result.error; }
+        catch { billingFailed = true; }
+      }
+      if (!current()) return;
+      const [roles, result] = await Promise.all([
+        supabase.from('user_roles').select('role').eq('user_id', id).eq('role', 'admin').maybeSingle().retry(false),
+        supabase.rpc('get_upload_usage').retry(false),
+      ]);
+      if (!current()) return;
+      setIsAdmin(!roles.error && !!roles.data);
+      const usage = result.data?.[0] as UploadUsage | undefined;
+      if (result.error || !usage || !Number.isFinite(Number(usage.uploads_used)) || Number(usage.uploads_used) < 0
+          || (usage.upload_limit !== null && (!Number.isFinite(Number(usage.upload_limit)) || Number(usage.upload_limit) < 0))) throw new Error('Allowance unavailable');
+      const allowance = resolveUploadAllowance(usage);
+      setUserTier(allowance.tier); setUploadsUsed(allowance.uploadsUsed); setCanUpload(allowance.canUpload);
+      setAccountError(billingFailed ? 'Billing could not be refreshed. Your last confirmed plan is shown. Retry before changing your plan.' : '');
+      try {
+        const key = 'casher:onboarding:' + id;
+        if (allowance.uploadsUsed === 0 && !localStorage.getItem(key)) { setShowOnboarding(true); localStorage.setItem(key, 'true'); }
+      } catch { /* Storage restrictions must not block account access. */ }
+    } catch {
+      if (current()) { setCanUpload(false); setAccountError('Your upload allowance could not be loaded. Retry to check your plan and uploads.'); }
+    } finally {
+      if (current()) { setLoading(false); setRefreshingAccount(false); }
+    }
   }, []);
 
-  const checkSubscription = useCallback(async () => {
-    // Throttle: at most once every 60s, regardless of trigger
-    const now = Date.now();
-    if (now - lastSubCheckRef.current < 60_000) return;
-    lastSubCheckRef.current = now;
-    try {
-      const { data, error } = await supabase.functions.invoke("check-subscription");
-      if (!error && data) {
-        const tier = data.tier || "free";
-        setUserTier(tier);
-        // A paid tier is immediately upload-capable; reconcile with the server.
-        if (isPaidTier(tier)) setCanUpload(true);
-        await fetchUploadUsage(tier);
-      }
-    } catch (error) {
-      console.error("Error checking subscription:", error);
-    }
-  }, [fetchUploadUsage]);
-
-
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) console.error('Session error:', sessionError);
-      if (!session) { navigate("/auth"); return; }
-
-      setUser(session.user);
-
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      setIsAdmin(!!roleData);
-
-      // Upload allowance is read-only for the client. The database decides
-      // (and resets) it using server time via get_upload_usage(); the browser
-      // never writes monthly_uploads_used or uploads_reset_date.
-      const { data: usageRows } = await supabase.rpc("get_upload_usage" as never);
-      const rawUsage: unknown = usageRows;
-      const usage = (Array.isArray(rawUsage) ? rawUsage[0] : rawUsage) as
-
-        | { uploads_used: number; upload_limit: number | null; tier: string }
-        | null
-        | undefined;
-
-      if (usage) {
-        const currentUploads = Number(usage.uploads_used ?? 0);
-        const uploadLimit = usage.upload_limit === null || usage.upload_limit === undefined
-          ? Infinity
-          : Number(usage.upload_limit);
-
-        setUserTier(usage.tier || "free");
-        setUploadsUsed(currentUploads);
-        setCanUpload(currentUploads < uploadLimit);
-
-        if (currentUploads === 0 && !localStorage.getItem('onboarding_seen')) {
-          setShowOnboarding(true);
-          localStorage.setItem('onboarding_seen', 'true');
-        }
-      } else {
-        // Pre-migration fallback: read the counters without ever writing them.
-        // The server remains the authority; this is display only.
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("subscription_tier, monthly_uploads_used, uploads_reset_date")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-
-        if (profileData) {
-          const tier = profileData.subscription_tier || "free";
-          const limit = tier === "free" ? 1 : Infinity;
-          const now = new Date();
-          const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-          const resetDate = profileData.uploads_reset_date
-            ? new Date(String(profileData.uploads_reset_date))
-            : null;
-          const used = !resetDate || resetDate.getTime() < periodStart.getTime()
-            ? 0
-            : Number(profileData.monthly_uploads_used ?? 0);
-
-          setUserTier(tier);
-          setUploadsUsed(used);
-          setCanUpload(used < limit);
-
-          if (used === 0 && !localStorage.getItem('onboarding_seen')) {
-            setShowOnboarding(true);
-            localStorage.setItem('onboarding_seen', 'true');
-          }
-        }
-      }
-
-
-
-      await checkSubscription();
-      setLoading(false);
+    let active = true;
+    const invalidate = () => { ++generation.current; identity.current = null; };
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const applyUser = (next: User | null) => {
+      if (!active) return;
+      const changed = identity.current !== (next?.id || null);
+      if (changed) { ++generation.current; queryClient.clear(); setIsAdmin(false); setUserTier('free'); setUploadsUsed(0); setCanUpload(false); setShowOnboarding(false); setAccountError(''); }
+      identity.current = next?.id || null; setUser(next);
+      if (!next) { setLoading(false); navigate('/auth', { replace: true }); return; }
+      if (changed) { setLoading(true); void loadAccount(next.id, true); }
     };
-
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-      setUser(session.user);
-      // Only re-check subscription on actual sign-in, not on token refresh
-      if (event === "SIGNED_IN") {
-        checkSubscription();
-      }
+    // Supabase callbacks run under a session lock; defer account requests.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const timer = setTimeout(() => { timers.delete(timer); applyUser(session?.user || null); }, 0); timers.add(timer);
     });
+    const initialGeneration = generation.current;
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (active && initialGeneration === generation.current) applyUser(error ? null : data.session?.user || null);
+    }).catch(() => { if (active && initialGeneration === generation.current) applyUser(null); });
+    return () => { active = false; invalidate(); timers.forEach(clearTimeout); subscription.unsubscribe(); };
+  }, [loadAccount, navigate, queryClient]);
 
-    return () => subscription.unsubscribe();
-  }, [checkSubscription, navigate]);
-
+  const refreshAccount = () => { if (identity.current) void loadAccount(identity.current, true); };
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      ++generation.current; identity.current = null; queryClient.clear(); navigate('/auth', { replace: true });
+    } catch { toast({ title: 'Sign-out failed', description: 'Check your connection and try again.', variant: 'destructive' }); }
   };
-
-  return {
-    user, loading, isAdmin, userTier, uploadsUsed, canUpload,
-    showOnboarding, setShowOnboarding, setUploadsUsed, setCanUpload,
-    setUserTier, handleSignOut,
-  };
+  return { user, loading, isAdmin, userTier, uploadsUsed, canUpload, accountError, refreshingAccount, refreshAccount,
+    showOnboarding, setShowOnboarding, setUploadsUsed, setCanUpload, setUserTier, handleSignOut };
 };

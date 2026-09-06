@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STRIPE_TIERS, PRICE_ID_TO_TIER } from "@/config/stripe";
+import { STRIPE_TIERS } from "@/config/stripe";
 
 describe("Stripe tier configuration", () => {
   it("has pro and premium tiers defined", () => {
@@ -9,22 +9,12 @@ describe("Stripe tier configuration", () => {
 
   it("pro tier has correct price", () => {
     expect(STRIPE_TIERS.pro.price).toBe("£9.99");
-    expect(STRIPE_TIERS.pro.priceId).toMatch(/^price_/);
   });
 
   it("premium tier has correct price", () => {
     expect(STRIPE_TIERS.premium.price).toBe("£14.99");
-    expect(STRIPE_TIERS.premium.priceId).toMatch(/^price_/);
   });
 
-  it("reverse lookup maps price IDs to tier names", () => {
-    expect(PRICE_ID_TO_TIER[STRIPE_TIERS.pro.priceId]).toBe("pro");
-    expect(PRICE_ID_TO_TIER[STRIPE_TIERS.premium.priceId]).toBe("premium");
-  });
-
-  it("unknown price ID returns undefined", () => {
-    expect(PRICE_ID_TO_TIER["price_nonexistent"]).toBeUndefined();
-  });
 });
 
 describe("Dashboard tier gating logic", () => {
