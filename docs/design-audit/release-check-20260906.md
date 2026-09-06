@@ -6,7 +6,7 @@
 
 The Stripe account switcher explicitly identifies **Casher sandbox (SpendLeak)**. Its sandbox account is `acct_1SCrpvJMS012Ip2A`; the parent live account is `acct_1SCrpiJXnVWNQOUC`, named SpendLeak. The sandbox API's account endpoint independently returned Casher sandbox and the same ID. These are the sandbox and its parent, not two unrelated business accounts. This does not claim that every unrelated account visible in the account switcher was audited.
 
-The existing Pro price, `price_1SYzJQJMS012Ip2AChBRKO5w`, belongs to that sandbox and is GBP 999 per month. The live account's product catalogue contains zero products. Hosted test checkout and portal still display the old SpendLeak sandbox business name; public-facing Stripe branding needs a Casher review before launch.
+The existing Pro price, `price_1SYzJQJMS012Ip2AChBRKO5w`, belongs to that sandbox and is GBP 9.99 per month (999 pence). The live account's product catalogue contains zero products. Hosted test checkout and portal still display the old SpendLeak sandbox business name; public-facing Stripe branding needs a Casher review before launch.
 
 The sandbox endpoint `we_1SYzkiJMS012Ip2AOCaPTMhO` points to the connected Supabase project's `stripe-webhook`. At inspection it subscribed only to `checkout.session.completed`; its three deliveries for the week had all failed with HTTP 400 and `Invalid signature`. The repaired handler passes real-event signature and lifecycle tests in isolation, but the connected cloud endpoint still runs the previous code. Its actual signing secret must be installed and its delivery verified after deployment.
 

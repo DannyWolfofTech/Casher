@@ -23,18 +23,11 @@ const results = [];
 const pass = name => { results.push({ test: name, result: 'passed' }); console.log(`PASS ${name}`); };
 const ok = result => { assert.equal(result.error, null, result.error?.message); return result.data; };
 const invoke = async (user, name, body) => {
-  const res = await fetch(`${url}/functions/v1/${name}`, { method: 'POST', headers: { apikey: config.ANON_KEY, Authorization: `Bearer ${user?.token || 'invalid'}`, 'Content-Type': 'application/json', Origin: 'http://localhost:8080' }, body: JSON.stringify(body) });
+  const res = await fetch(`${url}/functions/v1/${name}`, { method: 'POST', headers: { apikey: config.ANON_KEY, Authorization: `Bearer ${user?.token || 'invalid'}`, 'Content-Type': 'application/json', Origin: 'http://localhost:8080' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });
   return { status: res.status, body: await res.json() };
 };
 const csv = 'Date,Description,Money Out,Money In\n01/09/2026,Payroll,,3000.00\n02/09/2026,Test Coffee,4.50,\n02/09/2026,Test Coffee,4.50,\n03/09/2026,Netflix,10.99,\n';
 try {
-  let ready = false;
-  for (let i = 0; i < 60; i++) {
-    try { ready = (await invoke(null, 'process-csv', {})).status === 401; } catch { /* runtime is starting */ }
-    if (ready) break;
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  assert(ready, 'Start the local edge runtime before running integration tests');
   for (let i = 0; i < 3; i++) {
     const email = `casher-local-${run}-${i}@example.test`;
     const password = `Casher-test-${randomUUID()}!`;
@@ -44,6 +37,25 @@ try {
     users.push({ id: created.user.id, email, password, client, token: signedIn.session.access_token });
   }
   const [a, b, c] = users;
+  // An anonymous 401 comes from the gateway even while `functions serve` is
+  // restarting. Wait for the actual handlers and the test environment instead.
+  const readyDeadline = Date.now() + 120000;
+  let ready = false;
+  let readiness = 'No function response';
+  while (Date.now() < readyDeadline) {
+    try {
+      const importProbe = await invoke(a, 'process-csv', {});
+      readiness = `Import function returned ${importProbe.status}`;
+      if (importProbe.status === 422 && importProbe.body.code === 'INVALID_PAYLOAD') {
+        const previewProbe = await fetch(`${url}/functions/v1/auth-email-hook/preview`, { method: 'POST', headers: { Authorization: 'Bearer casher-local-email-fixture', 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'recovery' }), signal: AbortSignal.timeout(15000) });
+        readiness = `Email function returned ${previewProbe.status}`;
+        ready = previewProbe.status === 200 && (await previewProbe.text()).includes('Casher');
+      }
+    } catch (error) { readiness = error.name; }
+    if (ready) break;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  assert(ready, `Local functions did not become ready with the test environment: ${readiness}`);
   assert.equal(ok(await a.client.from('profiles').select('*')).length, 1);
   assert.equal(ok(await a.client.from('profiles').select('*').eq('user_id', b.id)).length, 0);
   pass('Real Supabase login creates private profiles for three independent users');

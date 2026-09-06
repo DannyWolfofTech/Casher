@@ -47,6 +47,9 @@ jobs:
           node -e "require('fs').writeFileSync('.audit-results/edge-test.env', 'LOVABLE_API_KEY=casher-local-email-fixture\n')"
           npx --yes supabase@2.116.0 functions serve --env-file .audit-results/edge-test.env > .audit-results/edge.log 2>&1 &
           node tools/billing-sandbox/verify-supabase.mjs
+      - name: Show function startup diagnostics on failure
+        if: failure()
+        run: tail -n 80 .audit-results/edge.log || true
       - name: Stop local services
         if: always()
         run: npx --yes supabase@2.116.0 stop
