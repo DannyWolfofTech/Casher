@@ -1,12 +1,12 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
-import Stripe from 'https://esm.sh/stripe@18.5.0';
-import { billingClients, json, syncCustomer } from '../_shared/billing.ts';
+import Stripe from 'npm:stripe@18.5.0';
+import { assertStripeAccount, billingClients, json, syncCustomer } from '../_shared/billing.ts';
 
 serve(async req => {
   if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
   let eventId: string | undefined;
   try {
-    const { stripe, admin } = billingClients();
+    const { stripe, admin, config } = billingClients();
     const secret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     if (!secret) throw new Error('Webhook unavailable');
     const signature = req.headers.get('stripe-signature');
@@ -18,6 +18,8 @@ serve(async req => {
       // Unverified requests must not manufacture database audit rows or expose secrets.
       return json({ error: 'Invalid signature.' }, 400);
     }
+    if (event.livemode !== config.live || (event.account && event.account !== config.accountId)) return json({ error: 'Event account or mode does not match.' }, 400);
+    await assertStripeAccount(stripe, config);
     eventId = event.id;
     const { error: logError } = await admin.from('webhook_events').upsert({
       event_id: event.id, event_type: event.type, processing_status: 'processing', payload: {},

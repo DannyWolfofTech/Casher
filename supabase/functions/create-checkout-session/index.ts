@@ -1,21 +1,24 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import { billingContext, billingErrorResponse, corsHeaders, currentSubscriptions, json } from '../_shared/billing.ts';
 import { hasUnfinishedSubscription } from '../_shared/billing-state.ts';
-import { isPurchasablePriceId, safeReturnOrigin } from '../_shared/stripe-guard.ts';
+import { safeReturnOrigin } from '../_shared/stripe-guard.ts';
+import { checkoutPrice } from '../_shared/billing-config.ts';
 
 serve(async req => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
-    const { stripe, admin, user, customerId: existingCustomerId } = await billingContext(req);
-    const { priceId } = await req.json();
-    if (!isPurchasablePriceId(priceId)) return json({ error: 'This plan is not available to purchase.' }, 400);
+    const { stripe, admin, config, user, customerId: existingCustomerId } = await billingContext(req);
+    const priceId = checkoutPrice(await req.json(), config);
+    if (!priceId) return json({ error: 'This plan is not available to purchase.' }, 400);
+    const price = await stripe.prices.retrieve(priceId);
+    if (!price.active || price.livemode !== config.live || price.currency !== 'gbp' || price.unit_amount !== 999 || price.recurring?.interval !== 'month' || price.recurring.interval_count !== 1) throw new Error('Configured price does not match the advertised plan');
     const origin = safeReturnOrigin(req.headers.get('origin') || req.headers.get('referer'), Deno.env.get('ALLOWED_REDIRECT_ORIGINS'));
     let customerId = existingCustomerId;
     if (!customerId) {
       const customer = await stripe.customers.create({ email: user.email, metadata: { user_id: user.id } }, { idempotencyKey: `customer:${user.id}` });
       customerId = customer.id;
-      const { error } = await admin.from('profiles').update({ stripe_customer_id: customerId }).eq('user_id', user.id);
-      if (error) throw error;
+      const { data, error } = await admin.from('profiles').update({ stripe_customer_id: customerId }).eq('user_id', user.id).select('user_id').single();
+      if (error || !data) throw new Error('Billing account could not be saved');
     }
     if (!customerId) throw new Error('Billing account could not be created');
     // Existing, overdue and incomplete plans go to billing instead of charging twice.

@@ -1,6 +1,8 @@
 # Casher: product, UI and production-readiness audit
 
-Audit date: 4 September 2026; implementation continued 5 September. Workspace: `D:\Projects\Coding\Casher`.
+Audit date: 4 September 2026; implementation continued 5–6 September. Workspace: `D:\Projects\Coding\Casher`.
+
+The [6 September release checks](release-check-20260906.md) add verified Stripe account identity, hosted sandbox payment tests, full local Supabase acceptance, additional runtime/email fixes and the completed www domain connection. They supersede the earlier test limitations where explicitly stated; cloud deployment and live-service acceptance remain open.
 
 ## Release verdict
 

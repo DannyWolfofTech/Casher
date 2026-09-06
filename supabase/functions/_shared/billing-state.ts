@@ -9,10 +9,10 @@ export interface BillingSubscription {
 }
 
 /** Reconcile the complete current customer state, including a second active plan. */
-export function billingState(subscriptions: BillingSubscription[]) {
+export function billingState(subscriptions: BillingSubscription[], priceToTier: Record<string, string> = PRICE_ID_TO_TIER) {
   const ranked = subscriptions.map(subscription => {
-    const item = subscription.items.data.find(item => PRICE_ID_TO_TIER[item.price.id]);
-    const entitlement = entitlementForSubscription(subscription.status, item?.price.id, PRICE_ID_TO_TIER);
+    const item = subscription.items.data.find(item => priceToTier[item.price.id]);
+    const entitlement = entitlementForSubscription(subscription.status, item?.price.id, priceToTier);
     const rank = entitlement.subscription_tier === 'premium' ? 2 : entitlement.subscription_tier === 'pro' ? 1 : 0;
     return { subscription, item, entitlement, rank };
   }).sort((a, b) => b.rank - a.rank || b.subscription.created - a.subscription.created);

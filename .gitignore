@@ -15,6 +15,9 @@ dist-ssr
 .env.*
 !.env.example
 test-results/
+.audit-results/
+supabase/.branches/
+supabase/.temp/
 playwright-report/
 docs/design-audit/changes.patch
 docs/design-audit/changed-files.txt

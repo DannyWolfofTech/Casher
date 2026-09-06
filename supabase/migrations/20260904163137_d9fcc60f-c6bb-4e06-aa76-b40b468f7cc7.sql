@@ -2,13 +2,20 @@
 --    email_queue_wake/dispatch are internal queue plumbing invoked from
 --    service-role paths (and from triggers inside SECURITY DEFINER enqueue),
 --    so browser roles never need EXECUTE.
-REVOKE ALL ON FUNCTION public.email_queue_wake() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.email_queue_wake() FROM anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.email_queue_wake() TO service_role;
-
-REVOKE ALL ON FUNCTION public.email_queue_dispatch() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.email_queue_dispatch() FROM anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.email_queue_dispatch() TO service_role;
+-- Lovable provisions these project-specific dispatchers outside migrations.
+-- Fresh local/staging databases do not have them; preserve the same restrictions
+-- wherever they exist without making a clean database bootstrap fail.
+DO $$
+DECLARE routine text;
+BEGIN
+  FOREACH routine IN ARRAY ARRAY['public.email_queue_wake()', 'public.email_queue_dispatch()'] LOOP
+    IF to_regprocedure(routine) IS NOT NULL THEN
+      EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', routine);
+      EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role', routine);
+    END IF;
+  END LOOP;
+END;
+$$;
 
 -- has_role() must stay callable by authenticated: RLS policies evaluate it as
 -- the calling role. get_upload_usage() is a deliberate, own-row-only RPC used

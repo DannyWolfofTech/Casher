@@ -62,7 +62,7 @@ const Pricing = () => {
     return () => { active = false; subscription.unsubscribe(); };
   }, [accountRetry]);
 
-  const handleSubscribe = async (priceId: string) => {
+  const handleSubscribe = async (tier: string) => {
     if (loadingTier || accountLoading || accountError) return;
     if (!user) {
       toast({
@@ -74,10 +74,10 @@ const Pricing = () => {
       return;
     }
 
-    setLoadingTier(priceId);
+    setLoadingTier(tier);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-        body: { priceId },
+        body: { tier },
       });
 
       if (error) throw error;
@@ -118,7 +118,6 @@ const Pricing = () => {
       name: t("free"),
       nameKey: "free",
       price: "£0",
-      priceId: "",
       description: t("perfectForGettingStarted"),
       comingSoon: false,
       features: [
@@ -136,7 +135,6 @@ const Pricing = () => {
       name: t("pro"),
       nameKey: "pro",
       price: STRIPE_TIERS.pro.price,
-      priceId: STRIPE_TIERS.pro.priceId,
       description: t("forRegularUsers"),
       comingSoon: false,
       features: [
@@ -153,7 +151,6 @@ const Pricing = () => {
       name: t("premium"),
       nameKey: "premium",
       price: STRIPE_TIERS.premium.price,
-      priceId: STRIPE_TIERS.premium.priceId,
       description: t("forPowerUsers"),
       comingSoon: !PREMIUM_PURCHASABLE,
       features: [
@@ -286,12 +283,12 @@ const Pricing = () => {
                         variant={cta.action === "none" ? "outline" : plan.popular ? "default" : "outline"}
                         onClick={() => {
                           if (cta.action === "signup") navigate("/auth");
-                          if (cta.action === "checkout") handleSubscribe(plan.priceId);
+                          if (cta.action === "checkout") handleSubscribe(plan.nameKey);
                           if (cta.action === 'billing') handleBilling();
                         }}
                         disabled={accountLoading || !!accountError || cta.disabled || billingLoading || (loadingTier !== null && cta.action === "checkout")}
                       >
-                        {loadingTier === plan.priceId ? (
+                        {loadingTier === plan.nameKey ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
                         {cta.action === 'billing' ? 'Manage in billing' : t(cta.labelKey)}

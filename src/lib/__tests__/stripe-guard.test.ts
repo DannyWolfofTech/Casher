@@ -7,7 +7,7 @@ import {
   isAllowedPriceId,
   safeReturnOrigin,
 } from "../../../supabase/functions/_shared/stripe-guard";
-import { STRIPE_TIERS } from "@/config/stripe";
+import { STRIPE_TIERS } from "../../../supabase/functions/_shared/stripe-tiers";
 
 const PRICE_TO_TIER: Record<string, string> = {
   [STRIPE_TIERS.pro.priceId]: "pro",
@@ -15,7 +15,7 @@ const PRICE_TO_TIER: Record<string, string> = {
 };
 
 describe("price allowlist", () => {
-  it("stays in sync with the frontend tier config", () => {
+  it("contains the sandbox tier prices", () => {
     expect([...ALLOWED_PRICE_IDS].sort()).toEqual(
       [STRIPE_TIERS.pro.priceId, STRIPE_TIERS.premium.priceId].sort(),
     );

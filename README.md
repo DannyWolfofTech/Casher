@@ -4,7 +4,7 @@ Casher imports GBP statements, shows spending by transaction month, and identifi
 
 ## Start with the audit
 
-The [September 2026 audit](docs/design-audit/README.md) contains findings, screenshots, verification evidence and release gates. Passing local checks does not certify the live backend, billing or email service.
+The [September 2026 audit](docs/design-audit/README.md) contains findings, screenshots, verification evidence and release gates. The [6 September release checks](docs/design-audit/release-check-20260906.md) document actual Stripe sandbox and full local Supabase acceptance, additional fixes and remaining live-service setup.
 
 ## Install and verify
 
@@ -29,7 +29,9 @@ To use a real development backend, copy .env.example to .env.local, enter a stag
 
 Apply supabase/migrations/20260904220000_atomic_statement_import.sql and then supabase/migrations/20260904230000_statement_corrections.sql after all earlier migrations, first to staging. Deploy process-csv, check-subscription, create-checkout-session, customer-portal and stripe-webhook with their shared modules and function configuration. Publish the frontend after staging acceptance. If the atomic import function is absent, the importer fails safely.
 
-Billing requires STRIPE_SECRET_KEY_CUSTOM, STRIPE_WEBHOOK_SECRET and a configured Stripe customer portal with cancellation enabled. Supabase provides SUPABASE_URL and server-role credentials. ALLOWED_REDIRECT_ORIGINS must contain only trusted exact origins. Reconcile legacy Stripe customers before rollout: an email match alone no longer grants billing access.
+Billing requires STRIPE_SECRET_KEY_CUSTOM, STRIPE_WEBHOOK_SECRET and a configured Stripe customer portal with cancellation enabled. Live billing additionally requires STRIPE_ACCOUNT_ID and STRIPE_PRO_PRICE_ID; STRIPE_MODE must agree with the key when supplied. STRIPE_PREMIUM_PRICE_ID is optional for recognition of existing plans, but Premium cannot be purchased. The server checks the configured account and GBP 9.99 monthly price. Sandbox defaults are limited to the verified Casher sandbox. Supabase provides SUPABASE_URL and server-role credentials. ALLOWED_REDIRECT_ORIGINS must contain only trusted exact origins. Reconcile legacy Stripe customers before rollout: an email match alone no longer grants billing access, and sandbox customer IDs cannot be reused in live mode.
+
+Deploy the create-checkout alias too, so the old URL uses the repaired implementation. Deploy the changed auth-email-hook, process-email-queue, check-failed-webhooks and send-welcome-email modules; their imports are now pinned. The existing 20260904163137 migration was made compatible with fresh databases lacking Lovable's separately provisioned email dispatchers, retaining its permissions wherever those routines exist.
 
 With Deno 2, check the changed edge functions:
 

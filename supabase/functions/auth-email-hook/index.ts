@@ -1,8 +1,8 @@
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { parseEmailWebhookPayload } from 'npm:@lovable.dev/email-js'
-import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js'
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { parseEmailWebhookPayload } from 'npm:@lovable.dev/email-js@0.3.0'
+import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js@0.0.2'
+import { createClient } from 'npm:@supabase/supabase-js@2.115.0'
 import { SignupEmail } from '../_shared/email-templates/signup.tsx'
 import { InviteEmail } from '../_shared/email-templates/invite.tsx'
 import { MagicLinkEmail } from '../_shared/email-templates/magic-link.tsx'
@@ -38,7 +38,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "master-vault-download"
+const SITE_NAME = "Casher"
 const SENDER_DOMAIN = "notify.trycasher.com"
 const ROOT_DOMAIN = "trycasher.com"
 const FROM_DOMAIN = "trycasher.com" // Domain shown in From address (may be root or sender subdomain)
@@ -48,7 +48,7 @@ const FROM_DOMAIN = "trycasher.com" // Domain shown in From address (may be root
 // The sample email uses a fixed placeholder (RFC 6761 .test TLD) so the Go backend
 // can always find-and-replace it with the actual recipient when sending test emails,
 // even if the project's domain has changed since the template was scaffolded.
-const SAMPLE_PROJECT_URL = "https://master-vault-download.lovable.app"
+const SAMPLE_PROJECT_URL = "https://trycasher.com"
 const SAMPLE_EMAIL = "user@example.test"
 const SAMPLE_DATA: Record<string, object> = {
   signup: {
@@ -144,7 +144,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   }
 
   // Verify signature + timestamp, then parse payload.
-  let payload: Record<string, unknown> & { run_id?: string }
+  let payload: ReturnType<typeof parseEmailWebhookPayload>
   let run_id = ''
   try {
     const verified = await verifyWebhookRequest({
@@ -153,7 +153,7 @@ async function handleWebhook(req: Request): Promise<Response> {
       parser: parseEmailWebhookPayload,
     })
     payload = verified.payload
-    run_id = payload.run_id
+    run_id = payload.run_id ?? ''
   } catch (error) {
     if (error instanceof WebhookError) {
       switch (error.code) {
@@ -183,8 +183,8 @@ async function handleWebhook(req: Request): Promise<Response> {
     )
   }
 
-  if (!run_id) {
-    console.error('Webhook payload missing run_id')
+  if (!run_id || !payload.data?.email || !payload.data.action_type) {
+    console.error('Webhook payload missing required auth email fields')
     return new Response(
       JSON.stringify({ error: 'Invalid webhook payload' }),
       {
@@ -208,7 +208,7 @@ async function handleWebhook(req: Request): Promise<Response> {
   // The email action type is in payload.data.action_type (e.g., "signup", "recovery")
   // payload.type is the hook event type ("auth")
   const emailType = payload.data.action_type
-  console.log('Received auth event', { emailType, email: payload.data.email, run_id })
+  console.log('Received auth event', { emailType, run_id })
 
   const EmailTemplate = EMAIL_TEMPLATES[emailType]
   if (!EmailTemplate) {
@@ -284,7 +284,7 @@ async function handleWebhook(req: Request): Promise<Response> {
     })
   }
 
-  console.log('Auth email enqueued', { emailType, email: payload.data.email, run_id })
+  console.log('Auth email enqueued', { emailType, run_id })
 
   return new Response(
     JSON.stringify({ success: true, queued: true }),
@@ -309,9 +309,8 @@ Deno.serve(async (req) => {
   try {
     return await handleWebhook(req)
   } catch (error) {
-    console.error('Webhook handler error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(JSON.stringify({ error: message }), {
+    console.error('Auth email handler failed')
+    return new Response(JSON.stringify({ error: 'Email is temporarily unavailable. Please retry.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
