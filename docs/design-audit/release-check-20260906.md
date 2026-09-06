@@ -1,5 +1,7 @@
 # Release checks — 6 September 2026
 
+> Historical pre-deployment report. The deployment and Stripe launch work below has since been completed; see [production deployment and acceptance](production-deployment-20260906.md) for current status and remaining operating decisions.
+
 **The corrected application passes the tests below. The connected public site is not ready to accept customers yet.** Backend/frontend deployment, live billing configuration, historical-data acceptance and a working support/privacy inbox remain open. The fixes are in [PR #2](https://github.com/DannyWolfofTech/Casher/pull/2).
 
 ## Stripe identity and configuration
