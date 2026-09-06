@@ -36,7 +36,7 @@ const backend = http.createServer(async (req, res) => {
     const transaction = url.pathname.endsWith('/review_transaction');
     const row = state[transaction ? 'transactions' : 'detected_subscriptions'].find(row => row.id === body._id && row.user_id === user.id);
     if (!row) return send({ code: '42501' }, 403);
-    if ((row.reviewed_at ?? null) !== (body._expected_reviewed_at ?? null)) return send({ code: '40001' }, 409);
+    if ((row.reviewed_at ?? null) !== (body._expected_reviewed_at ?? null)) return send({ code: 'PT409' }, 409);
     if (transaction) Object.assign(row, { direction_override: body._direction, category_override: body._category });
     else Object.assign(row, { status: body._status, amount: body._amount, frequency: body._frequency });
     row.reviewed_at = new Date().toISOString(); return send({ id: row.id, reviewed_at: row.reviewed_at });

@@ -28,6 +28,7 @@ beforeAll(async () => {
   await db.exec(quota.slice(quota.indexOf('CREATE OR REPLACE FUNCTION public.upload_limit_for_tier'), quota.indexOf('-- Signed cash-flow columns')));
   await db.exec(readFileSync('supabase/migrations/20260904220000_atomic_statement_import.sql', 'utf8'));
   await db.exec(readFileSync('supabase/migrations/20260904230000_statement_corrections.sql', 'utf8'));
+  await db.exec(readFileSync('supabase/migrations/20260906220000_review_conflict_status.sql', 'utf8'));
   await db.exec(`ALTER TABLE transactions ENABLE ROW LEVEL SECURITY; ALTER TABLE detected_subscriptions ENABLE ROW LEVEL SECURITY;
     GRANT SELECT, UPDATE ON transactions, detected_subscriptions TO authenticated;
     CREATE POLICY own_transactions ON transactions FOR SELECT TO authenticated USING (user_id = auth.uid());

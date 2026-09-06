@@ -19,7 +19,7 @@ export default function TransactionReview({ row, onClose }: { row: Tables<'trans
     setBusy(true); setError('');
     try {
       const { error } = await supabase.rpc('review_transaction', { _id: row.id, _direction: direction, _category: category.trim(), _expected_reviewed_at: row.reviewed_at ?? null });
-      if (error) { if (error.code === '40001') await client.invalidateQueries({ queryKey: ['transactions', row.user_id] }); setError(error.code === '40001' ? 'This transaction changed in another window. Close this form and open it again.' : 'The correction could not be saved. Please try again.'); return; }
+      if (error) { if (['PT409', '40001'].includes(error.code)) await client.invalidateQueries({ queryKey: ['transactions', row.user_id] }); setError(['PT409', '40001'].includes(error.code) ? 'This transaction changed in another window. Close this form and open it again.' : 'The correction could not be saved. Please try again.'); return; }
       await client.invalidateQueries({ queryKey: ['transactions', row.user_id] });
       onClose();
     } catch { setError('The correction could not be saved. Check your connection and try again.'); }

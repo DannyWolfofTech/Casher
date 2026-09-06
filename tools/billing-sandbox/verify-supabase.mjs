@@ -100,7 +100,7 @@ try {
   assert((await b.client.rpc('review_transaction', { _id: row.id, _direction: 'credit', _category: 'Income' })).error);
   const corrected = ok(await a.client.rpc('review_transaction', { _id: row.id, _direction: 'credit', _category: 'Income' }));
   assert(corrected.reviewed_at);
-  assert.equal((await a.client.rpc('review_transaction', { _id: row.id, _direction: 'debit', _category: 'Other' })).error.code, '40001');
+  assert.equal((await a.client.rpc('review_transaction', { _id: row.id, _direction: 'debit', _category: 'Other' })).error.code, 'PT409');
   const afterReview = ok(await a.client.from('transactions').select('*').eq('id', row.id).single());
   assert.equal(afterReview.direction, 'debit');
   assert.equal(afterReview.direction_override, 'credit');

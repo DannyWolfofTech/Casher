@@ -32,7 +32,7 @@ export default function SubscriptionsList({ refreshKey = 0, userId, onDataChange
       const { error } = await supabase.rpc('review_subscription', { _id: selected.id, _status: status,
         _amount: editDetails ? Number(amount) : Number(selected.amount), _frequency: editDetails ? frequency : selected.frequency === 'yearly' ? 'annual' : selected.frequency,
         _expected_reviewed_at: selected.reviewed_at ?? null });
-      if (error) { if (error.code === '40001') await client.invalidateQueries({ queryKey: ['subscriptions', userId] }); setError(error.code === '40001' ? 'This subscription changed in another window. Close this form and open it again.' : 'The subscription could not be saved. Check the amount and billing frequency, then try again.'); return; }
+      if (error) { if (['PT409', '40001'].includes(error.code)) await client.invalidateQueries({ queryKey: ['subscriptions', userId] }); setError(['PT409', '40001'].includes(error.code) ? 'This subscription changed in another window. Close this form and open it again.' : 'The subscription could not be saved. Check the amount and billing frequency, then try again.'); return; }
       setSelected(null); await client.invalidateQueries({ queryKey: ['subscriptions', userId] }); onDataChanged?.();
       toast({ title: status === 'cancelled' ? 'Marked as cancelled' : status === 'dismissed' ? 'Detection dismissed' : 'Subscription updated', description: 'Your past transactions remain unchanged.' });
     } catch { setError('Could not update the subscription. Check your connection and try again.'); }
