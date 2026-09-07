@@ -370,6 +370,7 @@ const Pricing = () => {
 
         <div className="text-center text-sm text-muted-foreground space-y-2">
           <p>CSV uploads support GBP statements. Bank connections and Premium features are still in development.</p>
+          <p>Stripe collects payment details for Pro on its hosted checkout page. Paying for Pro does not connect your bank account.</p>
           <p>{t("cancelAnytime")}</p>
         </div>
       </main>

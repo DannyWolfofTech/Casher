@@ -34,7 +34,20 @@ const Privacy = () => {
               Casher collects only the data necessary to provide our subscription management service. 
               This includes your email address and bank transaction data from uploaded CSV files. 
               We process uploaded CSV data solely for subscription detection and categorization. 
-              No banking credentials are stored or shared with third parties.
+              Casher does not ask for or store your bank password, PIN or bank security codes.
+              Transaction data is banking information; it is different from the credentials used to log in to your bank.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold text-foreground mb-3">Bank connections and payments</h2>
+            <p>
+              Today, spending analysis uses the CSV transaction data you upload. Automatic bank connections
+              are in development and are not available. Any future Open Banking connection will be optional,
+              with consent through a provider and authentication at your bank. Casher will not collect your
+              bank login credentials. We will explain the provider, data requested and how to disconnect before launch.
+              Paying for Casher Pro is separate: Stripe collects payment details on its hosted checkout page.
+              Buying Pro does not connect your bank or give Casher access to your bank account.
             </p>
           </section>
 
@@ -72,7 +85,7 @@ const Privacy = () => {
             <p>
               All data transmission is encrypted using HTTPS, and stored data sits in a managed database
               with encryption at rest and row-level access rules so each account can only read its own
-              records. We never store banking credentials or login information. Transaction descriptions
+              records. We never store bank passwords, PINs or bank security codes. Transaction descriptions
               are stored as they appear in your CSV and are not anonymised, so avoid uploading statements
               containing details you do not want stored.
             </p>
@@ -107,7 +120,7 @@ const Privacy = () => {
 
           <div className="mt-8 p-4 bg-muted rounded-lg">
             <p className="text-sm">
-              <strong>Last updated:</strong> 4 September 2026
+              <strong>Last updated:</strong> 7 September 2026
             </p>
           </div>
         </div>

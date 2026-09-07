@@ -2,12 +2,12 @@
 
 > Casher helps UK freelancers and individuals spot and cancel unused subscriptions by analyzing CSV bank statements. No bank login required.
 
-Casher is a privacy-first web and mobile app. Users export a CSV from their bank, upload it to Casher, and get auto-categorized spending plus a list of recurring subscriptions to review and cancel. Free, Pro (£9.99/mo), and Premium (£14.99/mo) tiers are available.
+Casher is a web app. Users upload bank transaction data in CSV files and get categorized spending and possible recurring payments to review. Casher does not collect bank passwords, PINs or security codes. Free and Pro (£9.99/month) are available; Premium, optional Open Banking connections and native mobile apps are in development. Stripe collects payment details separately on hosted checkout; paying for Pro does not connect a bank. Casher does not cancel provider contracts automatically.
 
 ## Pages
 
 - [Home](/): Product overview and how Casher works.
-- [About](/about): Why CSV-only, security model, and mission.
+- [About](/about): Current CSV processing, bank-password protection, and mission.
 - [Pricing](/pricing): Free, Pro, and Premium plan details.
 - [Privacy](/privacy): Data handling, GDPR, and retention policy.
 - [Sign in](/auth): Create an account or log in.

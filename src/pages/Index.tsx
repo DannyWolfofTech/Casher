@@ -118,7 +118,7 @@ const Index = () => {
               </div>
               <h3 className="text-2xl font-semibold mb-3 tracking-tight text-foreground">01. Upload</h3>
               <p className="text-foreground/70 leading-relaxed">
-                Drag your bank CSV export into the analyzer. No bank logins, no API access — just a file you already have.
+                Upload a CSV export from your bank. Casher reads its transaction data; it does not ask for your bank password, PIN or security codes.
               </p>
             </div>
             <div className="p-10 md:p-12 rounded-3xl bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors">
@@ -154,7 +154,7 @@ const Index = () => {
             {[
               { title: "GDPR-aligned", body: "Handled under UK/EU data protection principles and removable on request." },
               { title: "Encrypted in transit and at rest", body: "HTTPS everywhere, and managed database encryption for stored results." },
-              { title: "No bank login", body: "We never see your banking credentials. Ever." },
+              { title: "No bank password", body: "You upload transaction data, not bank login credentials. Optional bank connections are still in development." },
             ].map((item) => (
               <div key={item.title} className="border-t border-foreground/15 pt-4">
                 <p className="font-bold text-foreground mb-1">{item.title}</p>
