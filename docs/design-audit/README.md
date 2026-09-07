@@ -22,9 +22,17 @@ The separate UI regression suite uses invented responses, covers 320/390/768/144
 | P2 | Wide pricing comparison and small mobile controls reduced readability. | Two real product tiers, responsive table, larger native targets and input text, safe areas. |
 | P2 | Main entry bundle is over 500kB minified. | Route splitting already present; remains a measured performance risk on slow devices, not a failed build. |
 
+## Final published verification
+
+Application checkpoint `6b292f0` was published through deployment `2b030e21-45ad-497b-91c2-780a59a5112d`. All 16 live browser checks passed in 43.9 seconds, covering six public routes at 390/1440px, French/Polish About at 320px, navigation and the signed Android association. The in-app Browser and refreshed screenshots confirmed the production homepage.
+
+Licensed Inter and Instrument Serif files are now bundled and preloaded locally, removing the Google Fonts rendering dependency. Small text contrast, the landing main landmark and the toast viewport semantics were corrected; the 33-case browser regression includes accessibility while a toast is visible. All 13 frozen Deno function checks pass with the matching workspace lock.
+
+Live Lighthouse 13.4.1 after publication: **mobile 91 performance / 100 accessibility / 100 best practices / 100 SEO** at 12:26:17 UTC; **desktop 99 / 100 / 100 / 100** at 12:26:54 UTC. Mobile FCP was 2.1s, LCP 2.9s, TBT 20ms and CLS 0.006; desktop LCP was 0.7s. The earlier live mobile run was 73/93/100/100 with 4.4s LCP. These are individual controlled lab runs, not field Core Web Vitals or a latency SLA. Exportable HTML/JSON reports are in `release-artifacts/reports/`.
+
 ## Screenshot inventory
 
-Live custom-domain screenshots, each in desktop 1440px and mobile 390px versions:
+Live custom-domain screenshots refreshed after the final publication, each in desktop 1440px and mobile 390px versions:
 
 - `assets/live-20260907-home-{1440,390}.png`
 - `assets/live-20260907-pricing-{1440,390}.png`
@@ -34,6 +42,10 @@ Live custom-domain screenshots, each in desktop 1440px and mobile 390px versions
 - `assets/live-20260907-unsubscribe-{1440,390}.png`
 
 Representative before/after fixture evidence: `before-dashboard-desktop.png`, `after-dashboard-desktop.png`, `after-dashboard-1440.png`, `after-history-desktop.png`, `after-empty-mobile.png`, `after-import-error-mobile.png`, `after-legacy-data-warning.png`, and `after-public-{about,auth,home,pricing,privacy}-320.png`. The historical report contains the earlier full inventory. Existing screenshot files were preserved and refreshed where the regression suite generated a new result.
+
+Actual iOS Release simulator screenshots from `4c13598` (iPhone 17 Pro, iOS 26.2): `assets/ios-auth-portrait-20260907.png`, `ios-auth-landscape-20260907.png`, `ios-signup-20260907.png`, `ios-privacy-20260907.png` and `ios-recovery-request-20260907.png`. All six were visually reviewed, including `ios-auth-landscape-scrolled-20260907.png`; the scrolled Sign in control is fully visible above the home indicator. The recovery screen shows a real production response for a reserved nonexistent test identity; it does not establish email delivery or a valid callback. Landscape uses a scrollable form; the initial viewport is not a claim that every control fits without scrolling.
+
+The final Android release screen is retained as `assets/android-auth-release-20260907.png`. It was captured from the installed signed APK, not a browser mock.
 
 ## 5 Issues Hurting Conversion Most
 
