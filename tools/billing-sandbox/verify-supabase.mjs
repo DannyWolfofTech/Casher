@@ -174,8 +174,22 @@ try {
   pass('The signed email hook rejects missing fields and queues the correct branded message');
   assert.equal((await invoke(a, 'process-email-queue', {})).status, 403);
   pass('Ordinary accounts cannot invoke the privileged email dispatcher');
+  const unsubscribeToken=randomUUID();
+  ok(await admin.from('email_unsubscribe_tokens').insert({email:b.email,token:unsubscribeToken}));
+  assert((await a.client.rpc('unsubscribe_app_email',{_token:unsubscribeToken})).error);
+  assert.equal(ok(await admin.rpc('unsubscribe_app_email',{_token:unsubscribeToken})),b.email);
+  assert.equal(ok(await admin.rpc('unsubscribe_app_email',{_token:unsubscribeToken})),b.email);
+  assert.equal(ok(await admin.from('suppressed_emails').select('id').eq('email',b.email)).length,1);
+  const preferenceProbe=await fetch(`${url}/functions/v1/unsubscribe-email`,{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://trycasher.com'},body:JSON.stringify({token:randomUUID()})});
+  assert.equal(preferenceProbe.status,200);
+  assert.deepEqual(await preferenceProbe.json(),{unsubscribed:true});
+  const suppressedMessage=randomUUID();
+  ok(await admin.rpc('enqueue_email',{queue_name:'transactional_emails',payload:{message_id:suppressedMessage,to:b.email,label:'release-suppression-test',purpose:'transactional',queued_at:new Date().toISOString()}}));
+  assert.equal((await invoke({token:config.SERVICE_ROLE_KEY},'process-email-queue',{})).status,200);
+  assert.equal(ok(await admin.from('email_send_log').select('status').eq('message_id',suppressedMessage).single()).status,'suppressed');
+  pass('Unsubscribe tokens enforce recipient-scoped preferences and the actual dispatcher suppresses app mail before delivery');
   if (process.argv.includes('--stripe')) {
-    assert(process.env.STRIPE_SECRET_KEY_CUSTOM?.startsWith('sk_test_'));
+    assert(/^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY_CUSTOM ?? ''), 'Only Stripe test-mode credentials are allowed');
     assert(process.env.STRIPE_WEBHOOK_SECRET?.startsWith('whsec_local_'), 'Use a local test signing secret');
     assert.equal((await stripeApi('account')).id, 'acct_1SCrpvJMS012Ip2A');
     const priceId = 'price_1SYzJQJMS012Ip2AChBRKO5w';
@@ -274,8 +288,7 @@ try {
     assert.equal(await deliver(failedEvent),200);
     assert.equal(ok(await a.client.from('profiles').select('subscription_tier').single()).subscription_tier,'pro');
     pass('Payment recovery restores Pro and an old failed event cannot revoke current access');
-    // Simulate a missed delivery by intentionally aging only this synthetic customer's
-    // reconciliation marker. The scheduled handler must repair real PostgreSQL.
+    // Hold the real database lease to verify retry after concurrent processing.
     ok(await admin.from('profiles').update({subscription_tier:'free'}).eq('user_id',a.id));
     const held=ok(await admin.rpc('acquire_billing_sync',{_customer_id:customer.id}));
     assert(held);
@@ -284,6 +297,19 @@ try {
     assert.equal(await deliver(created),200);
     assert.equal(ok(await admin.from('profiles').select('subscription_tier').single()).subscription_tier,'pro');
     pass('Concurrent reconciliation returns a retryable webhook failure and retry repairs the entitlement');
+    // A second real sandbox customer has never received a webhook. The service-only
+    // scheduled handler must discover and repair this missing entitlement.
+    const missedCustomer=await stripeApi('customers',{email:b.email,test_clock:stripeClock.id,'metadata[user_id]':b.id,'metadata[casher_release_test]':run});
+    const missedPayment=await stripeApi('payment_methods/pm_card_visa/attach',{customer:missedCustomer.id});
+    await stripeApi('subscriptions',{customer:missedCustomer.id,'items[0][price]':priceId,default_payment_method:missedPayment.id,'metadata[user_id]':b.id});
+    ok(await admin.from('profiles').update({stripe_customer_id:missedCustomer.id}).eq('user_id',b.id));
+    assert.equal((await invoke(b,'reconcile-billing',{})).status,401);
+    const reconciliation=await invoke({token:config.SERVICE_ROLE_KEY},'reconcile-billing',{});
+    assert.equal(reconciliation.status,200,JSON.stringify(reconciliation.body));
+    assert.equal(ok(await b.client.from('profiles').select('subscription_tier').single()).subscription_tier,'pro');
+    await stripeApi(`customers/${missedCustomer.id}`,undefined,'DELETE');
+    assert.equal((await invoke(b,'check-subscription',{})).body.tier,'free');
+    pass('Scheduled reconciliation repairs a genuinely missed sandbox webhook and deleted customers lose paid access');
     if(interactive) {
       const cancellation=await invoke(a,'customer-portal',{});
       await browserStep('cancel-in-portal',{url:cancellation.body.url,subscriptionId:subscription.id});
@@ -299,11 +325,17 @@ try {
     assert.equal(ok(await a.client.from('profiles').select('subscription_tier').single()).subscription_tier, 'free');
     pass('Deployed billing refresh, portal, cancellation and old-event replay agree with PostgreSQL');
     const repeat=await invoke(a,'create-checkout-session',{tier:'pro'});assert.equal(repeat.status,200);
-    // Account deletion must expire this new checkout and suppress late Stripe events.
+    const activeAtDeletion=await stripeApi('subscriptions',{customer:customer.id,'items[0][price]':priceId,default_payment_method:visa.id,'metadata[user_id]':a.id});
+    assert.equal(activeAtDeletion.status,'active');
+    // The interactive checks may take longer than the ten-minute deletion window.
+    a.token=ok(await a.client.auth.signInWithPassword({email:a.email,password:a.password})).session.access_token;
+    // Deletion must expire checkout, cancel an actually active subscription and
+    // suppress late Stripe events without creating an invoice or proration.
     const deleted=await invoke(a,'delete-account',{confirmation:'DELETE'});
     assert.equal(deleted.status,200,JSON.stringify(deleted.body));a.deleted=true;
     const openSessions=await stripeApi(`checkout/sessions?customer=${customer.id}&status=open`);
     assert.equal(openSessions.data.length,0);
+    assert.equal((await stripeApi(`subscriptions/${activeAtDeletion.id}`)).status,'canceled');
     assert.equal(await deliver(created),200);
     assert.equal(ok(await admin.from('profiles').select('user_id').eq('user_id',a.id)).length,0);
     pass('Paid-account deletion expires checkout, cancels renewal and ignores late billing events');
@@ -354,7 +386,14 @@ try {
   process.exitCode = 1;
 } finally {
   if (stripeClock) await stripeApi(`test_helpers/test_clocks/${stripeClock.id}`, undefined, 'DELETE');
-  for (const user of users) { await user.client.auth.signOut(); if(!user.deleted) ok(await admin.auth.admin.deleteUser(user.id)); }
+  for (const user of users) {
+    await user.client.auth.signOut();
+    if(!user.deleted) ok(await admin.auth.admin.deleteUser(user.id));
+    // Remove only this run's synthetic records that intentionally lack Auth FKs.
+    ok(await admin.from('upload_history').delete().eq('user_id',user.id));
+    for(const table of ['email_unsubscribe_tokens','suppressed_emails']) ok(await admin.from(table).delete().eq('email',user.email));
+    ok(await admin.from('email_send_log').delete().eq('recipient_email',user.email));
+  }
   await writeFile('.audit-results/supabase-integration.json', JSON.stringify({ time: new Date().toISOString(), environment: 'full local Supabase with all migrations and actual edge functions', results }, null, 2));
   console.log(`Finished: ${results.filter(result => result.result === 'passed').length} passed; ${results.filter(result => result.result === 'failed').length} failed.`);
 }

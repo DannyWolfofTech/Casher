@@ -16,8 +16,8 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Account = lazy(() => import("./pages/Account"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const About = lazy(() => import("./pages/About"));
-const Admin = lazy(() => import("./pages/Admin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -41,8 +41,9 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/account" element={<Account />} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/about" element={<About />} />
-              <Route path="/admin" element={<Admin />} />
+              <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

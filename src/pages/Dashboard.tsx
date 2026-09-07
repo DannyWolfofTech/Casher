@@ -24,7 +24,7 @@ export default function Dashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [lastUpload, setLastUpload] = useState<UploadResult | null>(null);
   const { t } = useTranslation();
-  const { user, loading, isAdmin, userTier, uploadsUsed, canUpload, accountError, refreshingAccount, refreshAccount, showOnboarding, setShowOnboarding, setUploadsUsed, setCanUpload, handleSignOut } = useAuth();
+  const { user, loading, userTier, uploadsUsed, canUpload, accountError, refreshingAccount, refreshAccount, showOnboarding, setShowOnboarding, setUploadsUsed, setCanUpload, handleSignOut } = useAuth();
   const data = useDashboardData(user?.id, refreshKey);
   const refresh = () => setRefreshKey(key => key + 1);
   const handleUploadComplete = (result?: UploadResult) => {
@@ -37,7 +37,7 @@ export default function Dashboard() {
   return <div className="min-h-screen bg-background">
     <SEO title="Dashboard — Casher" description="Review your statement spending and recurring subscriptions." path="/dashboard" noindex />
     <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
-    <DashboardHeader isAdmin={isAdmin} userTier={userTier} hasUser onSignOut={handleSignOut} />
+    <DashboardHeader userTier={userTier} hasUser onSignOut={handleSignOut} />
     <main id="main-content" className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><p className="mb-1 text-sm text-muted-foreground">Your statements, made clearer</p><h1 className="text-3xl font-semibold tracking-tight">Overview</h1></div>

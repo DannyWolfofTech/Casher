@@ -43,7 +43,7 @@ describe("safeReturnOrigin", () => {
     "https://preview--trycasher-com.lovable.app",
     "https://ea77ebbb-78bd-46c4-a0c9-0ab73994a416.lovableproject.com",
     "https://www.trycasher.com",
-    "http://localhost:8080",
+    "https://trycasher-com.lovable.app",
   ])("allows the exact Casher origin %s", (origin) => {
     expect(safeReturnOrigin(origin)).toBe(origin);
   });
@@ -57,6 +57,11 @@ describe("safeReturnOrigin", () => {
       expect(isAllowedOrigin(origin)).toBe(false);
       expect(safeReturnOrigin(origin)).toBe(CANONICAL_ORIGIN);
     }
+  });
+
+  it('only allows local development when explicitly configured', () => {
+    expect(isAllowedOrigin('http://localhost:8080')).toBe(false);
+    expect(isAllowedOrigin('http://localhost:8080','http://localhost:8080')).toBe(true);
   });
 
   it("rejects a forged origin and falls back to canonical", () => {

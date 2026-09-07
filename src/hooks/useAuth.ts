@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [userTier, setUserTier] = useState('free');
   const [uploadsUsed, setUploadsUsed] = useState(0);
   const [canUpload, setCanUpload] = useState(false);
@@ -33,12 +32,8 @@ export const useAuth = () => {
         catch { billingFailed = true; }
       }
       if (!current()) return;
-      const [roles, result] = await Promise.all([
-        supabase.from('user_roles').select('role').eq('user_id', id).eq('role', 'admin').maybeSingle().retry(false),
-        supabase.rpc('get_upload_usage').retry(false),
-      ]);
+      const result = await supabase.rpc('get_upload_usage').retry(false);
       if (!current()) return;
-      setIsAdmin(!roles.error && !!roles.data);
       const usage = result.data?.[0] as UploadUsage | undefined;
       if (result.error || !usage || !Number.isFinite(Number(usage.uploads_used)) || Number(usage.uploads_used) < 0
           || (usage.upload_limit !== null && (!Number.isFinite(Number(usage.upload_limit)) || Number(usage.upload_limit) < 0))) throw new Error('Allowance unavailable');
@@ -63,7 +58,7 @@ export const useAuth = () => {
     const applyUser = (next: User | null) => {
       if (!active) return;
       const changed = identity.current !== (next?.id || null);
-      if (changed) { ++generation.current; queryClient.clear(); setIsAdmin(false); setUserTier('free'); setUploadsUsed(0); setCanUpload(false); setShowOnboarding(false); setAccountError(''); }
+      if (changed) { ++generation.current; queryClient.clear(); setUserTier('free'); setUploadsUsed(0); setCanUpload(false); setShowOnboarding(false); setAccountError(''); }
       identity.current = next?.id || null; setUser(next);
       if (!next) { setLoading(false); navigate('/auth', { replace: true }); return; }
       if (changed) { setLoading(true); void loadAccount(next.id, true); }
@@ -87,6 +82,6 @@ export const useAuth = () => {
       ++generation.current; identity.current = null; queryClient.clear(); navigate('/auth', { replace: true });
     } catch { toast({ title: 'Sign-out failed', description: 'Check your connection and try again.', variant: 'destructive' }); }
   };
-  return { user, loading, isAdmin, userTier, uploadsUsed, canUpload, accountError, refreshingAccount, refreshAccount,
+  return { user, loading, userTier, uploadsUsed, canUpload, accountError, refreshingAccount, refreshAccount,
     showOnboarding, setShowOnboarding, setUploadsUsed, setCanUpload, setUserTier, handleSignOut };
 };

@@ -71,7 +71,7 @@ const Index = () => {
               Plug your <span className="italic">financial leaks<span className="text-primary">.</span></span>
             </p>
             <p className="text-base md:text-lg leading-relaxed max-w-xl text-foreground/70 mb-12 mt-8">
-              The UK financial app that helps freelancers spot and cancel unused subscriptions.
+              Review your bank CSV, find possible subscriptions, and decide what to cancel with the provider.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <button
@@ -152,7 +152,7 @@ const Index = () => {
           </div>
           <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { title: "Your records stay yours", body: "Export your transactions and request removal of your account data." },
+              { title: "Your records stay yours", body: "Export your saved data or delete your account from Account settings, on every plan." },
               { title: "Encrypted in transit and at rest", body: "HTTPS everywhere, and managed database encryption for stored results." },
               { title: "No bank password", body: "You upload transaction data, not bank login credentials. Optional bank connections are still in development." },
             ].map((item) => (

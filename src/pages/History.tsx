@@ -28,7 +28,7 @@ export default function History() {
   if (auth.loading || !auth.user) return <div role="status" className="p-8">Loading your account…</div>;
   return <div className="min-h-screen">
     <SEO title="Spending history — Casher" description="Spending by transaction month and your subscription records." path="/dashboard/history" noindex />
-    <DashboardHeader isAdmin={auth.isAdmin} userTier={auth.userTier} hasUser onSignOut={auth.handleSignOut} />
+    <DashboardHeader userTier={auth.userTier} hasUser onSignOut={auth.handleSignOut} />
     <main id="main-content" className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
       <div><Link className="text-sm underline underline-offset-4" to="/dashboard">Back to overview</Link><h1 className="mt-4 text-3xl font-semibold tracking-tight">Spending history</h1><p className="mt-2 text-sm text-muted-foreground">Understand the statements you have imported over time.</p></div>
       {auth.accountError && <div role="alert" className="space-y-3 rounded-lg border p-4 text-sm"><p>{auth.accountError}</p><Button variant="outline" disabled={auth.refreshingAccount} onClick={auth.refreshAccount}>Retry account check</Button></div>}

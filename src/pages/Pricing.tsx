@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/language-context";
 import SEO from "@/components/SEO";
-import { planCtaState, PREMIUM_PURCHASABLE, PRO_PURCHASABLE, type PlanKey } from "@/lib/pricing-cta";
+import { planCtaState, PRO_PURCHASABLE, type PlanKey } from "@/lib/pricing-cta";
 import { redirectToCheckout } from "@/lib/checkout-redirect";
 
 
@@ -120,7 +120,6 @@ const Pricing = () => {
       nameKey: "free",
       price: "£0",
       description: t("perfectForGettingStarted"),
-      comingSoon: false,
       features: [
         t("oneUploadPerMonth"),
         t("basicCategorization"),
@@ -137,7 +136,6 @@ const Pricing = () => {
       nameKey: "pro",
       price: STRIPE_TIERS.pro.price,
       description: t("forRegularUsers"),
-      comingSoon: false,
       features: [
         t("unlimitedUploads"),
         t("advancedFiltersSearch"),
@@ -148,29 +146,13 @@ const Pricing = () => {
       limits: [],
       popular: true,
     },
-    {
-      name: t("premium"),
-      nameKey: "premium",
-      price: STRIPE_TIERS.premium.price,
-      description: t("forPowerUsers"),
-      comingSoon: !PREMIUM_PURCHASABLE,
-      features: [
-        t("allProFeatures"),
-        t("aiInsights"),
-        t("customRecommendations"),
-        t("priorityChatSupport"),
-        t("earlyAccess"),
-        t("quarterlyReview"),
-      ],
-      limits: [],
-    },
   ];
 
   return (
     <div className="min-h-screen bg-background">
       <SEO
         title="Pricing — Casher subscription tracker plans"
-        description="Free, Pro (£9.99/mo) and Premium (£14.99/mo) plans for CSV-based subscription tracking. Pick the plan that fits your savings goals."
+        description="Start with Casher Free for CSV-based subscription tracking. New Pro subscriptions are paused; existing subscribers can manage their billing."
         path="/pricing"
         jsonLd={[
           {
@@ -184,19 +166,6 @@ const Pricing = () => {
               priceCurrency: "GBP",
               url: "https://trycasher.com/pricing",
               availability: PRO_PURCHASABLE ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-            },
-          },
-          {
-            "@context": "https://schema.org",
-            "@type": "Product",
-            name: "Casher Premium",
-            description: "Everything in Pro, plus upcoming AI insight features. Not yet available to buy.",
-            offers: {
-              "@type": "Offer",
-              price: "14.99",
-              priceCurrency: "GBP",
-              url: "https://trycasher.com/pricing",
-              availability: "https://schema.org/OutOfStock",
             },
           },
         ]}
@@ -228,7 +197,7 @@ const Pricing = () => {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto mb-12 md:mb-16 md:pt-4">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto mb-12 md:mb-16 md:pt-4">
             {plans.map((plan) => (
               <Card
                 key={plan.name}
@@ -237,11 +206,6 @@ const Pricing = () => {
               {plan.popular && (
                   <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-semibold rounded-t-lg">
                     {t("forRegularUsers")}
-                  </div>
-                )}
-                {plan.comingSoon && (
-                  <div className="bg-muted text-muted-foreground text-center py-2 text-sm font-semibold rounded-t-lg">
-                    {t("comingSoonShort")}
                   </div>
                 )}
                 <CardHeader>
@@ -308,18 +272,12 @@ const Pricing = () => {
               {t("featureComparison")}
             </h2>
             <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="region" aria-label="Plan comparison" tabIndex={0}>
-              <table className="w-full min-w-[36rem] border-collapse bg-card rounded-lg overflow-hidden text-sm md:text-base">
+              <table className="w-full border-collapse bg-card rounded-lg overflow-hidden text-sm md:text-base">
                 <thead>
                   <tr className="bg-muted">
                     <th className="text-left p-3 md:p-4 font-semibold">{t("feature")}</th>
                     <th className="text-center p-3 md:p-4 font-semibold">{t("free")}</th>
                     <th className="text-center p-3 md:p-4 font-semibold bg-primary/10">{t("pro")}</th>
-                    <th className="text-center p-3 md:p-4 font-semibold">
-                      {t("premium")}
-                      {!PREMIUM_PURCHASABLE && (
-                        <span className="block text-xs font-normal text-muted-foreground">{t("comingSoonShort")}</span>
-                      )}
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -327,43 +285,31 @@ const Pricing = () => {
                     <td className="p-3 md:p-4">{t("csvUploads")}</td>
                     <td className="text-center p-3 md:p-4">{t("onePerMonth")}</td>
                     <td className="text-center p-3 md:p-4 bg-primary/5">{t("unlimited")}</td>
-                    <td className="text-center p-3 md:p-4">{t("unlimited")}</td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("transactionCategorization")}</td>
                     <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-3 md:p-4 bg-primary/5"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("subscriptionDetection")}</td>
                     <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-3 md:p-4 bg-primary/5"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("advancedFilters")}</td>
                     <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                     <td className="text-center p-3 md:p-4 bg-primary/5"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("csvExports")}</td>
                     <td className="text-center p-3 md:p-4"><X role="img" aria-label="Not included" className="inline h-5 w-5 text-muted-foreground" /></td>
                     <td className="text-center p-3 md:p-4 bg-primary/5"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
-                    <td className="text-center p-3 md:p-4"><Check role="img" aria-label="Included" className="inline h-5 w-5 text-primary" /></td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 md:p-4">{t("aiPoweredInsights")}</td>
-                    <td className="text-center p-3 md:p-4"><X role="img" aria-label="Not included" className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-3 md:p-4 bg-primary/5"><X role="img" aria-label="Not included" className="inline h-5 w-5 text-muted-foreground" /></td>
-                    <td className="text-center p-3 md:p-4 text-xs md:text-sm text-muted-foreground">{t("comingSoonShort")}</td>
                   </tr>
                   <tr>
                     <td className="p-3 md:p-4">{t("support")}</td>
                     <td className="text-center p-3 md:p-4">{t("community")}</td>
                     <td className="text-center p-3 md:p-4 bg-primary/5">{t("email")}</td>
-                    <td className="text-center p-3 md:p-4">{t("priorityChat")}</td>
                   </tr>
                 </tbody>
               </table>

@@ -1,6 +1,8 @@
 project_id = "ewnjmvxildwmbdmosasz"
 
 [functions]
+  [functions.unsubscribe-email]
+    verify_jwt = false
   [functions.reconcile-billing]
     verify_jwt = true
   [functions.delete-account]

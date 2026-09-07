@@ -26,7 +26,7 @@ jobs:
       - name: Check changed edge functions
         run: deno check --frozen supabase/functions/process-csv/index.ts supabase/functions/check-subscription/index.ts supabase/functions/create-checkout/index.ts supabase/functions/create-checkout-session/index.ts supabase/functions/customer-portal/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/check-failed-webhooks/index.ts supabase/functions/send-welcome-email/index.ts supabase/functions/delete-account/index.ts supabase/functions/reconcile-billing/index.ts
       - name: Check email rendering and dispatch functions
-        run: deno check --frozen supabase/functions/auth-email-hook/index.ts supabase/functions/process-email-queue/index.ts
+        run: deno check --frozen supabase/functions/auth-email-hook/index.ts supabase/functions/process-email-queue/index.ts supabase/functions/unsubscribe-email/index.ts
   supabase-local:
     runs-on: ubuntu-latest
     timeout-minutes: 20

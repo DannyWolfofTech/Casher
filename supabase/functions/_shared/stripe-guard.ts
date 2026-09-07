@@ -30,11 +30,10 @@ export const ALLOWED_PRICE_IDS: readonly string[] = Object.values(STRIPE_TIERS).
 const STATIC_ALLOWED_ORIGINS = [
   CANONICAL_ORIGIN,
   "https://www.trycasher.com",
+  "https://trycasher-com.lovable.app",
   "https://id-preview--ea77ebbb-78bd-46c4-a0c9-0ab73994a416.lovable.app",
   "https://preview--trycasher-com.lovable.app",
   "https://ea77ebbb-78bd-46c4-a0c9-0ab73994a416.lovableproject.com",
-  "http://localhost:8080",
-  "http://localhost:5173",
 ];
 
 function extraAllowedOrigins(raw?: string | null): string[] {

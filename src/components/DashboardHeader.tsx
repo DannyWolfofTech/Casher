@@ -11,13 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
 interface DashboardHeaderProps {
-  isAdmin: boolean;
   userTier: string;
   hasUser: boolean;
   onSignOut: () => void;
 }
 
-const DashboardHeader = ({ isAdmin, userTier, hasUser, onSignOut }: DashboardHeaderProps) => {
+const DashboardHeader = ({ userTier, hasUser, onSignOut }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -64,9 +63,6 @@ const DashboardHeader = ({ isAdmin, userTier, hasUser, onSignOut }: DashboardHea
             <Share2 className="mr-2 h-4 w-4" />
             {t("share")}
           </Button>
-          {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => navigate("/admin")}>{t("adminPanel")}</Button>
-          )}
           {canPurchaseInApp() && userTier === "free" && (
             <Button variant="outline" size="sm" onClick={() => navigate("/pricing")}>{t("upgradeToPro")}</Button>
           )}
@@ -107,11 +103,6 @@ const DashboardHeader = ({ isAdmin, userTier, hasUser, onSignOut }: DashboardHea
                   <Share2 className="mr-2 h-4 w-4" />
                   {t("share")}
                 </Button>
-                {isAdmin && (
-                  <Button variant="outline" className="justify-start" onClick={() => go("/admin")}>
-                    {t("adminPanel")}
-                  </Button>
-                )}
                 {canPurchaseInApp() && userTier === "free" && (
                   <Button variant="outline" className="justify-start" onClick={() => go("/pricing")}>
                     {t("upgradeToPro")}

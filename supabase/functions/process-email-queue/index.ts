@@ -176,6 +176,19 @@ Deno.serve(async (req) => {
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i]
       const payload = msg.message
+      // App email preferences must be enforced before calling the provider.
+      // User-requested authentication/security messages use the separate auth queue.
+      if (queue === 'transactional_emails') {
+        const {data: suppressed, error: suppressionError} = await supabase.from('suppressed_emails').select('id').eq('email',String(payload.to).toLowerCase()).maybeSingle()
+        if (suppressionError) return Response.json({error:'Email preferences unavailable'},{status:503})
+        if (suppressed) {
+          const logged=await supabase.from('email_send_log').insert({message_id:payload.message_id,template_name:payload.label || queue,recipient_email:payload.to,status:'suppressed'})
+          if(logged.error) return Response.json({error:'Email log unavailable'},{status:503})
+          const removed=await supabase.rpc('delete_email',{queue_name:queue,message_id:msg.msg_id})
+          if(removed.error) return Response.json({error:'Email queue unavailable'},{status:503})
+          continue
+        }
+      }
       const failedAttempts =
         payload?.message_id && typeof payload.message_id === 'string'
           ? (failedAttemptsByMessageId.get(payload.message_id) ?? 0)
