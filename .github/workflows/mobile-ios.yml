@@ -32,9 +32,13 @@ jobs:
         run: node tools/mobile/write-production-env.mjs
       - name: Build Release for iOS Simulator without distribution signing
         run: bash tools/mobile/build-ios-release.sh > .audit-results/ios-build.log 2>&1
+      - name: Exercise the actual iOS interface
+        run: bash tools/mobile/test-ios-ui.sh > .audit-results/ios-ui.log 2>&1
       - name: Show build diagnostics on failure
         if: failure()
-        run: tail -n 100 .audit-results/ios-build.log || true
+        run: |
+          tail -n 100 .audit-results/ios-build.log || true
+          tail -n 100 .audit-results/ios-ui.log || true
       - name: Package simulator application
         run: |
           ditto -c -k --sequesterRsrc --keepParent release-artifacts/ios/Casher-Simulator.app release-artifacts/ios/Casher-Simulator.zip
@@ -43,6 +47,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: casher-ios-simulator
-          path: release-artifacts/ios/Casher-Simulator.zip
+          path: |
+            release-artifacts/ios/Casher-Simulator.zip
+            release-artifacts/ios/screenshots/
           retention-days: 1
           if-no-files-found: error
