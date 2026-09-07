@@ -82,3 +82,5 @@ Ordinary Gmail replies currently reveal the Gmail sender. Outbound privacy@ SMTP
 ## Owner-only launch actions
 
 Supply a legal trading name and public business/service postal address for the Terms and Privacy Policy. Do not substitute a home address or personal phone. Authorize the official Stripe CLI for the Casher sandbox so the prepared real-provider renewal/failure/cancellation/deletion suite can run. Open the TrueLayer Console and accept the required terms personally; see `open-banking-provider-selection.md`. Back up the Android signing key and its password securely under owner control. Mac/Xcode/signing and store-enrollment decisions remain with the owner.
+
+A later actual native password-recovery request reached a unique privacy plus alias in Inbox at 12:14 BST on 7 September. That verifies this alias's forwarding and the production auth-mail path. It does not verify native password replacement: the automated link return was blocked on safe credential handling and never dispatched. The disposable identity, queue entries and local credential file were cleaned up afterward.

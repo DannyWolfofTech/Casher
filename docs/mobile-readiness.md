@@ -46,3 +46,5 @@ If Play App Signing later uses a different distribution certificate, add that ve
 
 
 Final device acceptance also selected the synthetic CSV through Android's actual system document picker, received production `REPLAY`, exported the same four records, and passed logout/recreation. Android reported `trycasher.com: verified` through its statement service without an override. The original production data counts were restored after deleting the disposable account. The remaining recovery gate is an actual email-to-app confirmation/recovery round trip, including cold and warm app states.
+
+Recovery follow-up: production accepted a native password-reset request and the real email reached the disposable privacy alias's Inbox at 12:14 BST. Cold and warm invalid-link rejection/retry passed on the signed Android app. A valid email-link round trip remains unverified: automatic approval review blocked reading the private queue's credential-bearing email, and that test timed out without a callback. The test account was deleted afterward; do not reuse its credentials. See the acceptance report for the pending secure-link handling approval or manual-device alternative.
