@@ -1,0 +1,38 @@
+{
+  "performedAt": "2026-09-07T15:44:50.794Z",
+  "sourceProject": "ea77ebbb-78bd-46c4-a0c9-0ab73994a416",
+  "operation": "Enforce deployed seven-day retention on completed cron job logs",
+  "cutoff": "2026-08-31T15:00:00Z",
+  "expiredLogsRemoved": 1611280,
+  "before": {
+    "databaseBytes": 6653078675,
+    "historyBytes": 6637879296
+  },
+  "after": {
+    "database_bytes": 15404179,
+    "detected_subscriptions": 60,
+    "expired_runs_remaining": 0,
+    "history_bytes": 147456,
+    "profiles": 29,
+    "retained_runs": 446,
+    "transactions": 490
+  },
+  "customerTablesModified": false,
+  "productionRestored": false,
+  "providerExportStarted": false,
+  "restorePerformed": false,
+  "exportBlocker": "Automatic approval review requires explicit authorization for the full database export into the existing Lovable project Cloud storage and the temporary download link emailed to the account owner.",
+  "maintenanceCheckpoint": "dfd2346a06175282844801668edd44efa56ad69d",
+  "ci": [
+    {
+      "id": 34138115572,
+      "branch": "main",
+      "result": "success"
+    },
+    {
+      "id": 34138115532,
+      "branch": "codex/production-hardening",
+      "result": "success"
+    }
+  ]
+}
