@@ -32,6 +32,8 @@ jobs:
         run: node tools/mobile/write-production-env.mjs
       - name: Build Release for iOS Simulator without distribution signing
         run: bash tools/mobile/build-ios-release.sh > .audit-results/ios-build.log 2>&1
+      - name: Compile the actual iPhone Release target up to the signing boundary
+        run: bash tools/mobile/check-ios-device-build.sh > .audit-results/ios-device-build.log 2>&1
       - name: Exercise the actual iOS interface
         shell: bash
         run: bash tools/mobile/test-ios-ui.sh 2>&1 | tee .audit-results/ios-ui.log
@@ -39,6 +41,7 @@ jobs:
         if: failure()
         run: |
           tail -n 100 .audit-results/ios-build.log || true
+          tail -n 100 .audit-results/ios-device-build.log || true
           tail -n 100 .audit-results/ios-ui.log || true
       - name: Package simulator application
         run: |
@@ -51,6 +54,7 @@ jobs:
           name: casher-ios-simulator
           path: |
             release-artifacts/ios/Casher-Simulator.zip
+            release-artifacts/ios/Casher-Device-Unsigned.zip
             release-artifacts/ios/Podfile.lock
             release-artifacts/ios/screenshots/
           retention-days: 1
