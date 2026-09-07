@@ -75,7 +75,7 @@ Immediately afterward I will verify the enabled API against real calls, then imp
 
 ## 4. Android physical acceptance and signing backup
 
-Install `D:\Projects\Coding\Casher\release-artifacts\android\casher-1.0.0-release.apk` on an owner-controlled Android phone. Version **1.0.0**, build **1**, package **com.trycasher.app**, SHA-256 **AC6FD80632E2FE972F6B7411F21E27A3EE45FEE8FAFD2BEB3E5E814E043B289B**. Transfer the APK by USB/file transfer and allow installation for that file manager only; disable that permission afterward. No Play submission is needed.
+Install `D:\Projects\Coding\Casher\release-artifacts\android\casher-1.0.0-release.apk` on an owner-controlled Android phone. Version **1.0.0**, build **1**, package **com.trycasher.app**, SHA-256 **24E8A7A8061C3E31154740E9D693200357596EA50013791BD5A6F00A04301CAC**. Transfer the APK by USB/file transfer and allow installation for that file manager only; disable that permission afterward. No Play submission is needed.
 
 Use a disposable Casher account and the supplied synthetic fixture, never a real statement for initial acceptance. Record device model, Android version, pass/fail and non-sensitive screenshots. Do not record passwords or email-link URLs.
 

@@ -2,6 +2,14 @@
 
 These are verified account and operations changes, not a new application deployment. Live checkout and bank connectivity remain disabled.
 
+## Latest application follow-up
+
+Frontend `9685c91e37646d2b52f6f3a4e5a3ca03a312fb2a` was published as deployment `994e3640-8522-430f-b881-43cde613064a`. The live Privacy asset now names Zoho Mail for outbound correspondence. Validation passed: 237 unit tests, 33 local browser tests, TypeScript, production build, lint with no errors (seven existing warnings), and 16 live desktop/mobile browser checks. Nine read-only production HTTP/authentication/webhook-boundary checks also passed. Both main and branch CI passed at this source. Android was rebuilt with the same release key; its current hashes and emulator installation are in the release report.
+
+The owner reports removing their phone and address from Stripe invoices; the agent made no Stripe contact/identity changes. The owner confirms personal operation without a registered company or company number. No alternative public address is available or authorized, so the public-address launch gate remains unresolved. A geographic establishment address is part of the information described by [regulation 6](https://www.legislation.gov.uk/uksi/2002/2013/regulation/6); merely removing invoice fields or inventing a mailbox address is not a resolution. No home address was read or published.
+
+Zoho supports creating application-specific credentials in its account security UI, but the attempted dedicated credential **Casher Privacy Gmail SMTP** was stopped by Zoho's required identity re-verification. No credential was created or copied. The owner verification tab is open; enter the existing Zoho password or complete its OTP route there, never in chat. After verification, SMTP eligibility and actual Gmail alias operation still need acceptance. Existing authenticated Zoho webmail sending remains available.
+
 ## TrueLayer
 
 Owner signup, MFA and file handoff completed. Created Casher sandbox application `sandbox-casher-b3ef06`. The credential is verified and protected, including a DPAPI copy. Console shows Data Active, but the documented V3 `data` scope returns `invalid_scope` and the V3 connection endpoint returns 403. The owner-approved support request was sent, and support confirmed escalation with an email reply when an agent returns. Frontend/consent/sync acceptance is not complete. No production account, signing key for payments, commercial upgrade or production connection was configured.

@@ -8,7 +8,7 @@
 
 Production: https://trycasher.com (alias https://trycasher-com.lovable.app).
 
-- Current frontend source: `6b292f0355b3ded42fa386a75c5d0f1f668bd676`; deployment `2b030e21-45ad-497b-91c2-780a59a5112d`. The live custom domain serves the new bundled-font assets (`index-X-P7qkba.js`, `index-BG7XO44f.css`) without a Google Fonts request.
+- Current frontend source: `9685c91e37646d2b52f6f3a4e5a3ca03a312fb2a`; deployment `994e3640-8522-430f-b881-43cde613064a`. The live custom domain serves `Privacy-osjXG75S.js` with the new Zoho correspondence disclosure. All 16 desktop/mobile production browser checks passed. This supersedes the earlier frontend deployment references in the historical sections below.
 - Current billing backend source: `fbeee491d983d86ec7153faab31be2ad271f2afe`. Lovable confirmed deployment of all seven affected functions with no errors: `check-subscription`, `create-checkout`, `create-checkout-session`, `customer-portal`, `stripe-webhook`, `reconcile-billing`, `delete-account`. Provider request `umsg_01m1y35hytfmvbfvm33p4662st`; confirmation `main:agent#00000000134878#don:2NHJNFJK`. The other backend functions remain on the reviewed `cd40d1d` implementation. No migrations, secrets, frontend assets or purchase gates changed in this deployment.
 - Major hardening checkpoint: `6a9cca51091362fc8353beb3d3014792c1056e7f`; actual-provider unsubscribe/retention fixes: `cd40d1d`; navigation/live acceptance checkpoint: `983d59f`.
 - [Hosted Linux CI](https://github.com/DannyWolfofTech/Casher/actions/runs/34121370128): both `check` and `supabase-local` succeeded at `6b292f0`, including 237 unit tests, 33 browser tests, 18 real integration groups and all frozen function checks.
@@ -52,12 +52,12 @@ Production: https://trycasher.com (alias https://trycasher-com.lovable.app).
 ## Android artifacts
 
 `release-artifacts/android/casher-1.0.0-release.apk`
-SHA-256: `AC6FD80632E2FE972F6B7411F21E27A3EE45FEE8FAFD2BEB3E5E814E043B289B`
+SHA-256: `24E8A7A8061C3E31154740E9D693200357596EA50013791BD5A6F00A04301CAC`
 
 `release-artifacts/android/casher-1.0.0-release.aab`
-SHA-256: `EF0512E4CD905E437F55DF302576FAA6BAEB7CF3F3486A529255B851578B57DC`
+SHA-256: `E12C8D2EA14A715B3D4325D788224CEEC073A3DBC565EC1CF45C907BDA19F106`
 
-Both use application ID `com.trycasher.app`, version 1.0.0 (build 1), and application source `4c135985d1a1b5d90d1ac3d981bdeb3ba842b230`. APK size: 4,307,280 bytes; AAB size: 4,194,159 bytes. The APK uses verified v2 signing with the RSA-3072 Casher release certificate. Artifacts and signing material are intentionally ignored by Git. [Mobile build/owner instructions](mobile-readiness.md) give exact paths and recovery requirements.
+Both use application ID `com.trycasher.app`, version 1.0.0 (build 1), and application source `9685c91e37646d2b52f6f3a4e5a3ca03a312fb2a`. APK size: 4,307,292 bytes; AAB size: 4,194,184 bytes. The rebuilt APK retained the original verified RSA-3072 release certificate and installed successfully over the emulator copy. Release assembly, bundle, lint and unit-test Gradle tasks passed. Physical-device acceptance remains open. Artifacts and signing material are intentionally ignored by Git. [Mobile build/owner instructions](mobile-readiness.md) give exact paths and recovery requirements.
 
 ## iOS simulator artifact
 

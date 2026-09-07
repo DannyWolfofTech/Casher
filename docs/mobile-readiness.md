@@ -4,6 +4,8 @@ The Android app is a signed release using bundled production assets, installed a
 
 ## Implemented
 
+Latest Android refresh: application source `9685c91`, including the Zoho correspondence disclosure. Release assembly/bundle/lint/unit tasks passed and the unchanged signing certificate verified; the APK installed successfully on the existing emulator. Current APK SHA-256 is `24E8A7A8061C3E31154740E9D693200357596EA50013791BD5A6F00A04301CAC` (4,307,292 bytes). AAB SHA-256 is `E12C8D2EA14A715B3D4325D788224CEEC073A3DBC565EC1CF45C907BDA19F106` (4,194,184 bytes). Paths below are unchanged. The older iOS artifacts still need this policy-text refresh before a signed-device release; their existing compilation evidence does not imply they contain the latest disclosure.
+
 - Capacitor 8.5.1, Android compile/target API 36, min API 24; iOS min 15.
 - Production HTTPS API configuration, no preview server, no cleartext traffic, release WebView debugging off.
 - Android Keystore / iOS Keychain session persistence, with a real write/read probe and failure closed. Native sessions do not use browser localStorage. Keychain uses device-only unlocked accessibility and no cloud synchronization.
