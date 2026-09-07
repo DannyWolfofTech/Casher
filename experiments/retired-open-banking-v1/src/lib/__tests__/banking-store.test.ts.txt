@@ -1,0 +1,63 @@
+import { PGlite } from '@electric-sql/pglite';
+import { readFileSync } from 'node:fs';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { encryptedBankingStore } from '../../../supabase/functions/_shared/banking-store';
+let db: PGlite;
+const owner = '00000000-0000-4000-8000-000000000001';
+const other = '00000000-0000-4000-8000-000000000002';
+beforeAll(async () => {
+  db = new PGlite();
+  await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+    CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid primary key);
+    INSERT INTO auth.users VALUES('${owner}'),('${other}');`);
+  await db.exec(readFileSync('supabase/migrations/20260907070000_banking_sandbox_store.sql','utf8'));
+  await db.exec(readFileSync('supabase/migrations/20260907080000_banking_sandbox_rate_limit.sql','utf8'));
+}, 30000);
+afterAll(async () => db.close());
+describe('private banking persistence', () => {
+  it('limits requests across callers and resets only after the fixed window', async () => {
+    await db.exec('SET ROLE service_role');
+    try {
+      for (let n = 0; n < 20; n++) expect((await db.query<{allowed:boolean}>('SELECT public.banking_sandbox_allow_request($1) AS allowed',[other])).rows[0].allowed).toBe(true);
+      expect((await db.query<{allowed:boolean}>('SELECT public.banking_sandbox_allow_request($1) AS allowed',[other])).rows[0].allowed).toBe(false);
+    } finally { await db.exec('RESET ROLE'); }
+    await db.query("UPDATE banking_private.request_limits SET window_start=now()-interval '11 minutes' WHERE user_id=$1",[other]);
+    expect((await db.query<{allowed:boolean}>('SELECT public.banking_sandbox_allow_request($1) AS allowed',[other])).rows[0].allowed).toBe(true);
+    await db.exec('SET ROLE authenticated');
+    try { await expect(db.query('SELECT public.banking_sandbox_allow_request($1)',[other])).rejects.toThrow(); }
+    finally { await db.exec('RESET ROLE'); }
+  });
+  it('denies browser roles access to secrets and service RPCs', async () => {
+    for (const role of ['anon','authenticated']) {
+      await db.exec(`SET ROLE ${role}`);
+      try {
+        await expect(db.query('SELECT * FROM banking_private.tokens')).rejects.toThrow();
+        await expect(db.query('SELECT public.banking_sandbox_consume_attempt($1,$2)',[owner,'x'.repeat(43)])).rejects.toThrow();
+        await expect(db.query('SELECT public.banking_sandbox_save_token($1,$2,$3)',[owner,'{}',new Date().toISOString()])).rejects.toThrow();
+      } finally { await db.exec('RESET ROLE'); }
+    }
+  });
+  it('encrypts stored fields, atomically consumes once and cascades owner deletion', async () => {
+    const key = await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+    const admin = { rpc: async (name: string, args: Record<string, unknown>) => {
+      const names = Object.keys(args);
+      const result = await db.query(`SELECT * FROM public.${name}(${names.map((n,i) => `${n} => $${i+1}`).join(',')})`, Object.values(args));
+      return {data:result.rows,error:null};
+    } };
+    const store = encryptedBankingStore(admin,key,'test-key-1');
+    const stateHash = 'a'.repeat(43); const expiresAt = Date.now()+300000;
+    await db.exec('SET ROLE service_role');
+    await store.create({userId:owner,stateHash,verifier:'secret-verifier',expiresAt});
+    expect(await store.consume(other,stateHash,Date.now())).toBeNull();
+    const consumed = await store.consume(owner,stateHash,Date.now());
+    expect(consumed?.verifier).toBe('secret-verifier');
+    expect(await store.consume(owner,stateHash,Date.now())).toBeNull();
+    await store.saveTokens(owner,{accessToken:'secret-access',expiresAt});
+    await db.exec('RESET ROLE');
+    const stored = await db.query('SELECT encrypted_token FROM banking_private.tokens');
+    expect(JSON.stringify(stored.rows)).not.toContain('secret-access');
+    expect(JSON.stringify(stored.rows)).toContain('test-key-1');
+    await db.query('DELETE FROM auth.users WHERE id=$1',[owner]);
+    expect((await db.query('SELECT * FROM banking_private.tokens')).rows).toHaveLength(0);
+  });
+});

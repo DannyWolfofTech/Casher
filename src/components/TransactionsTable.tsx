@@ -13,6 +13,8 @@ import { monthLabel } from '@/lib/analytics';
 import { Link } from 'react-router-dom';
 import TransactionReview from './TransactionReview';
 import type { Tables } from '@/integrations/supabase/types';
+import { saveFile } from '@/lib/save-file';
+import { isNativeApp } from '@/lib/mobile-platform';
 
 interface Props { refreshKey: number; userTier: string; userId: string; month: string; onDataChanged?: () => void; }
 export default function TransactionsTable({ refreshKey, userTier, userId, month }: Props) {
@@ -20,25 +22,28 @@ export default function TransactionsTable({ refreshKey, userTier, userId, month 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [onlyUnreviewed, setOnlyUnreviewed] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
   const [selected, setSelected] = useState<Tables<'transactions'> | null>(null);
   const { t } = useTranslation();
   const rows = useMemo(() => (query.data || []).filter(row => row.date.startsWith(month) && (!onlyUnreviewed || !row.direction) && `${row.description} ${row.category || ''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())), [query.data, month, search, onlyUnreviewed]);
   const totalPages = Math.max(1, Math.ceil(rows.length / 25));
   const currentPage = Math.min(page, totalPages);
   const visible = rows.slice((currentPage - 1) * 25, currentPage * 25);
-  const exportRows = () => {
-    if (!isPaidTier(userTier)) return;
-    const blob = new Blob([buildTransactionsCsv(rows)], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a'); link.href = url; link.download = exportFileName(); link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const exportRows = async () => {
+    if (!isPaidTier(userTier) || exporting) return;
+    setExporting(true); setExportError('');
+    try { await saveFile(buildTransactionsCsv(rows), exportFileName(), 'text/csv;charset=utf-8;'); }
+    catch { setExportError('The export was not saved. Try Export again and choose where to save it.'); }
+    finally { setExporting(false); }
   };
   return <Card className="min-w-0">
     <CardHeader className="flex flex-wrap flex-row items-start justify-between gap-3">
       <div><CardTitle>{t('allTransactions')}</CardTitle><CardDescription>{monthLabel(month)} · {rows.length} matching transactions</CardDescription></div>
-      {isPaidTier(userTier) ? <Button variant="outline" size="sm" onClick={exportRows} disabled={query.isPending || query.isError || !rows.length}><Download className="mr-2 h-4 w-4" />{t('export')}</Button> : <Button variant="outline" size="sm" asChild><Link to="/pricing">Export with Pro</Link></Button>}
+      {isPaidTier(userTier) ? <Button variant="outline" size="sm" onClick={exportRows} disabled={exporting || query.isPending || query.isError || !rows.length}><Download className="mr-2 h-4 w-4" />{exporting ? 'Preparing export…' : t('export')}</Button> : !isNativeApp() && <Button variant="outline" size="sm" asChild><Link to="/pricing">Export with Pro</Link></Button>}
     </CardHeader>
     <CardContent className="space-y-4">
+      {exportError && <p role="alert" className="text-sm text-destructive">{exportError}</p>}
       <div className="relative"><Search aria-hidden="true" className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input aria-label="Search transactions" placeholder={t('searchTransactions')} value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-9" /></div>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={onlyUnreviewed} onChange={e => { setOnlyUnreviewed(e.target.checked); setPage(1); }} />Only transactions needing a direction review</label>
       {query.isPending ? <p role="status">Loading transactions…</p> : query.isError ? <div role="alert"><p>Transactions could not be loaded.</p><Button variant="outline" onClick={() => query.refetch()}>Try again</Button></div> :

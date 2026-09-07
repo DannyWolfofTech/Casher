@@ -1,0 +1,85 @@
+import { describe, expect, it, vi } from 'vitest';
+import { bankingConfig, beginBankConnection, completeBankConnection, sealBankingSecret, openBankingSecret, type BankingStore, type BankingAttempt } from '../../../supabase/functions/_shared/open-banking';
+
+const config = bankingConfig({ OPEN_BANKING_MODE: 'sandbox', TRUELAYER_CLIENT_ID: 'sandbox-app', TRUELAYER_CLIENT_SECRET: 'fake-secret', OPEN_BANKING_REDIRECT_URI: 'https://staging.example.test/banking/callback' });
+function fixture() {
+  const attempts = new Map<string, BankingAttempt>();
+  const saveTokens = vi.fn(async () => {});
+  const store: BankingStore = {
+    create: async attempt => { attempts.set(attempt.stateHash, attempt); },
+    consume: async (user, hash, now) => {
+      const attempt = attempts.get(hash);
+      if (!attempt || attempt.userId !== user || attempt.expiresAt <= now) return null;
+      attempts.delete(hash); return attempt;
+    }, saveTokens,
+  };
+  return { store, attempts, saveTokens };
+}
+const success = () => vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ access_token: 'private-token', expires_in: 3600, token_type: 'Bearer' })));
+const params = (url: string) => { const values = new URL(url).searchParams; values.set('code', 'fake-code'); return values; };
+
+describe('Open Banking sandbox trust boundary', () => {
+  it('fails closed when disabled or live, even with credentials', () => {
+    for (const mode of [undefined, 'live', 'test', '']) expect(() => bankingConfig({ OPEN_BANKING_MODE: mode })).toThrow();
+    expect(() => bankingConfig({ OPEN_BANKING_MODE: 'sandbox' })).toThrow();
+  });
+  it('requests only mock-bank account/transaction access with unique state and PKCE', async () => {
+    const { store, attempts } = fixture();
+    const first = await beginBankConnection(config, store, 'user-a', 1000);
+    const second = await beginBankConnection(config, store, 'user-a', 1000);
+    const url = new URL(first.url);
+    expect(url.origin).toBe('https://auth.truelayer-sandbox.com');
+    expect(url.searchParams.get('providers')).toBe('uk-cs-mock');
+    expect(url.searchParams.get('scope')).toBe('accounts transactions');
+    expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+    expect(first.url).not.toContain('fake-secret');
+    expect(first.url).not.toContain('user-a');
+    expect(first.url).not.toBe(second.url);
+    expect([...attempts.values()].every(a => a.stateHash !== url.searchParams.get('state'))).toBe(true);
+  });
+  it('rejects other users without consuming the rightful owner’s attempt', async () => {
+    const { store, saveTokens } = fixture(); const request = success();
+    const start = await beginBankConnection(config, store, 'a');
+    await expect(completeBankConnection(config, store, 'b', params(start.url), request)).rejects.toThrow();
+    expect(request).not.toHaveBeenCalled();
+    expect(await completeBankConnection(config, store, 'a', params(start.url), request)).toEqual({ status: 'connected' });
+    expect(saveTokens).toHaveBeenCalledOnce();
+  });
+  it('allows exactly one callback across concurrent/replayed attempts and never returns tokens', async () => {
+    const { store } = fixture(); const request = success();
+    const start = await beginBankConnection(config, store, 'a');
+    const results = await Promise.allSettled([1, 2].map(() => completeBankConnection(config, store, 'a', params(start.url), request)));
+    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
+    expect(request).toHaveBeenCalledOnce();
+    expect(JSON.stringify(results)).not.toContain('private-token');
+    const options = request.mock.calls[0][1]!;
+    expect(options.redirect).toBe('error');
+    expect((options.body as URLSearchParams).get('code_verifier')).toHaveLength(43);
+  });
+  it('rejects expired callbacks, duplicate state and cancelled consent without contacting provider', async () => {
+    const { store } = fixture(); const request = success();
+    const start = await beginBankConnection(config, store, 'a', 0);
+    await expect(completeBankConnection(config, store, 'a', params(start.url), request, 600001)).rejects.toThrow();
+    const current = await beginBankConnection(config, store, 'a');
+    const duplicate = params(current.url); duplicate.append('state', duplicate.get('state')!);
+    await expect(completeBankConnection(config, store, 'a', duplicate, request)).rejects.toThrow();
+    const cancelled = params(current.url); cancelled.set('error', 'access_denied');
+    expect(await completeBankConnection(config, store, 'a', cancelled, request)).toEqual({ status: 'cancelled' });
+    expect(request).not.toHaveBeenCalled();
+  });
+  it('does not expose provider errors or save malformed tokens', async () => {
+    for (const response of [new Response('private-secret', {status: 400}), new Response(JSON.stringify({access_token:'secret',expires_in:-1}))]) {
+      const { store, saveTokens } = fixture(); const start = await beginBankConnection(config, store, 'a');
+      await expect(completeBankConnection(config, store, 'a', params(start.url), async () => response)).rejects.toThrow('Please reconnect');
+      expect(saveTokens).not.toHaveBeenCalled();
+    }
+  });
+  it('encrypts tokens and rejects tampering or swapping owners', async () => {
+    const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    const sealed = await sealBankingSecret(key, 'private-token', 'a:access-token');
+    expect(await openBankingSecret(key, sealed, 'a:access-token')).toBe('private-token');
+    await expect(openBankingSecret(key, sealed, 'b:access-token')).rejects.toThrow();
+    sealed.ciphertext[0] ^= 1;
+    await expect(openBankingSecret(key, sealed, 'a:access-token')).rejects.toThrow();
+  });
+});

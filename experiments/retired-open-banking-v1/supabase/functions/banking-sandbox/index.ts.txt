@@ -1,0 +1,33 @@
+import { createClient } from 'npm:@supabase/supabase-js@2.115.0';
+import { bankingConfig } from '../_shared/open-banking.ts';
+import { encryptedBankingStore } from '../_shared/banking-store.ts';
+import { bankingHandler } from '../_shared/banking-http.ts';
+
+// No production activation: configure only in an isolated provider sandbox project.
+Deno.serve(async req => {
+  try {
+    const env = Deno.env.toObject();
+    const config = bankingConfig(env);
+    const keyBytes = Uint8Array.from(atob(env.OPEN_BANKING_ENCRYPTION_KEY ?? ''), c => c.charCodeAt(0));
+    if (keyBytes.length !== 32) throw new Error('Invalid encryption configuration');
+    const key = await crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['encrypt', 'decrypt']);
+    const admin = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+    return await bankingHandler({
+      config, store: encryptedBankingStore(admin, key, env.OPEN_BANKING_KEY_ID),
+      testerIds: new Set((env.OPEN_BANKING_TESTER_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)),
+      authenticate: async token => {
+        const { data, error } = await admin.auth.getUser(token);
+        return !error && data.user?.email_confirmed_at ? data.user.id : null;
+      },
+      allowRequest: async userId => {
+        const { data, error } = await admin.rpc('banking_sandbox_allow_request', { p_user_id: userId });
+        if (error) throw new Error('Rate limit unavailable');
+        return data === true;
+      },
+    })(req);
+  } catch {
+    return new Response(JSON.stringify({ error: 'Bank connections are unavailable' }), {
+      status: 503, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' },
+    });
+  }
+});

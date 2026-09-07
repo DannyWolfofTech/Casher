@@ -1,3 +1,4 @@
+import { canPurchaseInApp } from '@/lib/mobile-platform';
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ const DashboardHeader = ({ isAdmin, userTier, hasUser, onSignOut }: DashboardHea
   const [menuOpen, setMenuOpen] = useState(false);
 
   const shareReferral = async () => {
-    const link = `${window.location.origin}/`;
+    const link = 'https://trycasher.com/';
     try {
       await navigator.clipboard.writeText(link);
       toast({ title: "Link copied", description: "Share Casher with someone who might find it useful." });
@@ -54,6 +55,7 @@ const DashboardHeader = ({ isAdmin, userTier, hasUser, onSignOut }: DashboardHea
         <div className="hidden items-center gap-3 lg:flex">
           <LanguageSelector />
           <ThemeToggle />
+          <Button variant="outline" size="sm" onClick={() => navigate('/account')}>Account</Button>
           <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/history")}>
             <History className="mr-2 h-4 w-4" />
             History
@@ -65,10 +67,10 @@ const DashboardHeader = ({ isAdmin, userTier, hasUser, onSignOut }: DashboardHea
           {isAdmin && (
             <Button variant="outline" size="sm" onClick={() => navigate("/admin")}>{t("adminPanel")}</Button>
           )}
-          {userTier === "free" && (
+          {canPurchaseInApp() && userTier === "free" && (
             <Button variant="outline" size="sm" onClick={() => navigate("/pricing")}>{t("upgradeToPro")}</Button>
           )}
-          {userTier !== "free" && <Button variant="outline" size="sm" onClick={() => navigate("/pricing")}>Billing</Button>}
+          {canPurchaseInApp() && userTier !== "free" && <Button variant="outline" size="sm" onClick={() => navigate("/pricing")}>Billing</Button>}
           {planBadge}
           <Button variant="ghost" size="sm" onClick={onSignOut}>
             <LogOut className="mr-2 h-4 w-4" />
@@ -92,6 +94,7 @@ const DashboardHeader = ({ isAdmin, userTier, hasUser, onSignOut }: DashboardHea
               </SheetHeader>
               <div className="mt-6 flex flex-col gap-3">
                 <LanguageSelector />
+                <Button variant="outline" className="justify-start" onClick={() => go('/account')}>Account</Button>
                 <Button variant="outline" className="justify-start" onClick={() => go("/dashboard/history")}>
                   <History className="mr-2 h-4 w-4" />
                   History
@@ -109,12 +112,12 @@ const DashboardHeader = ({ isAdmin, userTier, hasUser, onSignOut }: DashboardHea
                     {t("adminPanel")}
                   </Button>
                 )}
-                {userTier === "free" && (
+                {canPurchaseInApp() && userTier === "free" && (
                   <Button variant="outline" className="justify-start" onClick={() => go("/pricing")}>
                     {t("upgradeToPro")}
                   </Button>
                 )}
-                {userTier !== "free" && <Button variant="outline" className="justify-start" onClick={() => go("/pricing")}>Billing</Button>}
+                {canPurchaseInApp() && userTier !== "free" && <Button variant="outline" className="justify-start" onClick={() => go("/pricing")}>Billing</Button>}
                 <Button variant="ghost" className="justify-start" onClick={() => { setMenuOpen(false); onSignOut(); }}>
                   <LogOut className="mr-2 h-4 w-4" />
                   {t("signOut")}

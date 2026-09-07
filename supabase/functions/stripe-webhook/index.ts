@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import Stripe from 'npm:stripe@18.5.0';
 import { assertStripeAccount, billingClients, json, syncCustomer } from '../_shared/billing.ts';
+import { boundedText } from '../_shared/http-security.ts';
 
 serve(async req => {
   if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
@@ -13,7 +14,7 @@ serve(async req => {
     if (!signature) return json({ error: 'Invalid signature.' }, 400);
     let event: Stripe.Event;
     try {
-      event = await stripe.webhooks.constructEventAsync(await req.text(), signature, secret, undefined, Stripe.createSubtleCryptoProvider());
+      event = await stripe.webhooks.constructEventAsync(await boundedText(req,2*1024*1024), signature, secret, undefined, Stripe.createSubtleCryptoProvider());
     } catch {
       // Unverified requests must not manufacture database audit rows or expose secrets.
       return json({ error: 'Invalid signature.' }, 400);

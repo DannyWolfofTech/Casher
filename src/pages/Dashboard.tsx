@@ -1,3 +1,4 @@
+import { canPurchaseInApp } from '@/lib/mobile-platform';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,7 @@ export default function Dashboard() {
         </div>
       </div>
       {accountError && <div role="alert" className="space-y-3 rounded-lg border p-4 text-sm"><p>{accountError}</p><Button variant="outline" disabled={refreshingAccount} onClick={refreshAccount}>{refreshingAccount ? 'Checking account…' : 'Retry account check'}</Button></div>}
-      {showUpload && (canUpload ? <CSVUpload onUploadComplete={handleUploadComplete} /> : !accountError && <Card><CardContent className="space-y-3 p-5"><p>{t('uploadLimitReached')} · {uploadsUsed} used this month.</p><Button asChild><Link to="/pricing">View plans</Link></Button></CardContent></Card>)}
+      {showUpload && (canUpload ? <CSVUpload onUploadComplete={handleUploadComplete} /> : !accountError && <Card><CardContent className="space-y-3 p-5"><p>{t('uploadLimitReached')} · {uploadsUsed} used this month.</p>{canPurchaseInApp() && <Button asChild><Link to="/pricing">View plans</Link></Button>}</CardContent></Card>)}
       {lastUpload && <div role="status" className="rounded-lg border bg-muted/40 p-4 text-sm">{lastUpload.replay ? 'This statement was already imported.' : `${lastUpload.transactionsCount || 0} transactions imported.`}{!!lastUpload.skippedRows && <p className="mt-1">{lastUpload.skippedRows} rows could not be read. Review your statement before relying on these totals.</p>}</div>}
       {data.error ? <Card><CardContent role="alert" className="space-y-3 p-6"><h2 className="font-semibold">Your overview could not be loaded</h2><p className="text-sm text-muted-foreground">We could not retrieve all the data needed to calculate reliable totals.</p><Button variant="outline" onClick={data.retry}>Try again</Button></CardContent></Card>
         : data.loading ? <div role="status" className="rounded-lg border p-8 text-sm text-muted-foreground">Loading your statement totals…</div>

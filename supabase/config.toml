@@ -1,6 +1,10 @@
 project_id = "ewnjmvxildwmbdmosasz"
 
 [functions]
+  [functions.reconcile-billing]
+    verify_jwt = true
+  [functions.delete-account]
+    verify_jwt = true
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.check-failed-webhooks]

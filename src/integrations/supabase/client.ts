@@ -2,6 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
+import { sessionStorageForPlatform } from '@/lib/auth-storage';
+import { isNativeApp } from '@/lib/mobile-platform';
 
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -12,8 +14,10 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: brokeredPreviewStorage(),
+    storage: sessionStorageForPlatform(isNativeApp(), brokeredPreviewStorage),
     persistSession: true,
     autoRefreshToken: true,
+    flowType: isNativeApp() ? 'pkce' : 'implicit',
+    detectSessionInUrl: !isNativeApp(),
   }
 });

@@ -1,0 +1,25 @@
+-- Service-only, persistent limiter shared across edge instances. No customer financial rows changed.
+CREATE TABLE banking_private.request_limits (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  window_start timestamptz NOT NULL,
+  requests integer NOT NULL CHECK (requests > 0)
+);
+ALTER TABLE banking_private.request_limits ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON banking_private.request_limits FROM PUBLIC, anon, authenticated;
+
+CREATE FUNCTION public.banking_sandbox_allow_request(p_user_id uuid)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE allowed integer;
+BEGIN
+  INSERT INTO banking_private.request_limits AS lim(user_id,window_start,requests)
+  VALUES(p_user_id,now(),1)
+  ON CONFLICT(user_id) DO UPDATE SET
+    requests = CASE WHEN lim.window_start <= now() - interval '10 minutes' THEN 1 ELSE lim.requests + 1 END,
+    window_start = CASE WHEN lim.window_start <= now() - interval '10 minutes' THEN now() ELSE lim.window_start END
+  WHERE lim.window_start <= now() - interval '10 minutes' OR lim.requests < 20
+  RETURNING requests INTO allowed;
+  RETURN allowed IS NOT NULL;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.banking_sandbox_allow_request(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.banking_sandbox_allow_request(uuid) TO service_role;

@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react';
+import { privateErrorEvent } from './error-privacy';
 
 export const initSentry = () => {
   if (!import.meta.env.PROD) return;
@@ -9,13 +10,7 @@ export const initSentry = () => {
     // Financial screens must not be recorded or included in network breadcrumbs.
     integrations: integrations => integrations.filter(integration => !['BrowserSession', 'Breadcrumbs'].includes(integration.name)),
     tracesSampleRate: 0,
-    beforeSend(event) {
-      delete event.user;
-      delete event.request;
-      delete event.extra;
-      event.breadcrumbs = [];
-      return event;
-    },
+    beforeSend: privateErrorEvent,
   });
 };
 export const captureApiError = (error: unknown, context: { operation: string; [key: string]: unknown }) => {

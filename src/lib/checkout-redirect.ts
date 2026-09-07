@@ -11,6 +11,8 @@
  * with a user-meaningful message.
  */
 
+import { canPurchaseInApp } from './mobile-platform';
+
 const ALLOWED_CHECKOUT_HOSTS = ["checkout.stripe.com", "billing.stripe.com"];
 
 /** True when `url` is an https Stripe-hosted Checkout URL. */
@@ -59,6 +61,7 @@ export function redirectToCheckout(
   url: unknown,
   navigator: CheckoutNavigator = resolveCheckoutNavigator(),
 ): void {
+  if (!canPurchaseInApp()) throw new Error('Purchases are not available in this app.');
   if (!isValidCheckoutUrl(url)) {
     throw new Error(
       "We couldn't start checkout because the payment page link was missing or invalid. Please try again.",

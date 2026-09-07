@@ -16,6 +16,7 @@ dist-ssr
 !.env.example
 test-results/
 .audit-results/
+release-artifacts/
 supabase/.branches/
 supabase/.temp/
 playwright-report/

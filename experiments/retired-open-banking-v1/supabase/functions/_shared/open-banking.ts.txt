@@ -1,0 +1,106 @@
+/** Server-only sandbox foundation. No live mode or browser token API is exposed. */
+export interface BankingConfig {
+  mode: 'sandbox';
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}
+
+export function bankingConfig(env: Record<string, string | undefined>): BankingConfig {
+  // Live access requires separate provider/regulatory approval and implementation review.
+  if (env.OPEN_BANKING_MODE !== 'sandbox') throw new Error('Bank connections are unavailable');
+  const { TRUELAYER_CLIENT_ID: clientId, TRUELAYER_CLIENT_SECRET: clientSecret, OPEN_BANKING_REDIRECT_URI: redirectUri } = env;
+  if (!clientId || !clientSecret || !redirectUri) throw new Error('Bank connections are unavailable');
+  const uri = new URL(redirectUri);
+  if (uri.protocol !== 'https:' || uri.username || uri.password || uri.search || uri.hash || uri.port) throw new Error('Invalid banking callback');
+  return { mode: 'sandbox', clientId, clientSecret, redirectUri };
+}
+
+const AUTH = 'https://auth.truelayer-sandbox.com';
+const TTL = 10 * 60 * 1000;
+const encoder = new TextEncoder();
+const base64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const random = () => base64url(crypto.getRandomValues(new Uint8Array(32)));
+export const bankingHash = async (value: string) => base64url(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(value))));
+
+export interface BankingAttempt {
+  userId: string;
+  stateHash: string;
+  verifier: string;
+  expiresAt: number;
+}
+
+/** Implementations must keep these values server-only and encrypt verifier/token fields. */
+export interface BankingStore {
+  create(attempt: BankingAttempt): Promise<void>;
+  /** Atomically DELETE/RETURNING by owner + hash + expiry. Never select then delete. */
+  consume(userId: string, stateHash: string, now: number): Promise<BankingAttempt | null>;
+  saveTokens(userId: string, tokens: { accessToken: string; expiresAt: number }): Promise<void>;
+}
+
+function assertSandbox(config: BankingConfig) {
+  if (config.mode !== 'sandbox') throw new Error('Bank connections are unavailable');
+}
+
+/** userId must come from a verified Supabase session, never a request body. */
+export async function beginBankConnection(config: BankingConfig, store: BankingStore, userId: string, now = Date.now()) {
+  assertSandbox(config);
+  if (!userId) throw new Error('Sign in to connect a bank');
+  const state = random();
+  const verifier = random();
+  await store.create({ userId, stateHash: await bankingHash(state), verifier, expiresAt: now + TTL });
+  const url = new URL(AUTH);
+  url.search = new URLSearchParams({
+    response_type: 'code', client_id: config.clientId, redirect_uri: config.redirectUri,
+    scope: 'accounts transactions', providers: 'uk-cs-mock', state,
+    code_challenge: await bankingHash(verifier), code_challenge_method: 'S256',
+  }).toString();
+  return { url: url.toString(), expiresAt: now + TTL };
+}
+
+/** Run behind authenticated POST with rate limiting; caller strips callback URL before telemetry. */
+export async function completeBankConnection(
+  config: BankingConfig, store: BankingStore, userId: string, callback: URLSearchParams,
+  request: typeof fetch = fetch, now = Date.now(),
+) {
+  assertSandbox(config);
+  if (!userId) throw new Error('Sign in to connect a bank');
+  const state = callback.get('state');
+  if (!state || !/^[A-Za-z0-9_-]{43}$/.test(state) || callback.getAll('state').length !== 1) throw new Error('Invalid bank connection');
+  const attempt = await store.consume(userId, await bankingHash(state), now);
+  if (!attempt || attempt.userId !== userId || attempt.expiresAt <= now) throw new Error('Bank connection expired or already used');
+  if (callback.has('error')) return { status: 'cancelled' as const };
+  const code = callback.get('code');
+  if (!code || code.length > 4096 || callback.getAll('code').length !== 1) throw new Error('Invalid bank connection');
+  try {
+    const response = await request(`${AUTH}/connect/token`, {
+      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'authorization_code', client_id: config.clientId,
+        client_secret: config.clientSecret, redirect_uri: config.redirectUri, code, code_verifier: attempt.verifier }),
+    });
+    if (!response.ok) throw new Error('Provider unavailable');
+    const body = await response.json();
+    if (typeof body.access_token !== 'string' || !body.access_token || body.access_token.length > 16384 ||
+      typeof body.expires_in !== 'number' || !Number.isFinite(body.expires_in) || body.expires_in <= 0 || body.expires_in > 86400 ||
+      (body.token_type && body.token_type.toLowerCase() !== 'bearer')) throw new Error('Invalid provider response');
+    await store.saveTokens(userId, { accessToken: body.access_token, expiresAt: now + body.expires_in * 1000 });
+    return { status: 'connected' as const };
+  } catch {
+    // Provider responses can contain credentials. Never propagate or log them.
+    throw new Error('Bank connection could not be completed. Please reconnect.');
+  }
+}
+
+/** AES-GCM with owner/purpose binding. Key comes from a server secret, not the database. */
+export async function sealBankingSecret(key: CryptoKey, value: string, ownerAndPurpose: string) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: encoder.encode(ownerAndPurpose) }, key, encoder.encode(value));
+  return { version: 1, iv: Array.from(iv), ciphertext: Array.from(new Uint8Array(ciphertext)) };
+}
+
+export async function openBankingSecret(key: CryptoKey, sealed: Awaited<ReturnType<typeof sealBankingSecret>>, ownerAndPurpose: string) {
+  if (sealed.version !== 1) throw new Error('Unsupported secret version');
+  const bytes = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(sealed.iv), additionalData: encoder.encode(ownerAndPurpose) }, key, new Uint8Array(sealed.ciphertext));
+  return new TextDecoder().decode(bytes);
+}

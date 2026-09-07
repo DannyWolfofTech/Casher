@@ -152,7 +152,7 @@ const Index = () => {
           </div>
           <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { title: "GDPR-aligned", body: "Handled under UK/EU data protection principles and removable on request." },
+              { title: "Your records stay yours", body: "Export your transactions and request removal of your account data." },
               { title: "Encrypted in transit and at rest", body: "HTTPS everywhere, and managed database encryption for stored results." },
               { title: "No bank password", body: "You upload transaction data, not bank login credentials. Optional bank connections are still in development." },
             ].map((item) => (
@@ -191,6 +191,7 @@ const Index = () => {
           <div className="flex gap-6">
             <button onClick={() => navigate("/about")} className="hover:text-foreground transition-colors">{t("about")}</button>
             <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">{t("privacyPolicy")}</button>
+            <button onClick={() => navigate("/terms")} className="hover:text-foreground transition-colors">Terms</button>
           </div>
         </div>
       </footer>

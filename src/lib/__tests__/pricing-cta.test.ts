@@ -34,6 +34,6 @@ describe("planCtaState", () => {
       disabled: true,
       action: "none",
     });
-    expect(planCtaState("pro", false, null).action).toBe("checkout");
+    expect(planCtaState("pro", false, null)).toEqual({labelKey:'newSubscriptionsPaused',disabled:true,action:'none'});
   });
 });

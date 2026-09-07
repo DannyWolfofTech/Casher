@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.trycasher.app",
+      "sha256_cert_fingerprints": ["84:12:1F:7D:5C:87:F1:C4:90:ED:3C:74:22:DA:EF:8F:E1:CB:63:4A:E9:D1:4F:D0:3B:52:B9:6B:C3:17:D4:B4"]
+    }
+  }
+]

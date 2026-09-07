@@ -71,5 +71,10 @@ process.env.VITE_SUPABASE_PUBLISHABLE_KEY = 'synthetic-audit-key';
 const vite = await createServer({ server: { host: '127.0.0.1', port: 8080, strictPort: true, proxy: { '/audit-api': { target: `http://127.0.0.1:${port}`, rewrite: path => path.replace(/^\/audit-api/, '') } } } });
 await vite.listen();
 console.log('Synthetic Casher audit: http://127.0.0.1:8080 — sign in as audit@example.test with any 6+ character test password.');
-const close = async () => { await vite.close(); backend.close(); process.exit(0); };
+const close = async () => {
+  // Test shutdown must not wait forever for browser keep-alive proxy connections.
+  const deadline = setTimeout(() => process.exit(1), 5000); deadline.unref();
+  backend.closeAllConnections(); backend.close();
+  await vite.close(); clearTimeout(deadline); process.exit(0);
+};
 process.on('SIGINT', close); process.on('SIGTERM', close);

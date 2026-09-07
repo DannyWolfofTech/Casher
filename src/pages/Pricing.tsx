@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/language-context";
 import SEO from "@/components/SEO";
-import { planCtaState, PREMIUM_PURCHASABLE, type PlanKey } from "@/lib/pricing-cta";
+import { planCtaState, PREMIUM_PURCHASABLE, PRO_PURCHASABLE, type PlanKey } from "@/lib/pricing-cta";
 import { redirectToCheckout } from "@/lib/checkout-redirect";
 
 
@@ -63,6 +63,7 @@ const Pricing = () => {
   }, [accountRetry]);
 
   const handleSubscribe = async (tier: string) => {
+    if (!PRO_PURCHASABLE) return;
     if (loadingTier || accountLoading || accountError) return;
     if (!user) {
       toast({
@@ -128,7 +129,7 @@ const Pricing = () => {
         t("lightDarkMode"),
       ],
       limits: [
-        t("noExports"),
+        'Monthly CSV exports require Pro. Saved account-data export is included.',
       ],
     },
     {
@@ -182,7 +183,7 @@ const Pricing = () => {
               price: "9.99",
               priceCurrency: "GBP",
               url: "https://trycasher.com/pricing",
-              availability: "https://schema.org/InStock",
+              availability: PRO_PURCHASABLE ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
             },
           },
           {
@@ -195,7 +196,7 @@ const Pricing = () => {
               price: "14.99",
               priceCurrency: "GBP",
               url: "https://trycasher.com/pricing",
-              availability: "https://schema.org/PreOrder",
+              availability: "https://schema.org/OutOfStock",
             },
           },
         ]}
@@ -222,6 +223,7 @@ const Pricing = () => {
               {t("startSavingToday")}
             </p>
             {accountError && <div role="alert" className="mt-4 space-y-2 text-sm"><p>{accountError}</p><Button variant="outline" onClick={() => setAccountRetry(value => value + 1)}>Retry plan check</Button></div>}
+            {!PRO_PURCHASABLE && <p className="mx-auto mt-4 max-w-xl rounded-lg bg-muted p-4 text-sm">New Pro subscriptions are temporarily paused. You can use the Free plan. Existing subscribers can still manage billing and cancellation below.</p>}
             {user && hasBillingAccount && <Button className="mt-4" variant="outline" disabled={billingLoading || accountLoading || !!accountError} onClick={handleBilling}>{billingLoading ? "Opening billing…" : "Manage billing and cancellation"}</Button>}
           </div>
 
@@ -291,7 +293,7 @@ const Pricing = () => {
                         {loadingTier === plan.nameKey ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
-                        {cta.action === 'billing' ? 'Manage in billing' : t(cta.labelKey)}
+                        {cta.action === 'billing' ? 'Manage in billing' : cta.labelKey === 'newSubscriptionsPaused' ? 'New subscriptions paused' : t(cta.labelKey)}
                       </Button>
                     );
                   })()}
@@ -372,6 +374,8 @@ const Pricing = () => {
           <p>CSV uploads support GBP statements. Bank connections and Premium features are still in development.</p>
           <p>Stripe collects payment details for Pro on its hosted checkout page. Paying for Pro does not connect your bank account.</p>
           <p>{t("cancelAnytime")}</p>
+          <p>£9.99 per month, renewing monthly until cancelled. No free trial. Cancellation stops the next renewal; access continues until the paid period ends.</p>
+          <p><button className="underline" onClick={() => navigate('/terms')}>Terms of Service</button> · <button className="underline" onClick={() => navigate('/privacy')}>Privacy Policy</button></p>
         </div>
       </main>
     </div>

@@ -1,0 +1,69 @@
+import { beginBankConnection, completeBankConnection, type BankingConfig, type BankingStore } from './open-banking.ts';
+
+interface Dependencies {
+  config: BankingConfig;
+  store: BankingStore;
+  testerIds: ReadonlySet<string>;
+  authenticate(token: string): Promise<string | null>;
+  allowRequest(userId: string): Promise<boolean>;
+  request?: typeof fetch;
+}
+
+/** Sandbox-only endpoint. Never log requests, callbacks, provider responses or secrets. */
+export function bankingHandler(deps: Dependencies) {
+  const origin = new URL(deps.config.redirectUri).origin;
+  return async (req: Request): Promise<Response> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json', 'Cache-Control': 'no-store',
+      'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'Vary': 'Origin',
+    };
+    const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
+    if (req.headers.get('origin') !== origin) return reply({ error: 'Origin not allowed' }, 403);
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Headers'] = 'authorization, apikey, content-type, x-client-info';
+    headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
+    if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+    if (req.method !== 'POST') return reply({ error: 'Use POST' }, 405);
+    if (new URL(req.url).search) return reply({ error: 'Query parameters are not accepted' }, 400);
+    const token = /^Bearer ([^\s]+)$/i.exec(req.headers.get('authorization') ?? '')?.[1];
+    if (!token || token.length > 8192) return reply({ error: 'Sign in to continue' }, 401);
+    try {
+      const userId = await deps.authenticate(token);
+      if (!userId) return reply({ error: 'Sign in to continue' }, 401);
+      if (deps.config.mode !== 'sandbox' || !deps.testerIds.has(userId)) return reply({ error: 'Bank connections are unavailable' }, 403);
+      if (!await deps.allowRequest(userId)) return reply({ error: 'Too many requests. Try again later.' }, 429);
+      if (req.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') return reply({ error: 'Use JSON' }, 415);
+      // Bound the actual stream as well as Content-Length (which is untrusted).
+      const reader = req.body?.getReader();
+      if (!reader) return reply({ error: 'Invalid request' }, 400);
+      const chunks: Uint8Array[] = []; let length = 0;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        length += value.length;
+        if (length > 8192) { await reader.cancel(); return reply({ error: 'Request too large' }, 413); }
+        chunks.push(value);
+      }
+      const bytes = new Uint8Array(length); let offset = 0;
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+      let body: Record<string, unknown>;
+      try { body = JSON.parse(new TextDecoder().decode(bytes)); } catch { return reply({ error: 'Invalid JSON' }, 400); }
+      if (!body || Array.isArray(body) || typeof body !== 'object') return reply({ error: 'Invalid request' }, 400);
+      const keys = Object.keys(body);
+      if (body.action === 'begin' && keys.length === 1) return reply(await beginBankConnection(deps.config, deps.store, userId));
+      if (body.action !== 'complete' || keys.some(k => !['action', 'state', 'code', 'error'].includes(k)) ||
+        typeof body.state !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(body.state) ||
+        (typeof body.code === 'string') === (typeof body.error === 'string') ||
+        (body.code !== undefined && (typeof body.code !== 'string' || !body.code || body.code.length > 4096)) ||
+        (body.error !== undefined && (typeof body.error !== 'string' || !body.error || body.error.length > 128))) {
+        return reply({ error: 'Invalid request' }, 400);
+      }
+      const callback = new URLSearchParams({ state: body.state });
+      if (typeof body.code === 'string') callback.set('code', body.code);
+      else callback.set('error', body.error as string);
+      return reply(await completeBankConnection(deps.config, deps.store, userId, callback, deps.request));
+    } catch {
+      return reply({ error: 'Bank connection could not be completed. Please reconnect.' }, 503);
+    }
+  };
+}

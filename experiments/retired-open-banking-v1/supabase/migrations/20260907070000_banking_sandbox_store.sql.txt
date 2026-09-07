@@ -1,0 +1,60 @@
+-- Additive sandbox infrastructure only. No existing financial rows are changed.
+CREATE SCHEMA IF NOT EXISTS banking_private;
+REVOKE ALL ON SCHEMA banking_private FROM PUBLIC, anon, authenticated;
+
+CREATE TABLE banking_private.attempts (
+  state_hash text PRIMARY KEY CHECK (length(state_hash) = 43),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  encrypted_verifier jsonb NOT NULL,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX ON banking_private.attempts(expires_at);
+CREATE TABLE banking_private.tokens (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  encrypted_token jsonb NOT NULL,
+  expires_at timestamptz NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE banking_private.attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE banking_private.tokens ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON ALL TABLES IN SCHEMA banking_private FROM PUBLIC, anon, authenticated;
+
+CREATE FUNCTION public.banking_sandbox_create_attempt(p_user_id uuid, p_state_hash text, p_secret jsonb, p_expires_at timestamptz)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+BEGIN
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_user_id::text, 7301));
+  IF p_expires_at <= now() OR p_expires_at > now() + interval '11 minutes' THEN
+    RAISE EXCEPTION 'Invalid attempt expiry';
+  END IF;
+  DELETE FROM banking_private.attempts WHERE user_id = p_user_id AND expires_at <= now();
+  IF (SELECT count(*) FROM banking_private.attempts WHERE user_id = p_user_id) >= 5 THEN
+    RAISE EXCEPTION 'Too many pending attempts';
+  END IF;
+  INSERT INTO banking_private.attempts(state_hash,user_id,encrypted_verifier,expires_at)
+    VALUES(p_state_hash,p_user_id,p_secret,p_expires_at);
+END;
+$$;
+
+CREATE FUNCTION public.banking_sandbox_consume_attempt(p_user_id uuid, p_state_hash text)
+RETURNS TABLE(encrypted_verifier jsonb, expires_at timestamptz)
+LANGUAGE sql SECURITY DEFINER SET search_path = '' AS $$
+  DELETE FROM banking_private.attempts a
+  WHERE a.user_id = p_user_id AND a.state_hash = p_state_hash AND a.expires_at > now()
+  RETURNING a.encrypted_verifier, a.expires_at;
+$$;
+
+CREATE FUNCTION public.banking_sandbox_save_token(p_user_id uuid, p_secret jsonb, p_expires_at timestamptz)
+RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = '' AS $$
+  INSERT INTO banking_private.tokens(user_id, encrypted_token, expires_at)
+  VALUES(p_user_id,p_secret,p_expires_at)
+  ON CONFLICT(user_id) DO UPDATE SET encrypted_token=excluded.encrypted_token,
+    expires_at=excluded.expires_at,updated_at=now();
+$$;
+
+REVOKE ALL ON FUNCTION public.banking_sandbox_create_attempt(uuid,text,jsonb,timestamptz) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.banking_sandbox_consume_attempt(uuid,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.banking_sandbox_save_token(uuid,jsonb,timestamptz) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.banking_sandbox_create_attempt(uuid,text,jsonb,timestamptz) TO service_role;
+GRANT EXECUTE ON FUNCTION public.banking_sandbox_consume_attempt(uuid,text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.banking_sandbox_save_token(uuid,jsonb,timestamptz) TO service_role;

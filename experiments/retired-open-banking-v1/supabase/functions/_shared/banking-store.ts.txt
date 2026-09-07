@@ -1,0 +1,38 @@
+import { openBankingSecret, sealBankingSecret, type BankingStore } from './open-banking.ts';
+
+interface ServerRpc {
+  rpc(name: string, args: Record<string, unknown>): PromiseLike<{ data: unknown; error: unknown }>;
+}
+type Sealed = Awaited<ReturnType<typeof sealBankingSecret>>;
+
+/** Pass a service-role client only; key must be persistent and held outside the database. */
+export function encryptedBankingStore(admin: ServerRpc, key: CryptoKey, keyId: string): BankingStore {
+  if (!keyId || key.algorithm.name !== 'AES-GCM' || (key.algorithm as AesKeyAlgorithm).length !== 256) throw new Error('Invalid banking encryption key');
+  const call = async (name: string, args: Record<string, unknown>) => {
+    const result = await admin.rpc(name, args);
+    if (result.error) throw new Error('Bank connection storage unavailable');
+    return result.data;
+  };
+  return {
+    async create(attempt) {
+      const sealed = await sealBankingSecret(key, attempt.verifier, `${attempt.userId}:verifier:${attempt.stateHash}`);
+      await call('banking_sandbox_create_attempt', { p_user_id:attempt.userId, p_state_hash:attempt.stateHash,
+        p_secret:{ ...sealed, keyId }, p_expires_at:new Date(attempt.expiresAt).toISOString() });
+    },
+    async consume(userId, stateHash, now) {
+      const data = await call('banking_sandbox_consume_attempt', { p_user_id:userId, p_state_hash:stateHash });
+      const row = Array.isArray(data) ? data[0] : undefined;
+      if (!row) return null;
+      const sealed = row.encrypted_verifier as Sealed & { keyId: string };
+      const expiresAt = Date.parse(row.expires_at);
+      if (!Number.isFinite(expiresAt) || expiresAt <= now) return null;
+      if (sealed.keyId !== keyId) throw new Error('Bank connection key changed. Please reconnect.');
+      const verifier = await openBankingSecret(key, sealed, `${userId}:verifier:${stateHash}`);
+      return { userId, stateHash, expiresAt, verifier };
+    },
+    async saveTokens(userId, tokens) {
+      const sealed = await sealBankingSecret(key, tokens.accessToken, `${userId}:sandbox:access-token`);
+      await call('banking_sandbox_save_token', {p_user_id:userId, p_secret:{ ...sealed, keyId }, p_expires_at:new Date(tokens.expiresAt).toISOString()});
+    },
+  };
+}

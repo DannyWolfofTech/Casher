@@ -1,3 +1,4 @@
+import { isServiceRequest } from '../_shared/service-auth.ts';
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.115.0";
 
@@ -6,19 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function parseJwtClaims(token: string): Record<string, unknown> | null {
-  const parts = token.split(".");
-  if (parts.length < 2) return null;
-  try {
-    const payload = parts[1]
-      .replaceAll("-", "+")
-      .replaceAll("_", "/")
-      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
-    return JSON.parse(atob(payload)) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,7 +14,7 @@ serve(async (req) => {
   }
 
   // Internal monitoring endpoint: service-role callers only. verify_jwt=true
-  // validates the token at the gateway; this adds an explicit role check.
+  // validates the token at the gateway; this compares the server-held credential.
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -34,8 +22,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  const claims = parseJwtClaims(authHeader.slice("Bearer ".length).trim());
-  if (claims?.role !== "service_role") {
+
+  if (!await isServiceRequest(req, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -54,10 +42,10 @@ serve(async (req) => {
 
     const { data: failedEvents, error } = await supabaseAdmin
       .from("webhook_events")
-      .select("*")
+      .select('event_id,event_type,created_at')
       .eq("processing_status", "failed")
       .gte("created_at", since)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }).limit(100);
 
     if (error) throw error;
 
@@ -73,23 +61,33 @@ serve(async (req) => {
       .gte("created_at", since);
 
     const failedCount = failedEvents?.length || 0;
-    const hasFailures = failedCount > 0;
+    if (totalCount === null || succeededCount === null) throw new Error('Webhook counts unavailable');
+    const stale = await supabaseAdmin.rpc('stale_billing_count');
+    if (stale.error) throw new Error('Billing health unavailable');
+    const hasFailures = failedCount > 0 || stale.data > 0;
+    let alertQueued = false;
+    if (hasFailures) {
+      const alert = await supabaseAdmin.rpc('queue_maintenance_alert');
+      if (alert.error) throw new Error('Maintenance alert unavailable');
+      alertQueued = alert.data === true;
+    }
 
     console.log(`[check-failed-webhooks] Last 24h: ${totalCount} total, ${succeededCount} succeeded, ${failedCount} failed`);
 
     return new Response(
       JSON.stringify({
         alert: hasFailures,
+        alert_queued: alertQueued,
         summary: {
           total: totalCount || 0,
           succeeded: succeededCount || 0,
           failed: failedCount,
+          stale_billing_accounts: stale.data,
           period: "last_24_hours",
         },
         failed_events: failedEvents?.map((e) => ({
           event_id: e.event_id,
           event_type: e.event_type,
-          error_message: e.error_message,
           created_at: e.created_at,
         })),
       }),
@@ -99,8 +97,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("Error checking failed webhooks:", message);
+    console.error("Webhook health check could not complete");
     return new Response(JSON.stringify({ error: "Internal error" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

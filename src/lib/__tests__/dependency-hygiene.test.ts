@@ -12,7 +12,7 @@ const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
 /**
  * Guards the production dependency surface:
  * - test tooling and native packaging CLIs must never sit in `dependencies`
- * - the shipped bundle must not contain Capacitor or test-runner code
+ * - native runtime detection is isolated; packaging tools/test runners stay out
  * - security overrides pinned for known advisories must stay in place
  */
 describe("production dependency hygiene", () => {
@@ -24,7 +24,7 @@ describe("production dependency hygiene", () => {
     }
   });
 
-  it("does not import Capacitor or vitest from application source", () => {
+  it("isolates Capacitor core to the platform boundary and excludes test tooling", () => {
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -41,7 +41,9 @@ describe("production dependency hygiene", () => {
 
     const offenders = files.filter((f) => {
       const src = readFileSync(f, "utf8");
-      return /from\s+["']@capacitor\//.test(src) || /from\s+["']vitest["']/.test(src);
+      const importsNative = /from\s+["']@capacitor\//.test(src);
+      const permittedCore = f === join(root, 'src', 'lib', 'mobile-platform.ts') && /from\s+["']@capacitor\/core["']/.test(src);
+      return (importsNative && !permittedCore) || /from\s+["']vitest["']/.test(src);
     });
     expect(offenders).toEqual([]);
   });
@@ -55,14 +57,14 @@ describe("production dependency hygiene", () => {
     expect(overrides["postcss"]).toBeDefined();
   });
 
-  it("ships a bundle free of Capacitor and test-runner modules", () => {
+  it("ships a bundle free of native packaging and test-runner modules", () => {
     const assets = join(root, "dist", "assets");
     if (!existsSync(assets)) return; // build artefacts are optional in CI
     const bundles = readdirSync(assets).filter((f) => f.endsWith(".js"));
     expect(bundles.length).toBeGreaterThan(0);
     for (const file of bundles) {
       const code = readFileSync(join(assets, file), "utf8");
-      expect(code).not.toMatch(/@capacitor\//);
+      expect(code).not.toMatch(/@capacitor\/(cli|android|ios)/);
       expect(code).not.toMatch(/vitest\/dist/);
     }
   });

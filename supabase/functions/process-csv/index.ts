@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.115.0";
 import { buildSubscriptions, parseTransactionsCsv } from "../_shared/csv-parser.ts";
+import { browserEndpoint, boundedText, HttpError } from '../_shared/http-security.ts';
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const respond = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -13,7 +14,10 @@ export async function handleImport(req: Request) {
   if (!token) return respond({ code: "UNAUTHORIZED", message: "Sign in to upload a statement." }, 401);
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return respond({ code: "UNAUTHORIZED", message: "Your session expired. Please sign in again." }, 401);
-    const payload = await req.json();
+    const rate=await supabase.rpc('allow_import_request',{_user_id:user.id});
+    if(rate.error) return respond({code:'IMPORT_UNAVAILABLE',message:'Uploads are temporarily unavailable. Try again shortly.'},503);
+    if(rate.data!==true) return respond({code:'RATE_LIMIT',message:'Too many upload attempts. Try again in a few minutes.'},429);
+    const payload = JSON.parse(await boundedText(req,12*1024*1024));
     if (typeof payload?.csv !== "string" || !payload.csv.trim()) return respond({ code: "INVALID_PAYLOAD", message: "Choose a CSV statement to import." }, 422);
     if (new TextEncoder().encode(payload.csv).byteLength > 5 * 1024 * 1024) return respond({ code: "FILE_TOO_LARGE", message: "Choose a CSV smaller than 5 MB." }, 413);
     const parsed = parseTransactionsCsv(payload.csv, { maxRows: 10000 });
@@ -30,10 +34,11 @@ export async function handleImport(req: Request) {
     const status = data.code === "QUOTA_EXCEEDED" ? 429 : data.code === "PROFILE_NOT_FOUND" ? 403 : 200;
     return respond({ ...data, skippedRows: parsed.skipped.length, skippedSample: parsed.skipped.slice(0, 5), duplicatesInFile: parsed.duplicatesInFile }, status);
   } catch (error) {
+    if(error instanceof HttpError) return respond({code:'INVALID_PAYLOAD',message:error.message},error.status);
     if (error instanceof SyntaxError) return respond({ code: "INVALID_PAYLOAD", message: "The upload could not be read." }, 422);
     console.error("[process-csv] Request failed");
     // A transport failure may happen after the server committed: do not promise rollback.
     return respond({ code: "IMPORT_UNAVAILABLE", message: "We could not confirm the import result. Retry the same file; completed imports will not be duplicated." }, 503);
   }
 }
-serve(handleImport);
+serve(browserEndpoint(handleImport,Deno.env.get('ALLOWED_REDIRECT_ORIGINS')));

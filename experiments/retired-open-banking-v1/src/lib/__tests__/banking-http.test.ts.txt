@@ -1,0 +1,60 @@
+import { describe, expect, it, vi } from 'vitest';
+import { bankingHandler } from '../../../supabase/functions/_shared/banking-http';
+import type { BankingAttempt } from '../../../supabase/functions/_shared/open-banking';
+function fixture() {
+  const attempts = new Map<string, BankingAttempt>();
+  const saveTokens = vi.fn(async () => {});
+  const authenticate = vi.fn(async (token: string) => token === 'valid' ? 'owner' : null);
+  const allowRequest = vi.fn(async () => true);
+  const request = vi.fn<typeof fetch>(async () => Response.json({ access_token: 'never-public', expires_in: 3600 }));
+  const handler = bankingHandler({
+    config: { mode: 'sandbox', clientId: 'fake-id', clientSecret: 'secret', redirectUri: 'https://staging.example.test/banking/callback' },
+    testerIds: new Set(['owner']), authenticate, allowRequest, request,
+    store: {
+      create: async a => { attempts.set(a.stateHash, a); },
+      consume: async (owner, hash) => { const a = attempts.get(hash); if (a?.userId !== owner) return null; attempts.delete(hash); return a; },
+      saveTokens,
+    },
+  });
+  const call = (body: unknown, overrides: RequestInit = {}) => handler(new Request('https://edge.example.test/banking-sandbox', {
+    method: 'POST', headers: { origin: 'https://staging.example.test', authorization: 'Bearer valid', 'content-type': 'application/json' },
+    body: JSON.stringify(body), ...overrides,
+  }));
+  return { handler, call, request, authenticate, allowRequest, saveTokens };
+}
+describe('sandbox banking HTTP boundary', () => {
+  it('requires exact origin, verified identity and tester allowlist', async () => {
+    const f = fixture();
+    expect((await f.call({action:'begin'}, {headers:{origin:'https://evil.test'}})).status).toBe(403);
+    expect(f.authenticate).not.toHaveBeenCalled();
+    expect((await f.call({action:'begin'}, {headers:{origin:'https://staging.example.test'}})).status).toBe(401);
+    f.authenticate.mockResolvedValueOnce(null);
+    expect((await f.call({action:'begin'})).status).toBe(401);
+    f.authenticate.mockResolvedValueOnce('not-a-tester');
+    expect((await f.call({action:'begin'})).status).toBe(403);
+    expect(f.allowRequest).not.toHaveBeenCalled();
+  });
+  it('rejects owner/redirect injection, bad bodies and over-limit streams', async () => {
+    const f = fixture();
+    for (const body of [null, [], {action:'begin',userId:'victim'}, {action:'begin',redirectUri:'https://evil.test'}, {action:'complete', state:'x'}]) {
+      expect((await f.call(body)).status).toBe(400);
+    }
+    expect((await f.call({action:'begin', padding:'x'.repeat(9000)})).status).toBe(413);
+    f.allowRequest.mockResolvedValueOnce(false);
+    expect((await f.call({action:'begin'})).status).toBe(429);
+    expect(f.request).not.toHaveBeenCalled();
+  });
+  it('completes once, keeps tokens private, prevents caching and strips error details', async () => {
+    const f = fixture();
+    const start = await (await f.call({action:'begin'})).json();
+    const state = new URL(start.url).searchParams.get('state');
+    const response = await f.call({action:'complete', state, code:'invented-code'});
+    expect(await response.json()).toEqual({status:'connected'});
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(response.headers.get('referrer-policy')).toBe('no-referrer');
+    expect((await f.call({action:'complete',state,code:'invented-code'})).status).toBe(503);
+    expect(f.request).toHaveBeenCalledOnce();
+    f.authenticate.mockRejectedValueOnce(new Error('sensitive internal token'));
+    expect(await (await f.call({action:'begin'})).text()).not.toContain('sensitive');
+  });
+});

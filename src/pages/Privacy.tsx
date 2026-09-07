@@ -1,132 +1,40 @@
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useLanguage } from "@/contexts/language-context";
-import SEO from "@/components/SEO";
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import SEO from '@/components/SEO';
 
-const Privacy = () => {
-  const navigate = useNavigate();
-  const { t } = useLanguage();
-
-  return (
-    <div className="min-h-screen bg-background">
-      <SEO
-        title="Privacy Policy — Casher"
-        description="How Casher collects, processes, and protects your data: CSV-only processing, encrypted storage, and how to request deletion."
-        path="/privacy"
-      />
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t("back")}
-          </Button>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
-        <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
-        
-        <div className="space-y-6 text-muted-foreground">
-          <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">Data Collection</h2>
-            <p>
-              Casher collects only the data necessary to provide our subscription management service. 
-              This includes your email address and bank transaction data from uploaded CSV files. 
-              We process uploaded CSV data solely for subscription detection and categorization. 
-              Casher does not ask for or store your bank password, PIN or bank security codes.
-              Transaction data is banking information; it is different from the credentials used to log in to your bank.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">Bank connections and payments</h2>
-            <p>
-              Today, spending analysis uses the CSV transaction data you upload. Automatic bank connections
-              are in development and are not available. Any future Open Banking connection will be optional,
-              with consent through a provider and authentication at your bank. Casher will not collect your
-              bank login credentials. We will explain the provider, data requested and how to disconnect before launch.
-              Paying for Casher Pro is separate: Stripe collects payment details on its hosted checkout page.
-              Buying Pro does not connect your bank or give Casher access to your bank account.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">Data Storage</h2>
-            <p>
-              Uploaded CSV files are processed in memory and are not retained as files after processing —
-              we do not store your raw bank statements. The transactions, detected subscriptions and upload
-              history produced from them are stored in our managed database so your dashboard can display
-              them, and remain there until you ask us to remove them. To have your data deleted, email us
-              and we will action the request; in-app one-click deletion is not available yet.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">GDPR Compliance</h2>
-            <p>
-              Casher is built around UK GDPR principles. As a UK/EU user, you can exercise the following rights by contacting us:
-            </p>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>Request a copy of your data</li>
-              <li>Request deletion of your data</li>
-              <li>Opt out of data collection</li>
-              <li>Export your data in a portable format</li>
-              <li>Withdraw consent for data processing</li>
-            </ul>
-            <p className="mt-2">
-              We process your data lawfully, fairly, and transparently. Your CSV files are processed only for the 
-              purpose you uploaded them for, and you retain full control over your data.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">Data Security</h2>
-            <p>
-              All data transmission is encrypted using HTTPS, and stored data sits in a managed database
-              with encryption at rest and row-level access rules so each account can only read its own
-              records. We never store bank passwords, PINs or bank security codes. Transaction descriptions
-              are stored as they appear in your CSV and are not anonymised, so avoid uploading statements
-              containing details you do not want stored.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">Third-Party Services</h2>
-            <p>
-              We use Supabase to authenticate accounts and store imported transaction records, and
-              Stripe to process subscription payments. Bank statement contents are not sent to Stripe.
-              Sentry receives technical error reports to help us fix faults; session recording is disabled,
-              and request bodies and account details are excluded from those reports. Payment card details
-              are handled by Stripe.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">Cookies</h2>
-            <p>
-              We only use essential cookies and local browser storage for authentication and keeping you
-              signed in. Casher does not load advertising or analytics cookies, and we do not track you
-              across other websites.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-foreground mb-3">Contact</h2>
-            <p>
-              For any privacy-related questions or requests, please contact us at privacy@trycasher.com
-            </p>
-          </section>
-
-          <div className="mt-8 p-4 bg-muted rounded-lg">
-            <p className="text-sm">
-              <strong>Last updated:</strong> 7 September 2026
-            </p>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default Privacy;
+export default function Privacy() {
+  return <div className="min-h-screen bg-background">
+    <SEO title="Privacy Policy — Casher" description="What Casher stores, why it is used, and how to export or delete your personal data." path="/privacy" />
+    <header className="border-b px-4 py-4"><Button asChild variant="ghost"><Link to="/">Back to Casher</Link></Button></header>
+    <main className="mx-auto max-w-3xl space-y-8 px-4 py-10 text-sm leading-7">
+      <h1 className="text-4xl font-semibold">Privacy Policy</h1>
+      <p className="text-muted-foreground">Last updated: 7 September 2026</p>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">What we collect and why</h2>
+        <p>Casher uses your account email, sign-in information, profile preferences and plan status to provide your account. If you choose Google sign-in on the website, Google supplies the identity information needed to authenticate you. We also store transactions you import, recurring-payment suggestions, corrections you make, savings goals and upload history to provide spending analysis. Transaction descriptions are stored as supplied; they are not anonymised. Transaction data is banking information, separate from your bank login credentials. Casher never asks for your bank password, PIN or bank security codes.</p>
+        <p>We process the account and dashboard data needed to provide the service you request. We use limited operational records to protect accounts, prevent abuse, diagnose faults and handle support requests under our legitimate interests in running the service. Payment and accounting records may also be processed to meet legal obligations. Casher does not sell your transaction data or use it for advertising.</p>
+      </section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Bank connections and payments</h2>
+        <p>Spending analysis currently uses the CSV data you upload. Automatic bank connections are unavailable. Before any future optional connection, we will explain the provider, data requested, consent period and how to disconnect. Authentication will take place through the provider and your bank. Buying Pro does not connect your bank or give Casher access to your bank account.</p>
+        <p>Stripe handles web subscription payments on its hosted checkout. Casher stores the Stripe customer reference and subscription status needed to manage access. Your statement contents are not sent to Stripe, and Casher does not store full payment-card details. The mobile companion app has no in-app purchases.</p>
+      </section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Storage and service providers</h2>
+        <p>CSV files are read on your device and processed by our server. The raw uploaded file is not retained as a file; the resulting transaction records and upload metadata are saved. Lovable Cloud and its Supabase infrastructure host the website, account authentication and database. Stripe processes billing. Sentry receives limited technical failure reports; session recording is disabled, and our error-report filter removes dynamic error messages, account details, request data and callback tokens.</p>
+        <p>Our email services process delivery addresses and message contents for account messages and support. The privacy mailbox uses Forward Email to route incoming mail to the operator's mailbox. Do not email passwords, full card details or bank security codes. These providers may process data in different countries. Their service terms and data-protection arrangements govern their processing; contact us for information about the providers and transfer arrangements relevant to your request.</p>
+      </section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Retention and deletion</h2>
+        <p>Saved dashboard data remains while your account exists. In <Link className="underline" to="/account">Account</Link>, every plan can export saved data and request permanent account deletion after a recent sign-in and explicit confirmation. Deletion removes your sign-in, profile, imported transactions, corrections, detected subscriptions, goals and upload history. Any active Casher subscription is cancelled immediately before deletion completes. If billing cancellation cannot be confirmed, the account is kept so the operation can be retried, and new purchases are blocked.</p>
+        <p>Daily cleanup removes operational webhook records and minimal deleted-account and closed-customer references after 90 days. These references help prevent billing replays and reapply deletions after a backup restore. Email delivery logs are removed after 30 days; queued or archived mail older than one day is removed during daily cleanup. Suppression records may remain to honour unsubscribe requests and avoid sending mail to addresses that bounce or report abuse. Stripe and the operator may retain payment records for legal and accounting requirements.</p>
+        <p>Managed database backups normally expire after approximately 14 days, so deleted records may remain in restricted backups until those backups expire. A recovery procedure must reapply deletions before restored data returns to service. Removing the app from your device does not delete the account or cancel a subscription.</p>
+      </section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Your choices and rights</h2>
+        <p>You can correct imported records in Casher and export saved dashboard data from Account without upgrading. For access to other personal data, correction, deletion, restriction, portability or an objection to processing, email <a className="underline" href="mailto:privacy@trycasher.com">privacy@trycasher.com</a>. Rights depend on the processing involved; we may need to verify your identity. Where processing relies on consent, you can withdraw it without affecting earlier lawful processing. Some data is necessary to provide an account.</p>
+        <p>You can complain to the <a className="underline" href="https://ico.org.uk/make-a-complaint/" rel="noreferrer">Information Commissioner's Office</a> if you are concerned about how your personal data is handled.</p>
+      </section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Device storage and security</h2>
+        <p>HTTPS protects data in transit. The managed database uses encryption at rest and account access rules. Website sign-in uses browser storage; native sessions use the device's Keychain or Keystore-backed encrypted storage. Language, appearance and onboarding preferences are also saved locally. We do not load advertising cookies or cross-site tracking.</p>
+        <p>Native exports temporarily use the app cache so you can save or share them. Old export files are removed when the app next starts or exports after an hour. Files you save or share outside Casher remain under your control. Casher requests access to files you choose, rather than general access to your bank or device storage. No service can guarantee absolute security; keep your account and device protected.</p>
+      </section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Contact and updates</h2><p>For privacy questions, support or complaints, email <a className="underline" href="mailto:privacy@trycasher.com">privacy@trycasher.com</a>. We will update this policy when processing changes and explain material changes affecting your account.</p></section>
+    </main>
+  </div>;
+}

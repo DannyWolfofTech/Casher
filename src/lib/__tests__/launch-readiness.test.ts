@@ -39,11 +39,11 @@ describe("Premium is coming soon and not purchasable", () => {
     expect(planCtaState("premium", true, "premium").labelKey).toBe("currentPlan");
   });
 
-  it("keeps Pro fully purchasable", () => {
+  it("pauses new Pro sales until release acceptance without changing existing entitlements", () => {
     expect(planCtaState("pro", true, "free")).toEqual({
-      labelKey: "upgradeNow",
-      disabled: false,
-      action: "checkout",
+      labelKey: "newSubscriptionsPaused",
+      disabled: true,
+      action: "none",
     });
   });
 });
@@ -64,7 +64,7 @@ describe("launch copy accuracy", () => {
     const privacy = read("src/pages/Privacy.tsx");
     expect(privacy).not.toMatch(/analytics\s*\n?\s*cookies to improve/);
     expect(privacy).toContain("privacy@trycasher.com");
-    expect(privacy).toMatch(/Last updated:<\/strong> \d{1,2} \w+ \d{4}/);
+    expect(privacy).toMatch(/Last updated: (?:<\/strong> )?\d{1,2} \w+ \d{4}/);
     const sources = ["src/main.tsx", "index.html"].map(read).join("\n");
     expect(sources).not.toMatch(/gtag|googletagmanager|plausible|posthog|mixpanel/i);
   });

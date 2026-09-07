@@ -20,6 +20,16 @@ const stripeApi = async (path, fields, method = fields ? 'POST' : 'GET') => {
   return data;
 };
 const results = [];
+const interactive=process.argv.includes('--interactive');
+const until=async(get,accept,label,timeout=120000)=>{
+  const started=Date.now();
+  while(Date.now()-started<timeout) {const value=await get();if(accept(value)) return value;await new Promise(r=>setTimeout(r,1000));}
+  throw new Error(`Timed out: ${label}`);
+};
+const browserStep=async(phase,details)=>{
+  await writeFile('.audit-results/stripe-browser-step.json',JSON.stringify({phase,run,...details},null,2));
+  console.log(`BROWSER STEP ${phase}: URL is in .audit-results/stripe-browser-step.json`);
+};
 const pass = name => { results.push({ test: name, result: 'passed' }); console.log(`PASS ${name}`); };
 const ok = result => { assert.equal(result.error, null, result.error?.message); return result.data; };
 const invoke = async (user, name, body) => {
@@ -183,10 +193,19 @@ try {
     assert.equal(repeated.body.url, checkout.body.url);
     const sessions = await stripeApi(`checkout/sessions?customer=${customer.id}`);
     assert.equal(sessions.data.length, 1);
-    await stripeApi(`checkout/sessions/${sessions.data[0].id}/expire`, {});
     pass('Both deployed checkout URLs share one authenticated Stripe session');
-    const pm = await stripeApi('payment_methods/pm_card_visa/attach', { customer: customer.id });
-    const subscription = await stripeApi('subscriptions', { customer: customer.id, 'items[0][price]': priceId, default_payment_method: pm.id, 'metadata[user_id]': a.id });
+    let subscription;
+    if(interactive) {
+      await browserStep('checkout',{url:checkout.body.url,customerId:customer.id});
+      const paid=await until(()=>stripeApi(`checkout/sessions/${sessions.data[0].id}`),s=>s.status==='complete','hosted test checkout',900000);
+      assert.equal(paid.livemode,false);assert.equal(paid.payment_status,'paid');
+      subscription=await stripeApi(`subscriptions/${paid.subscription}`);
+      pass('Hosted Stripe Checkout completed using a test card');
+    } else {
+      await stripeApi(`checkout/sessions/${sessions.data[0].id}/expire`, {});
+      const pm = await stripeApi('payment_methods/pm_card_visa/attach', { customer: customer.id });
+      subscription = await stripeApi('subscriptions', { customer: customer.id, 'items[0][price]': priceId, default_payment_method: pm.id, 'metadata[user_id]': a.id });
+    }
     assert.equal(subscription.status, 'active');
     const event = async type => {
       for (let i = 0; i < 20; i++) {
@@ -207,6 +226,8 @@ try {
     };
     const created = await event('customer.subscription.created');
     assert.equal(await deliver(created, false), 400);
+    assert.equal(await deliver({...created,livemode:true}),400);
+    assert.equal(await deliver({...created,account:'acct_wrong'}),400);
     assert.equal(await deliver(created), 200);
     assert.equal(await deliver(created), 200);
     const paidProfile = ok(await a.client.from('profiles').select('*').single());
@@ -224,11 +245,68 @@ try {
     const existing = await invoke(a, 'create-checkout-session', { tier: 'pro' });
     assert.equal(existing.status, 200);
     assert.equal(new URL(existing.body.url).hostname, 'billing.stripe.com');
-    await stripeApi(`subscriptions/${subscription.id}`, undefined, 'DELETE');
+    const advance=async time=>{
+      await stripeApi(`test_helpers/test_clocks/${stripeClock.id}/advance`,{frozen_time:time});
+      await until(()=>stripeApi(`test_helpers/test_clocks/${stripeClock.id}`),c=>c.status==='ready','test clock');
+      subscription=await stripeApi(`subscriptions/${subscription.id}`);
+    };
+    const initialInvoice=subscription.latest_invoice;
+    await advance(subscription.items.data[0].current_period_end+3600);
+    subscription=await until(()=>stripeApi(`subscriptions/${subscription.id}`),s=>s.latest_invoice!==initialInvoice&&s.status==='active','successful renewal');
+    assert.equal(await deliver(created),200);
+    assert.equal(ok(await a.client.from('profiles').select('subscription_tier').single()).subscription_tier,'pro');
+    pass('A real Stripe test-clock renewal preserves Pro and advances the period');
+    const visa=await stripeApi('payment_methods/pm_card_visa/attach',{customer:customer.id});
+    const declined=await stripeApi('payment_methods/pm_card_chargeCustomerFail/attach',{customer:customer.id});
+    await stripeApi(`subscriptions/${subscription.id}`,{default_payment_method:declined.id});
+    await advance(subscription.items.data[0].current_period_end+3600);
+    subscription=await until(()=>stripeApi(`subscriptions/${subscription.id}`),s=>s.status==='past_due','failed renewal');
+    const failedEvent=await event('invoice.payment_failed');
+    assert.equal(await deliver(failedEvent),200);
+    const failedProfile=ok(await a.client.from('profiles').select('subscription_tier,subscription_status').single());
+    assert.equal(failedProfile.subscription_tier,'free');assert.equal(failedProfile.subscription_status,'past_due');
+    assert.equal(new URL((await invoke(a,'create-checkout-session',{tier:'pro'})).body.url).hostname,'billing.stripe.com');
+    pass('Failed renewal revokes paid access and routes the existing customer to billing');
+    await stripeApi(`subscriptions/${subscription.id}`,{default_payment_method:visa.id});
+    await stripeApi(`invoices/${subscription.latest_invoice}/pay`,{payment_method:visa.id});
+    subscription=await until(()=>stripeApi(`subscriptions/${subscription.id}`),s=>s.status==='active','payment recovery');
+    assert.equal(await deliver(await event('invoice.paid')),200);
+    assert.equal(await deliver(failedEvent),200);
+    assert.equal(ok(await a.client.from('profiles').select('subscription_tier').single()).subscription_tier,'pro');
+    pass('Payment recovery restores Pro and an old failed event cannot revoke current access');
+    // Simulate a missed delivery by intentionally aging only this synthetic customer's
+    // reconciliation marker. The scheduled handler must repair real PostgreSQL.
+    ok(await admin.from('profiles').update({subscription_tier:'free'}).eq('user_id',a.id));
+    const held=ok(await admin.rpc('acquire_billing_sync',{_customer_id:customer.id}));
+    assert(held);
+    assert.equal(await deliver(created),500);
+    ok(await admin.rpc('release_billing_sync',{_customer_id:customer.id,_lease:held,_failed:true}));
+    assert.equal(await deliver(created),200);
+    assert.equal(ok(await admin.from('profiles').select('subscription_tier').single()).subscription_tier,'pro');
+    pass('Concurrent reconciliation returns a retryable webhook failure and retry repairs the entitlement');
+    if(interactive) {
+      const cancellation=await invoke(a,'customer-portal',{});
+      await browserStep('cancel-in-portal',{url:cancellation.body.url,subscriptionId:subscription.id});
+      subscription=await until(()=>stripeApi(`subscriptions/${subscription.id}`),s=>s.cancel_at_period_end,'hosted portal cancellation',900000);
+      pass('The hosted billing portal schedules cancellation');
+    } else subscription=await stripeApi(`subscriptions/${subscription.id}`,{cancel_at_period_end:true});
+    assert.equal(await deliver(created),200);
+    assert.equal(ok(await a.client.from('profiles').select('subscription_tier').single()).subscription_tier,'pro');
+    await advance(subscription.items.data[0].current_period_end+3600);
+    assert.equal(subscription.status,'canceled');
     assert.equal(await deliver(await event('customer.subscription.deleted')), 200);
     assert.equal(await deliver(created), 200);
     assert.equal(ok(await a.client.from('profiles').select('subscription_tier').single()).subscription_tier, 'free');
     pass('Deployed billing refresh, portal, cancellation and old-event replay agree with PostgreSQL');
+    const repeat=await invoke(a,'create-checkout-session',{tier:'pro'});assert.equal(repeat.status,200);
+    // Account deletion must expire this new checkout and suppress late Stripe events.
+    const deleted=await invoke(a,'delete-account',{confirmation:'DELETE'});
+    assert.equal(deleted.status,200,JSON.stringify(deleted.body));a.deleted=true;
+    const openSessions=await stripeApi(`checkout/sessions?customer=${customer.id}&status=open`);
+    assert.equal(openSessions.data.length,0);
+    assert.equal(await deliver(created),200);
+    assert.equal(ok(await admin.from('profiles').select('user_id').eq('user_id',a.id)).length,0);
+    pass('Paid-account deletion expires checkout, cancels renewal and ignores late billing events');
   }
   // The local SMTP catcher receives mail; this cannot send to an external inbox.
   ok(await c.client.auth.resetPasswordForEmail(c.email, { redirectTo: 'http://localhost:3000/auth' }));
@@ -259,13 +337,24 @@ try {
   assert(new URL(replayLink.headers.get('location')).hash.includes('error'));
   await recovered.auth.signOut();
   pass('Recovery email, one-use link and password replacement work through real local Auth');
+  const deletionLogin=ok(await c.client.auth.signInWithPassword({email:c.email,password:newPassword}));
+  c.token=deletionLogin.session.access_token;
+  assert.equal((await invoke(c,'delete-account',{confirmation:'DELETE',userId:a.id})).status,400);
+  const deleted=await invoke(c,'delete-account',{confirmation:'DELETE'});
+  assert.equal(deleted.status,200,JSON.stringify(deleted.body));
+  assert.equal(deleted.body.deleted,true);
+  assert.equal(ok(await admin.from('profiles').select('user_id').eq('user_id',c.id)).length,0);
+  assert((await c.client.auth.getUser(c.token)).error);
+  assert.equal(ok(await admin.from('profiles').select('user_id').eq('user_id',b.id)).length,1);
+  c.deleted=true;
+  pass('Account deletion through the real edge function removes only the authenticated user and invalidates Auth');
 } catch (error) {
   console.error('FAIL', error.message);
   results.push({ test: 'Run completion', result: 'failed' });
   process.exitCode = 1;
 } finally {
   if (stripeClock) await stripeApi(`test_helpers/test_clocks/${stripeClock.id}`, undefined, 'DELETE');
-  for (const user of users) { await user.client.auth.signOut(); ok(await admin.auth.admin.deleteUser(user.id)); }
+  for (const user of users) { await user.client.auth.signOut(); if(!user.deleted) ok(await admin.auth.admin.deleteUser(user.id)); }
   await writeFile('.audit-results/supabase-integration.json', JSON.stringify({ time: new Date().toISOString(), environment: 'full local Supabase with all migrations and actual edge functions', results }, null, 2));
   console.log(`Finished: ${results.filter(result => result.result === 'passed').length} passed; ${results.filter(result => result.result === 'failed').length} failed.`);
 }
