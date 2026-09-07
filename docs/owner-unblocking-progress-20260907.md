@@ -12,6 +12,12 @@ The owner clicked Start export and placed its ZIP in the private local directory
 
 The older `.audit-results/recovery-drill` directory denied filesystem access in this session. A fresh `.audit-results/recovery-current` directory and its imported files are restricted to the Windows owner and SYSTEM. Original owner files and private verification logs are retained there. The public repository contains no backup, credential or password fingerprint.
 
+After explicit owner approval, the recovery follow-up was submitted through Lovable Support with Casher selected. The provider displayed **Your message has been sent successfully!**. The request asks for the existing-plan route to reprovision the undecryptable `email_queue_service_role_key`, recover Cloud configuration and object storage, and test a replacement without touching production. It explicitly forbids chargeable provisioning and an in-place restore. No backup, credential value or user record was attached. A support answer is still pending; no ticket reference was displayed.
+
+## Latest release verification
+
+Checkpoint `34d0c40079b0de3d8974db10cf3cd8bac224b178` passed [main CI](https://github.com/DannyWolfofTech/Casher/actions/runs/34158260759). Lovable's project API reports that exact latest commit with status completed, and the authenticated hosted preview renders the current CSV landing page successfully. The editor still labels the GitHub update Build unsuccessful; this is a provider UI discrepancy, not evidence of a newly broken production deployment. Direct anonymous preview requests require authorization. All four production health checks passed again after the support submission. No application source or deployed release changed in this follow-up.
+
 ## Monitoring
 
 Sentry GitHub association completed following owner approval. Casher project `4511223530258512` is accessible. The generic redacted test issue is visible. Enabled alert `483773` has a recorded trigger at 13:42 BST on 7 September, and its existing high-priority conditions were preserved. Changed recipient from suggested assignees/recently active members to the explicit existing owner member; the saved detail view confirms that destination. A Send Test Notification call returned **Notification fired!**. This verifies provider dispatch, not receipt in the owner's mailbox.
