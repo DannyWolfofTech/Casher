@@ -1,6 +1,6 @@
 # Mobile release status — 7 September 2026
 
-The Android app is now a signed release using bundled production assets. It has been installed and tested on a dedicated Android 16 emulator. iOS is configured but has not been compiled on this Windows machine. Neither app has been submitted to a store.
+The Android app is a signed release using bundled production assets, installed and tested on a dedicated Android 16 emulator. iOS now compiles as a Release simulator app on GitHub's standard macOS runner. Neither app has been submitted to a store. Simulator compilation does not establish signed-device acceptance.
 
 ## Implemented
 
@@ -27,15 +27,19 @@ The ignored signing key is `.audit-results/android-signing/casher-release.p12`; 
 
 Release instrumentation verifies actual native secure persistence and production configuration. The opt-in `tools/mobile/test-production-session.ps1` uses an explicitly provisioned disposable production identity supplied only to the test runner. It verifies production sign-in, saved records, recreation, JSON export through the OS share sheet, logout and recreation after logout. This is separate from browser tests using invented responses. The final acceptance report records any additional file-picker and deep-link results.
 
-## iOS boundary
+## Reproducible iOS build and remaining boundary
 
-`tools/mobile/build-ios-release.sh` requires a Mac, Xcode and CocoaPods. It creates a Release simulator build, converts the opaque Casher icon source to the required 1024px asset, syncs plugins, checks plists and writes `release-artifacts/ios/Casher-Simulator.app`. No iOS artifact exists yet and no simulator/device behavior is claimed.
+`.github/workflows/mobile-ios.yml` uses a standard macOS 26 runner for this public repository, without distribution credentials or a paid runner. It prepares only the intentionally public production configuration, runs `tools/mobile/build-ios-release.sh`, and packages `release-artifacts/ios/Casher-Simulator.zip`. The script converts the opaque Casher icon source to 1024px, syncs plugins, checks plists and builds the actual Release target. Preserve the ZIP when moving it from Windows to a Mac so framework symlinks survive extraction with `ditto`.
 
-The owner must provide Mac/Xcode access and the Apple Team ID, then authorize the relevant signing/developer-account steps. Publish a valid apple-app-site-association using the actual Team ID; test cold/warm Universal Links, recovery, secure storage, files, deletion, backgrounding and accessibility on iOS. An App Store/TestFlight build and review remain separate from a simulator build. No Apple/Google fee or legal agreement was accepted.
+The [first hosted build](https://github.com/DannyWolfofTech/Casher/actions/runs/34116904087) succeeded at `fcfd5c1`. Independent inspection confirmed `com.trycasher.app`, iOS 15 minimum, arm64 and x86_64 simulator architectures, the production API, disabled cleartext/logging/remote-server settings, no tracking and no distribution signature. That initial artifact retained version `1.0`; source is now aligned to Android's `1.0.0`. The final acceptance report records the delivered artifact's exact source, version, hash and runtime test results.
+
+`tools/mobile/test-ios-ui.sh` adds a real XCTest UI target on the build host and exercises native launch/navigation/privacy/relaunch and a recovery request to production Auth using a nonexistent reserved `.test` identity. It does not create an account or establish a valid email-link/session round trip. Failed checks remain failures; they are not replaced by mocked responses. `tools/mobile/inspect-ios-release.py` independently checks the packaged identity, version, simulator architectures, privacy/configuration and SHA-256.
+
+The owner must provide an Apple Team ID and authorize the relevant signing/developer-account steps. Publish a valid apple-app-site-association using that Team ID; test cold/warm Universal Links, valid recovery, saved authenticated sessions, files, deletion, backgrounding and accessibility on an owner-controlled iOS device. An App Store/TestFlight build and review remain separate from this simulator build. No Apple/Google fee or legal agreement was accepted.
 
 ## Remaining release acceptance
 
-Android needs broader physical-device/accessibility testing, real confirmation/recovery delivery through verified links, owner signing-key backup, Play Data Safety/reviewer metadata and an authorized distribution/store review path. iOS needs compilation and all device acceptance. Native billing-policy compliance is designed around a free companion app but is not a store approval.
+Android needs broader physical-device/accessibility testing, real confirmation/recovery delivery through verified links, owner signing-key backup, Play Data Safety/reviewer metadata and an authorized distribution/store review path. iOS needs signed-device acceptance and distribution credentials. Native billing-policy compliance is designed around a free companion app but is not a store approval.
 
 Sources: [Apple review guidelines](https://developer.apple.com/app-store/review/guidelines/), [Google payments policy](https://support.google.com/googleplay/android-developer/answer/9858738?hl=en), [Google consumption-only guidance](https://support.google.com/googleplay/android-developer/answer/10281818?hl=en), [Android target API requirements](https://developer.android.com/google/play/requirements/target-sdk).
 

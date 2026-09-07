@@ -33,7 +33,8 @@ jobs:
       - name: Build Release for iOS Simulator without distribution signing
         run: bash tools/mobile/build-ios-release.sh > .audit-results/ios-build.log 2>&1
       - name: Exercise the actual iOS interface
-        run: bash tools/mobile/test-ios-ui.sh > .audit-results/ios-ui.log 2>&1
+        shell: bash
+        run: bash tools/mobile/test-ios-ui.sh 2>&1 | tee .audit-results/ios-ui.log
       - name: Show build diagnostics on failure
         if: failure()
         run: |
@@ -42,7 +43,7 @@ jobs:
       - name: Package simulator application
         run: |
           ditto -c -k --sequesterRsrc --keepParent release-artifacts/ios/Casher-Simulator.app release-artifacts/ios/Casher-Simulator.zip
-          shasum -a 256 release-artifacts/ios/Casher-Simulator.zip
+          python3 tools/mobile/inspect-ios-release.py
       - name: Save simulator application for review
         if: always()
         uses: actions/upload-artifact@v7

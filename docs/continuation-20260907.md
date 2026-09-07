@@ -10,4 +10,6 @@ TrueLayer Data V3 is selected. No real sandbox account/credentials or complete b
 
 Current Stripe changes are deployed with sales disabled. The fresh real-Stripe lifecycle suite is prepared but awaits official CLI sandbox authorization. No real charge or Stripe identity/contact change was made.
 
-Android is a signed production release with actual emulator acceptance, not the former debug-only build. iOS is configured but unbuilt on Windows. See the acceptance report for exact artifacts, hashes and outstanding device/store requirements.
+Android is a signed production release with actual emulator acceptance. iOS now compiles in Release on GitHub's standard macOS runner for this public repository; a simulator ZIP has been downloaded and inspected. Device signing, Team ID/Universal Links and signed-device/store acceptance remain outstanding. See the acceptance report for exact artifacts, hashes and runtime test results.
+
+Independent read-only production checks are deployed in GitHub Actions, covering the site/assets, Auth, database/RLS and unauthenticated billing denial. The first hosted run passed. The schedule is configured for every 15 minutes; notification delivery to an actively monitored owner destination, Sentry access and an isolated backup restore drill remain unverified.

@@ -20,7 +20,8 @@ target.build_configurations.each do |configuration|
     'GENERATE_INFOPLIST_FILE' => 'YES',
     'TEST_TARGET_NAME' => 'App',
     'TARGETED_DEVICE_FAMILY' => '1,2',
-    'CODE_SIGNING_ALLOWED' => 'NO'
+    'CODE_SIGNING_ALLOWED' => 'YES',
+    'CODE_SIGN_IDENTITY' => '-'
   })
 end
 project.save

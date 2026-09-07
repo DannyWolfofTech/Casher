@@ -47,7 +47,7 @@ An HTTP 200 queue response is not proof of email delivery. Check `email_send_log
 
 The public `/unsubscribe` page requires a deliberate confirmation. Its opaque token can suppress only that recipient. Browser roles cannot resolve a token to an address. Local suppression is enforced before app mail is dispatched; requested authentication/security mail uses its separate queue. Provider suppression is also requested. A provider-sync error is logged without the email address, while local suppression remains effective.
 
-Failures in the same database/email provider can prevent an alert. The scheduled jobs are not an independent external uptime monitor. Owner access to the existing Sentry project and an independent outage alert destination still need verification.
+Failures in the same database/email provider can prevent these jobs from sending an alert. Independent GitHub checks are now configured as described below. Owner access to the existing Sentry project and delivery of GitHub failure notifications still need verification.
 
 ## Billing investigation
 
@@ -81,6 +81,14 @@ Ordinary Gmail replies currently reveal the Gmail sender. Outbound privacy@ SMTP
 
 ## Owner-only launch actions
 
-Supply a legal trading name and public business/service postal address for the Terms and Privacy Policy. Do not substitute a home address or personal phone. Authorize the official Stripe CLI for the Casher sandbox so the prepared real-provider renewal/failure/cancellation/deletion suite can run. Open the TrueLayer Console and accept the required terms personally; see `open-banking-provider-selection.md`. Back up the Android signing key and its password securely under owner control. Mac/Xcode/signing and store-enrollment decisions remain with the owner.
+Supply a legal trading name and public business/service postal address for the Terms and Privacy Policy. Do not substitute a home address or personal phone. Authorize the official Stripe CLI for the Casher sandbox so the prepared real-provider renewal/failure/cancellation/deletion suite can run. Open the TrueLayer Console and accept the required terms personally; see `open-banking-provider-selection.md`. Back up the Android signing key and its password securely under owner control. Apple Team ID, device signing and store-enrollment decisions remain with the owner; hosted simulator compilation is now available without those credentials.
 
 A later actual native password-recovery request reached a unique privacy plus alias in Inbox at 12:14 BST on 7 September. That verifies this alias's forwarding and the production auth-mail path. It does not verify native password replacement: the automated link return was blocked on safe credential handling and never dispatched. The disposable identity, queue entries and local credential file were cleaned up afterward.
+
+## Independent production checks
+
+`.github/workflows/production-health.yml` runs `tools/release/check-production-health.mjs` from GitHub, outside Lovable/Supabase. It checks the public site and referenced JS/CSS, Auth availability, database connectivity with anonymous profile isolation, and rejection of an anonymous billing request. It creates no accounts, mail, webhook events or payments and never logs response bodies or customer data. Each failed check is retried once after four seconds before the job fails.
+
+The schedule is at minutes 7, 22, 37 and 52 each hour, with a manual workflow trigger and a push trigger for changes to the monitor. The first actual GitHub run passed: https://github.com/DannyWolfofTech/Casher/actions/runs/34116904108. Scheduled executions can be delayed or disabled by GitHub inactivity rules; this is not an uptime SLA. Confirm that GitHub Actions failure notifications reach an actively monitored owner destination. Sentry access and alert delivery remain separate acceptance items.
+
+The job is guarded to the public `DannyWolfofTech/Casher` repository and uses a standard runner. It stops running if the repository becomes private, avoiding accidental private-runner charges. The iOS validation workflow has the same public-repository guard. No larger runners or new paid service are used. [GitHub billing rules](https://docs.github.com/en/billing/concepts/product-billing/github-actions) and [scheduled event behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule) describe the applicable limits.

@@ -9,7 +9,7 @@ test_status=0
 xcodebuild -workspace ios/App/App.xcworkspace -scheme CasherAcceptance -configuration Release \
   -destination "platform=iOS Simulator,id=$simulator_id" \
   -derivedDataPath .audit-results/ios-derived-data -resultBundlePath .audit-results/ios-acceptance.xcresult \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test || test_status=$?
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test || test_status=$?
 mkdir -p release-artifacts/ios/screenshots
 if [[ -d .audit-results/ios-acceptance.xcresult ]]; then
   xcrun xcresulttool export attachments --path .audit-results/ios-acceptance.xcresult --output-path release-artifacts/ios/screenshots

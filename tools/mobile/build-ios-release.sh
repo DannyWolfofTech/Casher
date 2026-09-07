@@ -15,7 +15,13 @@ npx cap sync ios
 plutil -lint ios/App/App/Info.plist ios/App/App/App.entitlements ios/App/App/PrivacyInfo.xcprivacy
 xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-  -derivedDataPath .audit-results/ios-derived-data CODE_SIGNING_ALLOWED=NO build
+  -derivedDataPath .audit-results/ios-derived-data CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
+# A simulator-local signature supplies the default Keychain application identity.
+# It uses no Apple account/certificate and is not valid for device distribution.
+codesign --verify --deep --strict .audit-results/ios-derived-data/Build/Products/Release-iphonesimulator/App.app
+codesign -dvv .audit-results/ios-derived-data/Build/Products/Release-iphonesimulator/App.app 2> .audit-results/ios-signature.txt
+python3 -c 'from pathlib import Path; assert "Signature=adhoc" in Path(".audit-results/ios-signature.txt").read_text(), "Expected simulator-local signing only"'
+codesign -d --entitlements :- .audit-results/ios-derived-data/Build/Products/Release-iphonesimulator/App.app
 mkdir -p release-artifacts/ios
 ditto .audit-results/ios-derived-data/Build/Products/Release-iphonesimulator/App.app release-artifacts/ios/Casher-Simulator.app
 echo 'Built release-artifacts/ios/Casher-Simulator.app. Device distribution still requires owner signing and device validation.'

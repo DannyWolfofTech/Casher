@@ -1,12 +1,12 @@
 # Casher
 
-Casher imports GBP statements, shows spending by transaction month, and identifies possible recurring payments. It uses React, TypeScript, Vite, Supabase and Stripe. Bank connections and Premium features remain in development.
+Casher imports GBP statements, shows spending by transaction month, and identifies possible recurring payments. It uses React, TypeScript, Vite, Supabase and Stripe. Bank connectivity and new paid subscriptions are disabled pending release acceptance.
 
-## Start with the audit
+## Current release
 
-The [7 September continuation](docs/continuation-20260907.md) tracks mailbox setup, current read-only billing verification, corrected banking disclosures, the [sandbox banking architecture](docs/open-banking-architecture.md), and [native mobile preparation](docs/mobile-readiness.md). The V1 banking experiment has been retired outside production source. [TrueLayer Data V3 is selected](docs/open-banking-provider-selection.md), with provider access still blocked at owner signup.
+The CSV web app is live at https://trycasher.com. The [release acceptance table](docs/release-acceptance-20260907.md) records deployed commits, tests, artifacts, disabled features and owner-only launch gates. Use the [operations runbook](docs/operations-runbook.md) for deployment, maintenance, privacy mail and recovery; the [design audit](docs/design-audit/README.md) contains current desktop/mobile screenshots.
 
-The [September 2026 audit](docs/design-audit/README.md) contains findings, screenshots, verification evidence and release gates. The [6 September release checks](docs/design-audit/release-check-20260906.md) document actual Stripe sandbox and full local Supabase acceptance, additional fixes and remaining live-service setup.
+[TrueLayer Data V3 is selected](docs/open-banking-provider-selection.md), with provider access blocked at owner signup. The V1 experiment is archived outside the production source. [Mobile release instructions](docs/mobile-readiness.md) cover the signed Android build and hosted iOS Simulator validation. Older dated reports are historical evidence and must not override the current acceptance table.
 
 ## Install and verify
 
@@ -27,17 +27,13 @@ Open http://127.0.0.1:8080 and sign in as audit@example.test using any test pass
 
 To use a real development backend, copy .env.example to .env.local, enter a staging Supabase URL and public key, then run npm run dev. Keep backend secrets in Supabase Edge Function secrets; never put them in VITE_ variables. Lovable may overwrite its generated client.
 
-## Backend deployment
+## Production changes and verification
 
-Apply supabase/migrations/20260904220000_atomic_statement_import.sql and then supabase/migrations/20260904230000_statement_corrections.sql after all earlier migrations, first to staging. Deploy process-csv, check-subscription, create-checkout-session, customer-portal and stripe-webhook with their shared modules and function configuration. Publish the frontend after staging acceptance. If the atomic import function is absent, the importer fails safely.
+Follow the [operations runbook](docs/operations-runbook.md). The recorded production migrations and hardened edge functions are already deployed. Apply only new, reviewed migrations; never rerun recorded migrations or include archived experiments. Deploy every affected edge function and shared module before publishing dependent frontend changes. Keep live checkout and bank connectivity disabled until their acceptance gates pass.
 
-Billing requires STRIPE_SECRET_KEY_CUSTOM, STRIPE_WEBHOOK_SECRET and a configured Stripe customer portal with cancellation enabled. New live checkout is paused until release acceptance and requires CASHER_LIVE_CHECKOUT_ENABLED=true plus the reviewed frontend Pro gate. Existing billing management remains available. Live billing additionally requires STRIPE_ACCOUNT_ID and STRIPE_PRO_PRICE_ID; STRIPE_MODE must agree with the key when supplied. STRIPE_PREMIUM_PRICE_ID is optional for recognition of existing plans, but Premium cannot be purchased. The server checks the configured account and GBP 9.99 monthly price. Sandbox defaults are limited to the verified Casher sandbox. Supabase provides SUPABASE_URL and server-role credentials. ALLOWED_REDIRECT_ORIGINS must contain only trusted exact origins. Reconcile legacy Stripe customers before rollout: an email match alone no longer grants billing access, and sandbox customer IDs cannot be reused in live mode.
+The exact frozen Deno and clean Supabase checks are maintained in `.github/workflows/ci.yml`. `node tools/release/check-production-health.mjs` performs the same read-only availability/access checks as the independent GitHub schedule. These use only intentionally public configuration; they cannot verify billing lifecycle, bank connectivity or restoration.
 
-Deploy the create-checkout alias too, so the old URL uses the repaired implementation. Deploy the changed auth-email-hook, process-email-queue, check-failed-webhooks and send-welcome-email modules; their imports are now pinned. The existing 20260904163137 migration was made compatible with fresh databases lacking Lovable's separately provisioned email dispatchers, retaining its permissions wherever those routines exist.
-
-With Deno 2, check the changed edge functions:
-
-    deno check --frozen supabase/functions/process-csv/index.ts supabase/functions/check-subscription/index.ts supabase/functions/create-checkout-session/index.ts supabase/functions/customer-portal/index.ts supabase/functions/stripe-webhook/index.ts
+Server secrets belong in Cloud secrets/Vault. Native and browser bundles may contain only the public Supabase URL and publishable/anonymous key. `tools/mobile/write-production-env.mjs` validates this public configuration before hosted iOS builds. No signing keys, test passwords or server credentials belong in Git.
 
 ## Correcting records
 
@@ -45,4 +41,4 @@ In the transaction table, use **Correct** to confirm payment direction and categ
 
 Subscription review supports correcting payment amount/frequency, dismissing false detections, marking confirmed cancellations and restoring records. New imports keep explicit payment corrections and inactive statuses. These actions do not cancel a provider contract.
 
-The source is connected to DannyWolfofTech/Casher and changes are prepared on codex/production-hardening. Review the [release checklist](docs/design-audit/README.md#release-gates) before publishing. Production migrations and billing/email acceptance must precede frontend rollout.
+The source is connected to DannyWolfofTech/Casher. Keep release checkpoints clean and review the current acceptance table before enabling additional production features.
