@@ -91,7 +91,7 @@ Report acceptance results or attach the physical device for controlled testing; 
 
 ## 5. iOS signing and device boundary
 
-The current simulator build already passed three real UI tests. The additional hosted build checks the actual **iphoneos Release/arm64** target without signing; its unsigned ZIP is compilation evidence, not an installable/tested device app. The existing `.xcworkspace`, pinned Pods, version, privacy manifest, icon/splash and production config are prepared.
+The current simulator build already passed three real UI tests. [Hosted build 34123424104](https://github.com/DannyWolfofTech/Casher/actions/runs/34123424104) passed the actual **iphoneos Release/arm64** target and all three simulator UI tests. Its downloaded `release-artifacts/ios/Casher-Device-Unsigned.zip` passed independent inspection; this unsigned ZIP is compilation evidence, not an installable/tested device app. The existing `.xcworkspace`, pinned Pods, version, privacy manifest, icon/splash and production config are prepared.
 
 Provide **Apple Team ID** (normally 10 characters), whether an existing Apple Developer Program membership is available, and your signing route. Preferred: an owner-controlled Mac with Xcode signed into your Apple account and a USB-connected iPhone with Developer Mode enabled. Alternative: an already-owned development certificate/private key and provisioning profile transferred through private owner-controlled storage, plus the registered device UDID. No signing secret belongs in this public repository or chat.
 

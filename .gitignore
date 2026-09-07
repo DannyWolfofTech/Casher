@@ -17,6 +17,10 @@ dist-ssr
 test-results/
 .audit-results/
 release-artifacts/
+# Owner signing identities and provisioning material never belong in Git.
+*.p12
+*.pfx
+*.mobileprovision
 supabase/.branches/
 supabase/.temp/
 playwright-report/

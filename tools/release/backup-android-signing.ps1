@@ -12,7 +12,7 @@ if (!(Test-Path -LiteralPath $keyPath) -or !(Test-Path -LiteralPath $passwordPat
     throw 'Original signing material is missing. Restore it; never generate a replacement key.'
 }
 $destinationRoot = [IO.Path]::GetFullPath($DestinationDirectory)
-if ($destinationRoot.StartsWith($workspace + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+if ($destinationRoot.Equals($workspace, [StringComparison]::OrdinalIgnoreCase) -or $destinationRoot.StartsWith($workspace + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'Choose a backup destination outside the repository.'
 }
 $backup = Join-Path $destinationRoot ('Signing-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0,8))
