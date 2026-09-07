@@ -32,7 +32,7 @@ export async function assertStripeAccount(stripe: Stripe, config: BillingConfig)
   if (account.id !== config.accountId) throw new BillingError('Billing configuration needs attention.', 503);
   verifiedAccount = { key: config.key, accountId: account.id, until: Date.now() + 60_000 };
 }
-export async function billingContext(req: Request) {
+export async function billingContext(req: Request, options: { allowDeletedCustomer?: boolean } = {}) {
   if (req.method !== 'POST') throw new BillingError('Use POST.', 405);
   const { stripe, admin, config } = billingClients();
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
@@ -48,7 +48,10 @@ export async function billingContext(req: Request) {
   let customerId: string | null = profile.stripe_customer_id || null;
   if (customerId) {
     const customer = await stripe.customers.retrieve(customerId);
-    if (customer.deleted || (customer.metadata.user_id && customer.metadata.user_id !== user.id)) throw new BillingError('Your billing account needs support. Please try again later.', 409);
+    // Read-only entitlement refresh must still revoke access after Stripe has
+    // deleted a customer. The server-owned profile binding supplies ownership.
+    // Checkout and portal operations continue to reject deleted customers.
+    if ((customer.deleted && !options.allowDeletedCustomer) || (!customer.deleted && customer.metadata.user_id && customer.metadata.user_id !== user.id)) throw new BillingError('Your billing account needs support. Please try again later.', 409);
   } else {
     // A matching email alone does not prove ownership of a Stripe customer.
     const matches = await stripe.customers.search({ query: `metadata['user_id']:'${user.id}'`, limit: 2 });

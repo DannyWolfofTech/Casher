@@ -4,6 +4,8 @@ This is an execution checklist. It adds no product scope. Production checkout an
 
 ## 1. Stripe authorization
 
+Authorization completed on 7 September through the existing signed-in account. The CLI verified the sandbox account and test price below without exposing/exporting an API key. The instructions remain for future reauthorization; this is no longer an owner blocker. Current acceptance evidence is recorded in the release report.
+
 In PowerShell, from `D:\Projects\Coding\Casher`, run:
 
 ```powershell
@@ -14,7 +16,16 @@ The helper prints a fresh pairing code and the official `https://access.stripe.c
 
 The CLI alone stores its credential under the restricted, Git-ignored `.audit-results/stripe-auth/` directory. The helper does not display or export a secret key. Expected sandbox account: `acct_1SCrpvJMS012Ip2A`; expected GBP monthly £9.99 test price: `price_1SYzJQJMS012Ip2AChBRKO5w`. These non-secret identifiers must be verified after authorization before any test mutation. No `--live` command is permitted.
 
-Next execution: verify account/price and use disposable sandbox customers, hosted test-card checkout and test clocks. Check activation, actual signed webhook delivery, duplicate/out-of-order handling, missed-event reconciliation, successful/failed renewal and recovery, hosted portal cancellation, cancellation expiry and paid-account deletion safeguards. Clean up only the run's test resources. The existing real Auth/Postgres acceptance harness is `tools/billing-sandbox/verify-supabase.mjs`; its old raw-key invocation is not the approved owner authorization route and will not be used to request/export a key. The fresh CLI-backed billing run has not passed yet. Live Pro remains disabled until acceptance passes and business disclosures are complete.
+The repeatable CLI route is below. Start isolated Supabase first and keep the first two services running in separate terminals. The bridge verifies the account/price, binds only to loopback, and uses a separate random local bearer credential. It protects its files before writing them. The ignored edge copy changes only the Stripe SDK HTTP transport so that the official CLI authenticates real provider calls. Never deploy that copy or its environment file. Original Stripe-signed CLI deliveries are forwarded unchanged for initial activation; signed genuine-event replays separately exercise ordering, duplicates and bounded retry. A deliberate delivery exclusion exercises missed-webhook reconciliation.
+
+```powershell
+node tools/billing-sandbox/serve-stripe-cli.mjs
+node tools/billing-sandbox/prepare-cli-runtime.mjs
+npx --yes supabase@2.116.0 functions serve --workdir .audit-results/stripe-workspace --env-file .audit-results/stripe-workspace/edge.env
+node tools/billing-sandbox/verify-supabase.mjs --stripe --stripe-cli --interactive
+```
+
+Complete only the generated hosted **test** checkout and portal steps. The harness uses disposable sandbox customers and test clocks, then cleans up its own resources. It never requires a raw Stripe API key. Results are saved to `.audit-results/stripe-cli-acceptance.json`. This verifies real Stripe against local Auth/Postgres and actual edge business logic; it does not move test secrets into production or constitute a live charge. Live Pro stays disabled until acceptance passes and business disclosures are complete.
 
 [Official Stripe CLI](https://github.com/stripe/stripe-cli) documents browser authorization; the installed CLI's device-flow output is used directly rather than a key-page export.
 
@@ -107,7 +118,7 @@ Signed-device acceptance then covers the Android checklist equivalents: real con
 
 **Sentry:** the production SDK's real error envelope was accepted with HTTP 200; its privacy filter passed. In your [Sentry account](https://sentry.io/), select Casher project ID **4511223530258512** and find event **ff73623cc9a04236a4c7eb5a6c1db65e** around 7 September 2026, 12:41 UTC. Confirm the event is visible with the generic redacted message. Leave the signed-in project available and identify the actively monitored owner alert destination. I will then verify the actual alert rule and a fresh test event's notification. Ingestion success alone is not proof of an alert.
 
-**GitHub:** sign in as `DannyWolfofTech`. At [notification settings](https://github.com/settings/notifications), **System → Actions → Email → Only notify for failed workflows → Save**; ensure the delivery address is verified and monitored. Watch `DannyWolfofTech/Casher`. Existing runs are attributed to that account. Then open [Production health](https://github.com/DannyWolfofTech/Casher/actions/workflows/production-health.yml), **Run workflow**, choose `main` and enable **test_failure_notification** once. It runs the real health checks first and deliberately fails a clearly labelled notification-test step. Confirm the matching failure email arrives; I will verify the run and restore normal green health verification. The default is false, and scheduled runs never deliberately fail. [GitHub's settings instructions](https://docs.github.com/en/subscriptions-and-notifications/how-tos/managing-github-actions-notifications).
+**GitHub:** the signed-in account's Actions notifications were already enabled on GitHub and by email, with **Only notify for failed workflows** selected. The actual [notification drill 34127331845](https://github.com/DannyWolfofTech/Casher/actions/runs/34127331845) passed its real health checks and deliberately failed only the labelled drill step. The separate [normal run 34128151586](https://github.com/DannyWolfofTech/Casher/actions/runs/34128151586) passed and skipped the drill. The configured delivery mailbox is not available in the connected sessions; confirm receipt of the matching failure email there. No notification setting or email address was changed. The input defaults to false and scheduled runs never deliberately fail. [GitHub's settings instructions](https://docs.github.com/en/subscriptions-and-notifications/how-tos/managing-github-actions-notifications).
 
 The independent health check passes, but scheduled GitHub execution has not yet been observed. Four provider maintenance cron jobs remain active; the recent health dispatch returned no recorded error. Notification and schedule evidence are still required.
 
@@ -115,7 +126,9 @@ The independent health check passes, but scheduled GitHub execution has not yet 
 
 > For project ea77ebbb-78bd-46c4-a0c9-0ab73994a416 (Casher), provide an isolated restore/export route for an existing daily database backup, including schema and Auth data. The live database must remain untouched, restored cron jobs/outbound mail/billing must be disabled, and customer data must remain private. Confirm the steps and whether this is included in our existing plan before provisioning anything chargeable. Can the backup be restored into a separate private project or supplied through an authenticated export for an isolated local restore?
 
-Give me the supported route and private access to its restored environment. I will then exercise the actual backup: verify schema/migrations/counts/RLS/Auth, reapply deletion receipts before access, ensure jobs cannot send mail/charge, test import/export and recovery, measure elapsed restore time, and clean up the isolated copy. No production data or Auth dump goes into public GitHub artifacts. The source database is left intact. Disaster recovery remains **not production ready** until that actual provider-backed path has been exercised. [Lovable restore behavior](https://docs.lovable.dev/features/database).
+The initial support request was submitted through the owner's existing Lovable session. Lovable's AI support replied with the existing-plan **Cloud → Overview → Advanced settings → Export data** route, with one export/day and a 5 GB limit, and said isolated Cloud restores are unsupported. The [official export documentation](https://docs.lovable.dev/features/advanced-settings) confirms the limit and export exclusions. Read-only SQL measured the physical database at **6,652,865,683 bytes**, exceeding that limit; application/Auth/private-schema relations total **2,555,904 bytes**. Export has not been started. Automatic approval review stopped it at the documented size boundary and separately requires permission before sending those detailed measurements in a support follow-up. No production data was deleted, resized or restored.
+
+The provider must clarify whether the limit applies to physical size or logical export, or supply a supported no-charge route for this project. Then exercise the actual provider export/backup: verify schema/migrations/counts/RLS/Auth, reapply deletion receipts before access, ensure jobs cannot send mail/charge, test import/export and recovery, measure elapsed restore time, and clean up the isolated copy. A fresh logical export drill must be distinguished from restoring a retained daily snapshot. No production data or Auth dump goes into public GitHub artifacts. Disaster recovery remains **not production ready** until an actual supported path has been exercised. [Lovable restore behavior](https://docs.lovable.dev/features/database).
 
 ## 7. Legal/public details
 

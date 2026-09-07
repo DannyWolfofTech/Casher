@@ -13,8 +13,17 @@ const admin = createClient(url, config.SERVICE_ROLE_KEY, { auth: { persistSessio
 const run = randomUUID();
 const users = [];
 let stripeClock;
+const cliMode = process.argv.includes('--stripe-cli');
+const cliState = cliMode ? JSON.parse(await readFile('.audit-results/stripe-transport/private-state.json', 'utf8')) : null;
+if (cliMode) {
+  assert(process.argv.includes('--stripe'), '--stripe-cli requires the real Stripe suite');
+  assert.equal(cliState.url, 'http://127.0.0.1:18771');
+  assert.equal(cliState.account, 'acct_1SCrpvJMS012Ip2A');
+  assert.equal(cliState.livemode, false);
+}
+const webhookSecret = cliMode ? cliState.webhookSecret : process.env.STRIPE_WEBHOOK_SECRET;
 const stripeApi = async (path, fields, method = fields ? 'POST' : 'GET') => {
-  const res = await fetch(`https://api.stripe.com/v1/${path}`, { method, headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY_CUSTOM}`, 'Stripe-Version': '2025-08-27.basil', 'Content-Type': 'application/x-www-form-urlencoded' }, ...(fields ? { body: new URLSearchParams(fields) } : {}) });
+  const res = await fetch(`${cliMode ? cliState.url : 'https://api.stripe.com'}/v1/${path}`, { method, headers: { Authorization: `Bearer ${cliMode ? cliState.token : process.env.STRIPE_SECRET_KEY_CUSTOM}`, 'Stripe-Version': '2025-08-27.basil', 'Content-Type': 'application/x-www-form-urlencoded' }, ...(fields ? { body: new URLSearchParams(fields) } : {}) });
   const data = await res.json();
   assert(res.ok, data.error?.message || `Stripe returned ${res.status}`);
   return data;
@@ -189,8 +198,10 @@ try {
   assert.equal(ok(await admin.from('email_send_log').select('status').eq('message_id',suppressedMessage).single()).status,'suppressed');
   pass('Unsubscribe tokens enforce recipient-scoped preferences and the actual dispatcher suppresses app mail before delivery');
   if (process.argv.includes('--stripe')) {
-    assert(/^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY_CUSTOM ?? ''), 'Only Stripe test-mode credentials are allowed');
-    assert(process.env.STRIPE_WEBHOOK_SECRET?.startsWith('whsec_local_'), 'Use a local test signing secret');
+    if (!cliMode) {
+      assert(/^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY_CUSTOM ?? ''), 'Only Stripe test-mode credentials are allowed');
+      assert(webhookSecret?.startsWith('whsec_local_'), 'Use a local test signing secret');
+    } else assert(webhookSecret?.startsWith('whsec_'), 'The official CLI webhook verifier is required');
     assert.equal((await stripeApi('account')).id, 'acct_1SCrpvJMS012Ip2A');
     const priceId = 'price_1SYzJQJMS012Ip2AChBRKO5w';
     assert.equal((await stripeApi(`prices/${priceId}`)).livemode, false);
@@ -198,6 +209,10 @@ try {
     stripeClock = await stripeApi('test_helpers/test_clocks', { frozen_time: Math.floor(Date.now() / 1000), name: `Casher local Supabase ${run}` });
     const customer = await stripeApi('customers', { name: `Casher local Supabase ${run}`, email: a.email, test_clock: stripeClock.id, 'metadata[user_id]': a.id, 'metadata[casher_release_test]': run });
     assert.equal(customer.livemode, false);
+    if (cliMode) {
+      const configured = await fetch(`${cliState.url}/control`, { method: 'POST', headers: { Authorization: `Bearer ${cliState.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ primaryCustomer: customer.id }) });
+      assert.equal(configured.status, 200);
+    }
     ok(await admin.from('profiles').update({ stripe_customer_id: customer.id, subscription_tier: 'free', subscription_status: 'inactive' }).eq('user_id', a.id));
     const checkout = await invoke(a, 'create-checkout-session', { tier: 'pro' });
     assert.equal(checkout.status, 200, JSON.stringify(checkout.body));
@@ -230,15 +245,31 @@ try {
       }
       throw new Error('Expected sandbox event');
     };
-    const deliver = async (event, valid = true) => {
+    const deliver = async (event, valid = true, retry = true) => {
       const payload = JSON.stringify(event);
-      const timestamp = Math.floor(Date.now() / 1000);
-      const signature = createHmac('sha256', process.env.STRIPE_WEBHOOK_SECRET).update(`${timestamp}.${payload}`).digest('hex');
-      const res = await fetch(`${url}/functions/v1/stripe-webhook`, { method: 'POST', headers: { 'stripe-signature': `t=${timestamp},v1=${valid ? signature : '0'.repeat(64)}` }, body: payload });
-      await res.text();
-      return res.status;
+      const deadline = Date.now() + 60000;
+      while (true) {
+        const timestamp = Math.floor(Date.now() / 1000);
+        const signature = createHmac('sha256', webhookSecret).update(`${timestamp}.${payload}`).digest('hex');
+        const res = await fetch(`${url}/functions/v1/stripe-webhook`, { method: 'POST', headers: { 'stripe-signature': `t=${timestamp},v1=${valid ? signature : '0'.repeat(64)}` }, body: payload });
+        await res.text();
+        // Original CLI deliveries can hold the real fenced lease concurrently.
+        // Retry genuine events as Stripe does; never alter their state or the lease.
+        if (!retry || !valid || res.status !== 500 || Date.now() >= deadline) return res.status;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     };
     const created = await event('customer.subscription.created');
+    if (cliMode) {
+      await until(async () => {
+        const deliveries = (await readFile('.audit-results/stripe-transport/deliveries.jsonl', 'utf8')).trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
+        // Stripe can deliver invoice success before checkout/subscription events.
+        // Any supported activation event may acquire the fenced sync lease first.
+        return deliveries.some(item => item.customer === customer.id && item.status === 200 && ['checkout.session.completed', 'customer.subscription.created', 'invoice.paid', 'invoice.payment_succeeded'].includes(item.type));
+      }, Boolean, 'actual Stripe CLI webhook delivery');
+      assert.equal(ok(await a.client.from('profiles').select('subscription_tier').single()).subscription_tier, 'pro');
+      pass('Original Stripe-signed CLI delivery activates Pro before any replay injection');
+    }
     assert.equal(await deliver(created, false), 400);
     assert.equal(await deliver({...created,livemode:true}),400);
     assert.equal(await deliver({...created,account:'acct_wrong'}),400);
@@ -292,10 +323,10 @@ try {
     ok(await admin.from('profiles').update({subscription_tier:'free'}).eq('user_id',a.id));
     const held=ok(await admin.rpc('acquire_billing_sync',{_customer_id:customer.id}));
     assert(held);
-    assert.equal(await deliver(created),500);
+    assert.equal(await deliver(created,true,false),500);
     ok(await admin.rpc('release_billing_sync',{_customer_id:customer.id,_lease:held,_failed:true}));
     assert.equal(await deliver(created),200);
-    assert.equal(ok(await admin.from('profiles').select('subscription_tier').single()).subscription_tier,'pro');
+    assert.equal(ok(await admin.from('profiles').select('subscription_tier').eq('user_id',a.id).single()).subscription_tier,'pro');
     pass('Concurrent reconciliation returns a retryable webhook failure and retry repairs the entitlement');
     // A second real sandbox customer has never received a webhook. The service-only
     // scheduled handler must discover and repair this missing entitlement.
@@ -312,6 +343,8 @@ try {
     pass('Scheduled reconciliation repairs a genuinely missed sandbox webhook and deleted customers lose paid access');
     if(interactive) {
       const cancellation=await invoke(a,'customer-portal',{});
+      assert.equal(cancellation.status,200,JSON.stringify(cancellation.body));
+      assert.equal(new URL(cancellation.body.url).hostname,'billing.stripe.com');
       await browserStep('cancel-in-portal',{url:cancellation.body.url,subscriptionId:subscription.id});
       subscription=await until(()=>stripeApi(`subscriptions/${subscription.id}`),s=>s.cancel_at_period_end,'hosted portal cancellation',900000);
       pass('The hosted billing portal schedules cancellation');
@@ -394,6 +427,6 @@ try {
     for(const table of ['email_unsubscribe_tokens','suppressed_emails']) ok(await admin.from(table).delete().eq('email',user.email));
     ok(await admin.from('email_send_log').delete().eq('recipient_email',user.email));
   }
-  await writeFile('.audit-results/supabase-integration.json', JSON.stringify({ time: new Date().toISOString(), environment: 'full local Supabase with all migrations and actual edge functions', results }, null, 2));
+  await writeFile(cliMode ? '.audit-results/stripe-cli-acceptance.json' : '.audit-results/supabase-integration.json', JSON.stringify({ time: new Date().toISOString(), environment: cliMode ? 'real Stripe Casher sandbox via official CLI, signed webhook forwarding, full local Supabase; SDK transport only replaced in ignored copy' : 'full local Supabase with all migrations and actual edge functions', results }, null, 2));
   console.log(`Finished: ${results.filter(result => result.result === 'passed').length} passed; ${results.filter(result => result.result === 'failed').length} failed.`);
 }

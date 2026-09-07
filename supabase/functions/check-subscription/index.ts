@@ -5,7 +5,7 @@ import { browserEndpoint } from '../_shared/http-security.ts';
 serve(browserEndpoint(async req => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
-    const { stripe, admin, user, customerId } = await billingContext(req);
+    const { stripe, admin, user, customerId } = await billingContext(req, { allowDeletedCustomer: true });
     if (!customerId) {
       const { error } = await admin.from('profiles').update({ subscription_tier: 'free', subscription_status: 'inactive', current_period_end: null }).eq('user_id', user.id);
       if (error) throw error;
