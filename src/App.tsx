@@ -1,9 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useLayoutEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { isNativeApp } from './lib/mobile-platform';
 import MobileRuntime from './components/MobileRuntime';
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -22,6 +22,12 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+function RouteScrollReset() {
+  const {pathname} = useLocation();
+  useLayoutEffect(() => { window.scrollTo(0,0); },[pathname]);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -30,6 +36,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <RouteScrollReset />
             <MobileRuntime />
             <Suspense fallback={<div role="status" className="p-8 text-muted-foreground">Loading page…</div>}>
             <Routes>

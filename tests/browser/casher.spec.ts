@@ -8,6 +8,14 @@ async function login(page: Page) {
   await expect(page).toHaveURL(/dashboard$/);
 }
 test.beforeEach(async ({ request }) => { await request.post(api, { data: { scenario: 'populated' } }); });
+test('public navigation starts the destination at its heading', async ({page}) => {
+  await page.setViewportSize({width:390,height:700});
+  await page.goto('/');
+  await page.getByRole('button',{name:'View Pricing',exact:true}).click();
+  await expect(page).toHaveURL(/pricing$/);
+  await expect(page.getByRole('heading',{level:1,name:'Choose Your Plan'})).toBeInViewport();
+  expect(await page.evaluate(()=>window.scrollY)).toBe(0);
+});
 for (const width of [320, 390, 768, 1440]) {
   test(`dashboard fits ${width}px and renders an intact chart`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 }); await login(page);

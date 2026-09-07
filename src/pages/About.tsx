@@ -64,7 +64,7 @@ const About = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4">
+      <main className="container mx-auto min-w-0 px-4 [overflow-wrap:anywhere]">
         {/* Hero Section */}
         <section className="py-20 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
@@ -84,7 +84,7 @@ const About = () => {
                   <Shield className="h-12 w-12 text-primary" />
                 </div>
               </div>
-              <div>
+              <div className="min-w-0 max-w-full">
                 <h2 className="text-3xl font-bold mb-4">
                   {t("whyCsvTitle")}
                 </h2>
@@ -144,11 +144,11 @@ const About = () => {
       <footer className="border-t py-8 mt-16">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} {t("appName")}. {t("allRightsReserved")}.</p>
-          <div className="flex gap-4 justify-center mt-2">
+          <div className="flex flex-wrap gap-4 justify-center mt-2">
             <Button variant="link" onClick={() => navigate("/about")}>
               {t("about")}
             </Button>
-            <Button variant="link" onClick={() => navigate("/privacy")}>
+            <Button variant="link" className="h-auto min-h-10 max-w-full whitespace-normal" onClick={() => navigate("/privacy")}>
               {t("privacyPolicy")}
             </Button>
           </div>
