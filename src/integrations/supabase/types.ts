@@ -569,6 +569,33 @@ export type Database = {
       }
     }
     Functions: {
+      acquire_account_operation: {
+        Args: { _closing?: boolean; _user_id: string }
+        Returns: Json
+      }
+      acquire_billing_sync: { Args: { _customer_id: string }; Returns: string }
+      allow_billing_request: { Args: { _user_id: string }; Returns: boolean }
+      allow_import_request: { Args: { _user_id: string }; Returns: boolean }
+      billing_reconciliation_candidates: {
+        Args: never
+        Returns: {
+          stripe_customer_id: string
+          user_id: string
+        }[]
+      }
+      commit_billing_sync: {
+        Args: {
+          _customer_id: string
+          _lease: string
+          _state: Json
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      complete_account_deletion: {
+        Args: { _customer_id?: string; _lease: string; _user_id: string }
+        Returns: undefined
+      }
       current_request_role: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -604,6 +631,10 @@ export type Database = {
           monthly_uploads_used: number
         }[]
       }
+      is_closed_billing_customer: {
+        Args: { _customer_id: string }
+        Returns: boolean
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -613,6 +644,8 @@ export type Database = {
         }
         Returns: number
       }
+      purge_operational_data: { Args: never; Returns: undefined }
+      queue_maintenance_alert: { Args: never; Returns: boolean }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -620,6 +653,14 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      release_account_operation: {
+        Args: { _lease: string; _user_id: string }
+        Returns: undefined
+      }
+      release_billing_sync: {
+        Args: { _customer_id: string; _failed?: boolean; _lease: string }
+        Returns: undefined
       }
       release_upload_slot: { Args: { _user_id: string }; Returns: number }
       reserve_upload_slot: {
@@ -652,6 +693,7 @@ export type Database = {
         }
         Returns: Json
       }
+      stale_billing_count: { Args: never; Returns: number }
       upload_limit_for_tier: { Args: { _tier: string }; Returns: number }
     }
     Enums: {
