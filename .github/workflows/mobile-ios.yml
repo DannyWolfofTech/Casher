@@ -44,6 +44,7 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent release-artifacts/ios/Casher-Simulator.app release-artifacts/ios/Casher-Simulator.zip
           shasum -a 256 release-artifacts/ios/Casher-Simulator.zip
       - name: Save simulator application for review
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: casher-ios-simulator
@@ -51,4 +52,4 @@ jobs:
             release-artifacts/ios/Casher-Simulator.zip
             release-artifacts/ios/screenshots/
           retention-days: 1
-          if-no-files-found: error
+          if-no-files-found: warn

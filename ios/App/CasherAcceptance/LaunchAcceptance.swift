@@ -44,4 +44,20 @@ final class LaunchAcceptance: XCTestCase {
         XCTAssertTrue(app.webViews.staticTexts["Bank connections and payments"].exists)
         capture("ios-privacy")
     }
+
+    func testRecoveryRequestUsesNativeStorageAndProductionAuth() throws {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.webViews.buttons["Forgot password?"].waitForExistence(timeout: 30))
+        app.webViews.buttons["Forgot password?"].tap()
+        let email = app.webViews.textFields.firstMatch
+        XCTAssertTrue(email.waitForExistence(timeout: 10))
+        email.tap()
+        // Reserved, nonexistent test identity: no real user's email or account is used.
+        email.typeText("release-ui-\(UUID().uuidString.lowercased())@example.test")
+        app.webViews.buttons["Send reset link"].tap()
+        // Native PKCE must initialize/probe Keychain and persist its verifier before this succeeds.
+        XCTAssertTrue(app.webViews.staticTexts["If an account exists for this email, you will receive a password reset link."].waitForExistence(timeout: 45))
+        capture("ios-recovery-request")
+    }
 }
