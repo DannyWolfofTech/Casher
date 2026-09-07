@@ -51,6 +51,10 @@ Failures in the same database/email provider can prevent these jobs from sending
 
 ## Billing investigation
 
+Billing functions were redeployed from `fbeee491d983d86ec7153faab31be2ad271f2afe` after 30/30 real sandbox acceptance checks passed. Entitlement refresh now revokes stale paid access for a deleted Stripe customer using its server-owned binding; checkout and portal retain the deleted-customer rejection. The CLI's credential was never exported. See `billing-acceptance-20260907.json` for the real-provider/local-application evidence boundary.
+
+Production destination `we_1UCoCSJXnVWNQOUCjCigFYFj` was inspected read-only: active, correct Casher endpoint, API `2025-08-27.basil`, all seven supported subscription/checkout/invoice event types. Its signing secret was not revealed or changed. This configuration inspection does not prove a matching-secret live delivery. All seven affected functions deployed without source/configuration mutations, and production health, public browser and invalid-request boundaries passed afterward.
+
 Check the Stripe delivery log first, then the matching `webhook_events` ID/status and current subscription. Unverified signatures are rejected before database insertion. Failed verified events return a retryable response. Replayed or out-of-order events re-read current Stripe state and cannot blindly restore an old entitlement.
 
 Never repair billing by manually setting a paid tier. Invoke the authenticated refresh path or service-only reconciliation. Inspect `app_private.billing_sync` for failed/expired leases. A deletion in progress must finish or be investigated; do not clear its closing flag merely to unblock purchases.

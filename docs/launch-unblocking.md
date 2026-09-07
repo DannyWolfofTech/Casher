@@ -4,7 +4,7 @@ This is an execution checklist. It adds no product scope. Production checkout an
 
 ## 1. Stripe authorization
 
-Authorization completed on 7 September through the existing signed-in account. The CLI verified the sandbox account and test price below without exposing/exporting an API key. The instructions remain for future reauthorization; this is no longer an owner blocker. Current acceptance evidence is recorded in the release report.
+Authorization completed on 7 September through the existing signed-in account. The CLI verified the sandbox account and test price below without exposing/exporting an API key. The full real provider suite passed **30/30** at 14:04 UTC, and the resulting deleted-customer entitlement fix was deployed from `fbeee49`. The instructions remain for future reauthorization; this is no longer an owner blocker. Current acceptance evidence is recorded in the release report.
 
 In PowerShell, from `D:\Projects\Coding\Casher`, run:
 
