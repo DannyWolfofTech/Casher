@@ -32,6 +32,12 @@ final class LaunchAcceptance: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.webViews.buttons["Sign in"].waitForExistence(timeout: 10))
         capture("ios-auth-landscape")
+        app.webViews.firstMatch.swipeUp()
+        let signIn = app.webViews.buttons["Sign in"]
+        XCTAssertTrue(signIn.isHittable)
+        XCTAssertGreaterThan(signIn.frame.minY, 0)
+        XCTAssertLessThan(signIn.frame.maxY, app.windows.firstMatch.frame.maxY - 20)
+        capture("ios-auth-landscape-scrolled")
         XCUIDevice.shared.orientation = .portrait
     }
 

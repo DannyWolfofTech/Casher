@@ -11,7 +11,8 @@ npm ci
 npm run build
 # Package the ImageGen-produced opaque source at Apple's exact icon size.
 sips -z 1024 1024 ios/assets/Casher-icon-source.png --out ios/App/App/Assets.xcassets/AppIcon.appiconset/Casher-1024.png >/dev/null
-npx cap sync ios
+npx cap sync ios --deployment
+git diff --exit-code -- ios/App/Podfile.lock
 plutil -lint ios/App/App/Info.plist ios/App/App/App.entitlements ios/App/App/PrivacyInfo.xcprivacy
 xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
