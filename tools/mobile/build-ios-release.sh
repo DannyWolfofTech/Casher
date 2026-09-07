@@ -23,5 +23,6 @@ codesign -dvv .audit-results/ios-derived-data/Build/Products/Release-iphonesimul
 python3 -c 'from pathlib import Path; assert "Signature=adhoc" in Path(".audit-results/ios-signature.txt").read_text(), "Expected simulator-local signing only"'
 codesign -d --entitlements :- .audit-results/ios-derived-data/Build/Products/Release-iphonesimulator/App.app
 mkdir -p release-artifacts/ios
+cp ios/App/Podfile.lock release-artifacts/ios/Podfile.lock
 ditto .audit-results/ios-derived-data/Build/Products/Release-iphonesimulator/App.app release-artifacts/ios/Casher-Simulator.app
 echo 'Built release-artifacts/ios/Casher-Simulator.app. Device distribution still requires owner signing and device validation.'

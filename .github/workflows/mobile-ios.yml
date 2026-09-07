@@ -51,6 +51,7 @@ jobs:
           name: casher-ios-simulator
           path: |
             release-artifacts/ios/Casher-Simulator.zip
+            release-artifacts/ios/Podfile.lock
             release-artifacts/ios/screenshots/
           retention-days: 1
           if-no-files-found: warn
