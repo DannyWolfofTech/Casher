@@ -694,6 +694,7 @@ export type Database = {
         Returns: Json
       }
       stale_billing_count: { Args: never; Returns: number }
+      unsubscribe_app_email: { Args: { _token: string }; Returns: string }
       upload_limit_for_tier: { Args: { _tier: string }; Returns: number }
     }
     Enums: {
