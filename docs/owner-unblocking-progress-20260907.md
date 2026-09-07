@@ -1,6 +1,6 @@
 # Owner unblocking verification — 7 September 2026
 
-These are verified account and operations changes, not a new application deployment. Live checkout and bank connectivity remain disabled.
+This records verified account, operations and application release changes. Live checkout and bank connectivity remain disabled.
 
 ## Latest application follow-up
 
@@ -8,7 +8,13 @@ Frontend `9685c91e37646d2b52f6f3a4e5a3ca03a312fb2a` was published as deployment 
 
 The owner reports removing their phone and address from Stripe invoices; the agent made no Stripe contact/identity changes. The owner confirms personal operation without a registered company or company number. No alternative public address is available or authorized, so the public-address launch gate remains unresolved. A geographic establishment address is part of the information described by [regulation 6](https://www.legislation.gov.uk/uksi/2002/2013/regulation/6); merely removing invoice fields or inventing a mailbox address is not a resolution. No home address was read or published.
 
-Zoho supports creating application-specific credentials in its account security UI, but the attempted dedicated credential **Casher Privacy Gmail SMTP** was stopped by Zoho's required identity re-verification. No credential was created or copied. The owner verification tab is open; enter the existing Zoho password or complete its OTP route there, never in chat. After verification, SMTP eligibility and actual Gmail alias operation still need acceptance. Existing authenticated Zoho webmail sending remains available.
+After the owner completed identity verification, the dedicated **Casher Privacy Gmail SMTP** credential was created and supplied directly to Gmail's SMTP setup. Gmail accepted `smtp.zoho.eu`, port 587 with TLS, username `privacy@trycasher.com`. The confirmation email reached the existing forwarded inbox and the alias was confirmed. The free plan therefore supports this tested authenticated SMTP route. No credential is recorded in the repository.
+
+At 22:13 BST, the actual Gmail-through-Zoho test reached the owner's Yahoo **Inbox**. Recipient raw headers show From `Casher Privacy <privacy@trycasher.com>`, Return-Path `privacy@trycasher.com`, SPF/DKIM/DMARC pass and TLS 1.3 on the recipient hop. Neither personal Gmail address appears in the received message. Gmail infrastructure and a Gmail Message-ID are visible; this does not reveal the personal address. At 22:15 BST, a recipient reply addressed only to privacy reached the established forwarding inbox. Thus real sending and inbound reply delivery passed. The earlier Zoho test had been marked Not spam by this recipient, so the Inbox result is not a general deliverability guarantee.
+
+The configured sending Gmail account differs from the established forwarding Gmail account. To support direct safe replies in that receiving inbox, its additional alias form is prepared with the same public display name and TLS SMTP settings. Zoho requires a fresh owner OneAuth verification before generating the separate **Casher Privacy Receiving Gmail SMTP** credential. The verification page and SMTP form are open. This second credential has not been created; direct reply sender selection in that receiving inbox remains a gate. Do not assume its normal Reply button uses privacy until this setup and reply-header verification pass. The first configured Gmail account can already send with its privacy From option; personal default senders and existing MX remain unchanged.
+
+The refreshed iOS run at `9685c91` passed both Release targets and all three UI tests. Downloaded simulator/device packages passed independent inspection. See [current artifact hashes and signing boundaries](mobile-readiness.md).
 
 ## TrueLayer
 
@@ -40,6 +46,6 @@ Published three public TXT records at GoDaddy: ownership `zoho-verification=zb08
 
 Outgoing display name is **Casher Privacy**. A synthetic owner-only test was sent from Zoho webmail at 21:34 BST on 7 September. Zoho displayed **Mail sent**, then **Email delivery status is Delivered**; the saved message header shows **Casher Privacy <privacy@trycasher.com>**. Recipient-side raw headers, SPF/DKIM/DMARC results, personal-address absence and reply round-trip remain unverified. The owner was asked to check the matching test message. Provider delivery status is not proof of inbox placement.
 
-Gmail Send mail as is not configured. This provisioned free account shows an SMTP settings section, but no authenticated SMTP acceptance has been performed; POP/IMAP and forwarding are shown as unavailable/paid. Do not infer SMTP eligibility from a settings tab or purchase an upgrade. Next steps require private SMTP authentication and Gmail alias verification, followed by recipient-side header/reply acceptance. The existing inbound route remains operational throughout.
+Gmail Send mail as is now authenticated and its alias confirmed. Recipient-side header and inbound reply acceptance passed as recorded above; direct sending from the receiving Gmail account awaits the additional owner identity check. Existing inbound forwarding is retained; no paid mailbox upgrade was needed.
 
 The owner confirmed receipt in Yahoo Spam. Inspection of that exact received test through Yahoo's raw-message UI verifies **SPF pass, DKIM pass (zmail / trycasher.com), and DMARC pass**. From is `Casher Privacy <privacy@trycasher.com>` and Return-Path is `privacy@trycasher.com`; the received message contains no personal Gmail address. Recipient transport used TLS 1.3. Yahoo's classification reason is not disclosed by these headers. The test was marked Not spam and Yahoo confirmed it moved to Inbox. This corrects the owner's mailbox classification only; it does not establish general inbox placement or the still-unconfigured Gmail SMTP route. Reply round-trip remains untested. No raw mailbox/session URL or private recipient header was saved to the repository.
