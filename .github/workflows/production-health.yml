@@ -1,0 +1,28 @@
+name: Production health
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/production-health.yml
+      - tools/release/check-production-health.mjs
+      - tools/mobile/production-public-config.json
+permissions:
+  contents: read
+concurrency:
+  group: production-health
+  cancel-in-progress: false
+jobs:
+  health:
+    # Standard runners are free for this public repository; never run after a visibility change.
+    if: github.repository == 'DannyWolfofTech/Casher' && github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+      - run: node tools/release/check-production-health.mjs

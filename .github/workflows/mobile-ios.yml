@@ -1,0 +1,48 @@
+name: iOS release validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mobile-ios.yml
+      - ios/**
+      - src/**
+      - public/**
+      - package.json
+      - package-lock.json
+      - capacitor.config.ts
+      - tools/mobile/**
+permissions:
+  contents: read
+concurrency:
+  group: ios-release-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  simulator:
+    # Do not consume paid private-repository or larger-runner minutes.
+    if: github.repository == 'DannyWolfofTech/Casher' && github.event.repository.private == false
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '26'
+      - name: Prepare public production configuration
+        run: node tools/mobile/write-production-env.mjs
+      - name: Build Release for iOS Simulator without distribution signing
+        run: bash tools/mobile/build-ios-release.sh > .audit-results/ios-build.log 2>&1
+      - name: Show build diagnostics on failure
+        if: failure()
+        run: tail -n 100 .audit-results/ios-build.log || true
+      - name: Package simulator application
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent release-artifacts/ios/Casher-Simulator.app release-artifacts/ios/Casher-Simulator.zip
+          shasum -a 256 release-artifacts/ios/Casher-Simulator.zip
+      - name: Save simulator application for review
+        uses: actions/upload-artifact@v7
+        with:
+          name: casher-ios-simulator
+          path: release-artifacts/ios/Casher-Simulator.zip
+          retention-days: 1
+          if-no-files-found: error
