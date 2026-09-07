@@ -1,0 +1,10 @@
+{
+  "status": "OWNER_REQUIRED_NOT_APPROVED_FOR_PUBLICATION",
+  "legalOperatorName": "[OWNER REQUIRED: legal person or registered company operating Casher]",
+  "tradingName": "[OWNER REQUIRED: confirm Casher or provide the authorized trading name]",
+  "publicBusinessOrServiceAddress": "[OWNER REQUIRED: authorized public postal address; do not use a home address]",
+  "companyRegistrationNumberIfApplicable": "[OWNER REQUIRED: provide if applicable, otherwise state not applicable]",
+  "publicSupportEmail": "privacy@trycasher.com",
+  "publicPhone": null,
+  "approvedForPublication": false
+}

@@ -1,6 +1,12 @@
 name: Production health
 on:
   workflow_dispatch:
+    inputs:
+      test_failure_notification:
+        description: 'Intentionally fail after healthy checks to verify owner notification delivery'
+        type: boolean
+        required: false
+        default: false
   schedule:
     - cron: '7,22,37,52 * * * *'
   push:
@@ -26,3 +32,10 @@ jobs:
         with:
           node-version: '26'
       - run: node tools/release/check-production-health.mjs
+      - name: Owner-requested notification delivery drill
+        if: github.event_name == 'workflow_dispatch' && inputs.test_failure_notification
+        run: |
+          echo '### Intentional notification test' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The production health checks above passed. This step fails deliberately to test delivery of the owner-requested GitHub Actions failure notification.' >> "$GITHUB_STEP_SUMMARY"
+          echo '::error::Owner-requested notification delivery drill; this is not a reported production outage.'
+          exit 1

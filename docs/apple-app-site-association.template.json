@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["__OWNER_SIGNED_APP_IDENTIFIER_PREFIX_REQUIRED__.com.trycasher.app"],
+        "components": [{"/": "/auth", "comment": "Casher email confirmation and password recovery"}]
+      }
+    ]
+  }
+}
