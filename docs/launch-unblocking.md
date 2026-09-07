@@ -2,6 +2,8 @@
 
 This is an execution checklist. It adds no product scope. Production checkout and banking stay disabled; no store submission, purchase or agreement acceptance is authorized. Do not paste credentials, verification links, signing passwords or personal contact details into chat.
 
+**Latest owner-action checkpoint:** see [verified account/export/monitoring progress](owner-unblocking-progress-20260907.md). TrueLayer signup and MFA, Lovable export approval/creation, and Sentry account access are now complete. The older instructions below are retained as operational procedures, not requests to repeat completed approvals. A real GitHub scheduled health run has now passed. Restore execution, secure sandbox credential availability, provider-backed banking acceptance and mailbox receipt checks remain outstanding.
+
 ## 1. Stripe authorization
 
 Authorization completed on 7 September through the existing signed-in account. The CLI verified the sandbox account and test price below without exposing/exporting an API key. The full real provider suite passed **30/30** at 14:04 UTC, and the resulting deleted-customer entitlement fix was deployed from `fbeee49`. The instructions remain for future reauthorization; this is no longer an owner blocker. Current acceptance evidence is recorded in the release report.

@@ -19,9 +19,9 @@ TrueLayer's current Data V3 documentation targets the UK and exposes a connectio
 
 ## Exact boundary and owner action
 
-The existing browser has no signed-in TrueLayer session. Console shows its account-creation page. Automatic approval review rejected submitting `privacy@trycasher.com` because that would initiate signup and might send onboarding mail. Nothing was submitted; no terms were accepted.
+The owner completed Console signup and MFA on 7 September. The agent created the **Casher** sandbox application, client ID **sandbox-casher-b3ef06** (application `54e28318-62b7-4794-997e-53d7d21ae75b`, organisation `9b94e950-872e-4bbb-80e7-da2556dd0c1e`). Console shows **Sandbox** and **Data: Active**. The owner completed the separate MFA challenge for creating a sandbox client secret. The provider reports the secret was created, but its secure local availability and a successful Data V3 API request have not been verified. No live onboarding or production activation occurred.
 
-1. The owner must create or sign in to [TrueLayer Console](https://console.truelayer.com/) and personally accept any required terms. Leave the signed-in session available and authorise free sandbox configuration. Do not paste secrets in chat.
+1. Console signup and MFA enrolment are complete. Preserve the newly created sandbox secret through the provider's download into private owner-controlled storage, never chat or Git. Complete a fresh MFA challenge only if the provider requires another credential operation.
 2. Request access to **Data V3 recurring account information for a UK consumer budgeting app**, with hosted consent and `accounts` / `transactions` scopes. If V3 is not enabled for the new sandbox, the owner must request provider enablement; do not silently substitute the retired V1 implementation.
 3. For production, obtain written bank coverage, pricing, data-protection/retention terms and the applicable AIS/agent regulatory arrangement. The owner alone accepts contracts, pays fees and completes identity/KYB or regulatory steps.
 
