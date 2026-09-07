@@ -4,13 +4,13 @@ These are verified account and operations changes, not a new application deploym
 
 ## TrueLayer
 
-Owner signup and MFA enrolment completed. Created Casher sandbox application `sandbox-casher-b3ef06`. Console shows Data Active. The owner approved the step-up MFA challenge and Console confirmed a new sandbox secret. Its secure local availability and a successful Data V3 call remain unverified; frontend/consent/sync acceptance is not complete. No production account, signing key for payments, commercial upgrade or production connection was configured.
+Owner signup, MFA and file handoff completed. Created Casher sandbox application `sandbox-casher-b3ef06`. The credential is verified and protected, including a DPAPI copy. Console shows Data Active, but the documented V3 `data` scope returns `invalid_scope` and the V3 connection endpoint returns 403. The owner-approved support request was sent, and support confirmed escalation with an email reply when an agent returns. Frontend/consent/sync acceptance is not complete. No production account, signing key for payments, commercial upgrade or production connection was configured.
 
 ## Recovery
 
-The owner clicked Start export. The completed export is visible in private bucket `database_export_07_09_26`, file `trycasher-com_260907.backup`, displayed size 502 KB. The Download control was invoked, but a local copy has not yet been verified. No restore has been performed. The browser downloads page is blocked by the browser URL policy; no browser download database or other bypass was used.
+The owner clicked Start export and placed its ZIP in the private local directory. The archive was extracted, restored and verified. See [actual recovery evidence and remaining service-recovery gaps](recovery-drill-20260907.md). Database/Auth/password integrity and permission/deletion checks passed; all temporary restored instances were removed. The provider-managed Vault secret did not decrypt on the replacement host. The browser downloads-page restriction was respected; the owner supplied the file directly.
 
-The older `.audit-results/recovery-drill` directory denied filesystem access in this session. A fresh `.audit-results/recovery-current` directory was created and its access verified, restricted to the current Windows owner and SYSTEM. Await the export in that directory before starting the network-isolated restore. The public repository must never contain the backup or credentials.
+The older `.audit-results/recovery-drill` directory denied filesystem access in this session. A fresh `.audit-results/recovery-current` directory and its imported files are restricted to the Windows owner and SYSTEM. Original owner files and private verification logs are retained there. The public repository contains no backup, credential or password fingerprint.
 
 ## Monitoring
 

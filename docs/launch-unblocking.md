@@ -2,7 +2,7 @@
 
 This is an execution checklist. It adds no product scope. Production checkout and banking stay disabled; no store submission, purchase or agreement acceptance is authorized. Do not paste credentials, verification links, signing passwords or personal contact details into chat.
 
-**Latest owner-action checkpoint:** see [verified account/export/monitoring progress](owner-unblocking-progress-20260907.md). TrueLayer signup and MFA, Lovable export approval/creation, and Sentry account access are now complete. The older instructions below are retained as operational procedures, not requests to repeat completed approvals. A real GitHub scheduled health run has now passed. Restore execution, secure sandbox credential availability, provider-backed banking acceptance and mailbox receipt checks remain outstanding.
+**Latest owner-action checkpoint:** see [verified account/export/monitoring progress](owner-unblocking-progress-20260907.md) and [the completed database restore drill](recovery-drill-20260907.md). TrueLayer signup/MFA/credential handoff, Lovable export and actual database restoration, and Sentry account access are complete. A real GitHub scheduled health run passed. TrueLayer V3 access is denied by the provider; the owner-approved support request was sent and escalated. Full service recovery still needs provider-managed secret reprovisioning, storage/configuration recovery and cutover testing. The older instructions below are operational history, not requests to repeat completed approvals.
 
 ## 1. Stripe authorization
 

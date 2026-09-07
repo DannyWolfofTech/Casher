@@ -2,6 +2,8 @@
 
 Reviewed 7 September 2026. Production: https://trycasher.com. Cloud project `ea77ebbb-78bd-46c4-a0c9-0ab73994a416`; Supabase project `ewnjmvxildwmbdmosasz`.
 
+**Verified restore procedure:** [the fresh provider-export drill](recovery-drill-20260907.md) passed with the executable `tools/release/restore-provider-export.ps1`. It preserves ownership/grants, bootstraps omitted operational queues, disables all extension workers and network access, verifies ownership/deletion behavior and removes the temporary instance. Database/Auth/password integrity matched production. Full service recovery still requires the provider-supported Vault secret reprovisioning path, storage/configuration recovery and isolated replacement/cutover testing. Historical statements below that export approval or execution is pending are superseded by this checkpoint.
+
 ## Deployment and release gates
 
 1. Run `npm ci`, `npm run check`, `npm run test:browser`, `npm audit --audit-level=high`, and the frozen Deno checks in `.github/workflows/ci.yml`.

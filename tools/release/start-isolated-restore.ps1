@@ -1,6 +1,7 @@
 param(
   [ValidatePattern('^casher-recovery-[a-z0-9-]+$')]
-  [string]$ContainerName = ('casher-recovery-' + (Get-Date -Format 'yyyyMMddHHmmss'))
+  [string]$ContainerName = ('casher-recovery-' + (Get-Date -Format 'yyyyMMddHHmmss')),
+  [switch]$ProviderExtensions
 )
 $ErrorActionPreference = 'Stop'
 $image = 'public.ecr.aws/supabase/postgres:17.6.1.165'
@@ -10,7 +11,11 @@ $image = 'public.ecr.aws/supabase/postgres:17.6.1.165'
 if ($LASTEXITCODE -ne 0) { throw 'The reviewed PostgreSQL image is not installed.' }
 
 # Memory-only data disappears when this disposable container stops. No TCP listener,
-# published port, external network, credentials, cron worker or production mount exists.
+# published port, external network or production mount exists. Provider archives need
+# pg_cron/pg_net loaded to restore their schemas. Zero worker slots prevent either
+# scheduler from running, in addition to the disabled cron launcher and no network.
+$preload = if ($ProviderExtensions) { 'pg_cron,pg_net' } else { '' }
+$cronOptions = if ($ProviderExtensions) { ' -c wal_level=logical -c max_worker_processes=0 -c cron.database_name=postgres -c cron.launch_active_jobs=off' } else { '' }
 $arguments = @(
   'run', '--detach', '--pull', 'never', '--name', $ContainerName,
   '--network', 'none', '--memory', '768m', '--cpus', '1', '--pids-limit', '128',
@@ -20,7 +25,7 @@ $arguments = @(
   '--tmpfs', '/var/run/postgresql:rw,nosuid,uid=100,gid=101,size=16777216',
   '--tmpfs', '/var/lib/postgresql/data:rw,nosuid,uid=100,gid=101,size=536870912',
   '--entrypoint', '/bin/bash', $image, '-lc',
-  "initdb -D /var/lib/postgresql/data --auth-local=trust --auth-host=reject >/tmp/initdb.log 2>&1 && exec postgres -D /var/lib/postgresql/data -c listen_addresses='' -c shared_preload_libraries='' -c unix_socket_directories='/var/run/postgresql'"
+  "initdb -D /var/lib/postgresql/data --auth-local=trust --auth-host=reject >/tmp/initdb.log 2>&1 && exec postgres -D /var/lib/postgresql/data -c listen_addresses='' -c shared_preload_libraries='$preload' -c unix_socket_directories='/var/run/postgresql'$cronOptions"
 )
 & docker @arguments | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Could not create the isolated restore target.' }
@@ -36,6 +41,12 @@ if (-not $ready) { throw "Restore target did not become ready: $ContainerName" }
 $isolation = & docker inspect $ContainerName --format '{{.HostConfig.NetworkMode}} {{json .HostConfig.PortBindings}} {{.HostConfig.ReadonlyRootfs}}'
 if ($LASTEXITCODE -ne 0 -or $isolation.Trim() -ne 'none {} true') {
   throw 'Restore target isolation could not be verified.'
+}
+if ($ProviderExtensions) {
+  $cronState = & docker exec $ContainerName psql -X -At -U postgres -d postgres -c 'SHOW cron.launch_active_jobs;'
+  if ($LASTEXITCODE -ne 0 -or $cronState.Trim() -ne 'off') { throw 'Cron execution is not disabled.' }
+  $workerLimit = & docker exec $ContainerName psql -X -At -U postgres -d postgres -c 'SHOW max_worker_processes;'
+  if ($LASTEXITCODE -ne 0 -or $workerLimit.Trim() -ne '0') { throw 'Extension workers are not disabled.' }
 }
 Write-Output "Prepared $ContainerName with no network, no published ports and temporary data storage."
 Write-Output 'No production data has been restored. This preparation is not a completed recovery drill.'

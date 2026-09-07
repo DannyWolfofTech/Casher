@@ -1,0 +1,68 @@
+{
+  "verifiedAt": "2026-09-07T20:00:47.8059586Z",
+  "kind": "Owner-authorized fresh Lovable logical export restored into an isolated local PostgreSQL instance",
+  "sourceProject": "ea77ebbb-78bd-46c4-a0c9-0ab73994a416",
+  "exportCreatedAt": "2026-09-07T19:42:56Z",
+  "archive": "trycasher-com_260907.backup",
+  "archiveSha256": "61B34E8A5CD30DE30B7929454D3601DC17BCD9F61311154F498B22DE58BE8AA6",
+  "archiveBytes": 513773,
+  "restorePassed": true,
+  "restoreSeconds": 2.3575362,
+  "restoreAndBehaviorSeconds": 3.5099114,
+  "comparison": {
+    "comparison": {
+      "application_function_fingerprint": true,
+      "application_policy_fingerprint": true,
+      "application_rls": true,
+      "application_structure_fingerprint": true,
+      "counts": true,
+      "deleted_users_still_present": true,
+      "migration_fingerprint": true
+    },
+    "unchanged": true
+  },
+  "effectivePermissions": {
+    "objects": 96,
+    "differences": 0
+  },
+  "passwordHashIntegrityMatched": true,
+  "passwordAccounts": 28,
+  "authUsers": 29,
+  "authIdentities": 31,
+  "profiles": 29,
+  "transactions": 490,
+  "detectedSubscriptions": 60,
+  "migrations": 34,
+  "rlsApplicationTables": 23,
+  "behaviorChecks": [
+    "anonymous profile and transaction denial",
+    "authenticated owner visibility",
+    "cross-user correction denial",
+    "client tier changes neutralized by existing trigger",
+    "own transaction correction",
+    "service-role deletion lease, cascades, upload cleanup and receipt",
+    "other user preserved",
+    "all test mutations rolled back"
+  ],
+  "isolation": {
+    "network": "none",
+    "publishedPorts": 0,
+    "readOnlyRoot": true,
+    "storage": "tmpfs",
+    "maxWorkerProcesses": 0,
+    "cronLaunchActiveJobs": false,
+    "observedBackgroundWorkers": 0
+  },
+  "productionRestored": false,
+  "productionDataModified": false,
+  "isolatedCopiesRemoved": true,
+  "limitations": [
+    "This was a fresh logical export, not a restore of a retained daily snapshot.",
+    "Provider-managed Vault ciphertext did not decrypt on the isolated host (SQLSTATE 22000); email_queue_service_role_key must be securely reprovisioned through the provider recovery route.",
+    "File object bytes and Cloud environment/deployment configuration are outside this database export.",
+    "Cluster roles were recreated as NOLOGIN; ownership/effective grants matched 96 application/Auth objects, while grantor attribution in some logical-export ACLs differs.",
+    "Two omitted extension-managed email queues were bootstrapped empty; queued mail was not recovered.",
+    "Database restore timing is measured, but full-service recovery RTO is not established."
+  ],
+  "fullDisasterRecoveryReady": false
+}
