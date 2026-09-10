@@ -42,8 +42,8 @@ export default function Dashboard() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><p className="mb-1 text-sm text-muted-foreground">Your statements, made clearer</p><h1 className="text-3xl font-semibold tracking-tight">Overview</h1></div>
         <div className="flex w-full flex-wrap items-end gap-3 sm:w-auto">
-          <label className="min-w-0 flex-1 text-xs text-muted-foreground sm:flex-none">Statement month
-            <select aria-label="Statement month" value={data.month} onChange={event => data.setSelectedMonth(event.target.value)} className="mt-1 block h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground sm:w-44">
+          <label className="min-w-0 basis-full text-xs text-muted-foreground sm:basis-auto sm:flex-none">Statement month
+            <select aria-label="Statement month" value={data.month} onChange={event => data.setSelectedMonth(event.target.value)} className="mt-1 block h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground sm:w-56">
               {[...new Set([currentMonth(), ...data.months])].sort().reverse().map(month => <option key={month} value={month}>{monthLabel(month)}</option>)}
             </select>
           </label>

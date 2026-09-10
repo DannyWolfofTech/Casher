@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/hooks/useAuth';
 import { useStatementData } from '@/hooks/useStatementData';
-import { annualSubscriptionCost, money, transactionTrend } from '@/lib/analytics';
+import { annualSubscriptionCost, money, monthLabel, transactionTrend, availableMonths } from '@/lib/analytics';
 import DashboardHeader from '@/components/DashboardHeader';
 import CategoryChart from '@/components/CategoryChart';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -37,9 +37,9 @@ export default function History() {
       : transactions.isPending || subscriptions.isPending ? <p role="status">Loading history…</p> : <>
         <div className="grid min-w-0 gap-6 lg:grid-cols-2">
           <Card className="min-w-0"><CardHeader><CardTitle>Monthly spending</CardTitle><CardDescription>Money out by transaction date, excluding money in. Only imported months are shown.</CardDescription></CardHeader><CardContent>
-            <div className="mb-6 flex flex-wrap items-end gap-3">
-              <label className="min-w-0 flex-1 text-xs">From month<input type="month" aria-label="From month" value={from} onChange={e => setFrom(e.target.value)} className="mt-1 block h-10 w-full rounded-md border bg-background px-2 text-sm" /></label>
-              <label className="min-w-0 flex-1 text-xs">To month<input type="month" aria-label="To month" value={to} onChange={e => setTo(e.target.value)} className="mt-1 block h-10 w-full rounded-md border bg-background px-2 text-sm" /></label>
+            <div className="mb-6 grid grid-cols-1 items-end gap-4 sm:grid-cols-2">
+              <label className="min-w-0 flex-1 text-xs">From month<select aria-label="From month" value={from} onChange={e => setFrom(e.target.value)} className="mt-1 block h-11 w-full min-w-0 rounded-md border bg-background px-3 text-base"><option value="">All months</option>{availableMonths(transactions.data || []).map(month => <option key={month} value={month}>{monthLabel(month)}</option>)}</select></label>
+              <label className="min-w-0 flex-1 text-xs">To month<select aria-label="To month" value={to} onChange={e => setTo(e.target.value)} className="mt-1 block h-11 w-full min-w-0 rounded-md border bg-background px-3 text-base"><option value="">All months</option>{availableMonths(transactions.data || []).map(month => <option key={month} value={month}>{monthLabel(month)}</option>)}</select></label>
               {(from || to) && <Button variant="ghost" size="sm" onClick={() => { setFrom(''); setTo(''); }}>Reset</Button>}
             </div>
             {invalidRange ? <p role="alert">Choose an end month on or after the start month.</p> : trend.length === 0 ? <p className="py-12 text-sm text-muted-foreground">No imported transactions in this period.</p> : <>

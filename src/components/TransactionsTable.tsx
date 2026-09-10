@@ -45,7 +45,7 @@ export default function TransactionsTable({ refreshKey, userTier, userId, month 
     <CardContent className="space-y-4">
       {exportError && <p role="alert" className="text-sm text-destructive">{exportError}</p>}
       <div className="relative"><Search aria-hidden="true" className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input aria-label="Search transactions" placeholder={t('searchTransactions')} value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-9" /></div>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={onlyUnreviewed} onChange={e => { setOnlyUnreviewed(e.target.checked); setPage(1); }} />Only transactions needing a direction review</label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={onlyUnreviewed} onChange={e => { setOnlyUnreviewed(e.target.checked); setPage(1); }} />Only older transactions with estimated direction</label>
       {query.isPending ? <p role="status">Loading transactions…</p> : query.isError ? <div role="alert"><p>Transactions could not be loaded.</p><Button variant="outline" onClick={() => query.refetch()}>Try again</Button></div> :
         <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Transactions table, scroll horizontally on small screens">
           <Table className="min-w-[600px]"><TableHeader><TableRow><TableHead>{t('date')}</TableHead><TableHead>{t('description')}</TableHead><TableHead className="text-right">{t('amount')}</TableHead><TableHead>{t('category')}</TableHead><TableHead><span className="sr-only">Review</span></TableHead></TableRow></TableHeader>
@@ -53,8 +53,8 @@ export default function TransactionsTable({ refreshKey, userTier, userId, month 
               <TableCell className="whitespace-nowrap">{new Date(`${row.date}T12:00:00`).toLocaleDateString('en-GB')}</TableCell>
               <TableCell className="min-w-40 max-w-sm whitespace-normal break-words">{row.description}</TableCell>
               <TableCell className={`whitespace-nowrap text-right font-medium tabular-nums ${isCredit(row) ? 'text-primary' : ''}`}>{formatSignedAmount(row)}</TableCell>
-              <TableCell className="text-muted-foreground">{row.category || t('other')}{!row.direction && <span className="mt-1 block text-xs">Direction needs review</span>}</TableCell>
-              <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(row)} aria-label={`Correct ${row.description}`}>Correct</Button></TableCell>
+              <TableCell className="text-muted-foreground">{row.category || t('other')}{!row.direction && <span className="mt-1 block text-xs">Estimated direction</span>}</TableCell>
+              <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(row)} aria-label={`Edit ${row.description}`}>Edit</Button></TableCell>
             </TableRow>)}</TableBody>
           </Table>
         </div>}

@@ -64,7 +64,7 @@ test('legacy records disclose that direction and totals are estimates', async ({
 test('legacy transaction corrections update totals, filters and persisted values', async ({ page, request }) => {
   await request.post(api, { data: { scenario: 'legacy' } }); await login(page);
   await expect(page.getByRole('note')).toContainText('10 older transactions');
-  await page.getByRole('button', { name: 'Correct Example rent payment', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit Example rent payment', exact: true }).click();
   await expect(page.getByLabel('Payment direction')).toHaveValue('');
   await page.getByLabel('Payment direction').selectOption('credit');
   await page.getByLabel('Category', { exact: true }).fill('Refund');
@@ -72,32 +72,34 @@ test('legacy transaction corrections update totals, filters and persisted values
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('note')).toContainText('9 older transactions');
   await expect(page.getByText('£573.69', { exact: true }).first()).toBeVisible();
-  await page.getByLabel('Only transactions needing a direction review').check();
+  await page.getByLabel('Only older transactions with estimated direction').check();
   await expect(page.getByRole('cell', { name: 'Example rent payment', exact: true })).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('cell', { name: '+£950.00', exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Correct Example rent payment', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit Example rent payment', exact: true }).click();
   expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
   await page.screenshot({ path: 'docs/design-audit/assets/after-transaction-correction.png' });
 });
 
 test('subscription frequency can be corrected and false detections dismissed and restored', async ({ page }) => {
-  await login(page); await page.getByRole('button', { name: 'Review Netflix', exact: true }).click();
+  await login(page); await page.getByRole('button', { name: 'Cancel Netflix', exact: true }).click();
+  await page.getByText('Edit detected payment details', { exact: true }).click();
   await page.getByLabel('Billing frequency').selectOption('annual');
   await page.getByRole('button', { name: 'Save payment details' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByText('£696.87', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Review Netflix', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel Netflix', exact: true }).click();
   await page.getByRole('button', { name: 'This is not a subscription', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Review Netflix', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Cancel Netflix', exact: true })).toHaveCount(0);
   await expect(page.getByText('£683.88', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Cancelled & dismissed', exact: true }).click();
-  await page.getByRole('button', { name: 'Review Netflix', exact: true }).click();
+  await page.getByRole('button', { name: 'Manage Netflix', exact: true }).click();
   await page.getByRole('button', { name: 'Restore as active subscription' }).click();
   await page.getByRole('button', { name: 'Active', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Review Netflix', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Review Netflix', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Cancel Netflix', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel Netflix', exact: true }).click();
+  await page.getByText('Edit detected payment details', { exact: true }).click();
   await expect(page.getByLabel('Billing frequency')).toHaveValue('annual');
   await page.setViewportSize({ width: 390, height: 844 });
   expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
@@ -162,14 +164,14 @@ test('history uses transaction months and annual subscription costs', async ({ p
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: 'docs/design-audit/assets/after-history-mobile.png', fullPage: true });
-  await page.getByLabel('From month').fill(month(0)); await page.getByLabel('To month').fill(month(-1));
+  await page.getByLabel('From month').selectOption(month(0)); await page.getByLabel('To month').selectOption(month(-1));
   await expect(page.getByRole('alert')).toContainText('Choose an end month');
 });
 test('cancellation updates subscriptions without modifying past spending', async ({ page }) => {
-  await login(page); await page.getByRole('button', { name: 'Review Netflix', exact: true }).click();
+  await login(page); await page.getByRole('button', { name: 'Cancel Netflix', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('Casher cannot cancel payments for you');
   await page.getByRole('button', { name: 'I cancelled with the provider' }).click();
-  await expect(page.getByRole('button', { name: 'Review Netflix', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Cancel Netflix', exact: true })).toHaveCount(0);
   await expect(page.getByText('£683.88', { exact: true })).toBeVisible();
   await expect(page.getByText('£1,523.69', { exact: true }).first()).toBeVisible();
 });
@@ -226,4 +228,26 @@ test('dark dashboard and mobile goal dialog remain accessible', async ({ page })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations.map(v => v.id)).toEqual([]);
   await page.screenshot({ path: 'docs/design-audit/assets/after-goal-dialog-mobile.png' });
+});
+
+
+test('iPhone chart selection stays inside the donut and month controls have space', async ({ page }) => {
+  await page.setViewportSize({width:393,height:852}); await login(page);
+  const monthBox = await page.getByLabel('Statement month').boundingBox();
+  expect(monthBox!.width).toBeGreaterThan(250);
+  const figure = page.getByRole('figure', {name:/Spending by category/});
+  await figure.getByRole('button', {name:'Rent',exact:true}).click();
+  await expect(figure.getByRole('button', {name:'Rent',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(figure.locator('.recharts-tooltip-wrapper')).toHaveCount(0);
+  await page.getByRole('button', {name:'Cancel Netflix',exact:true}).click();
+  await expect(page.getByRole('link', {name:/Continue to Netflix/})).toHaveAttribute('href','https://www.netflix.com/cancelplan');
+  await expect(page.getByLabel('Amount per payment (�)')).not.toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.goto('/dashboard/history');
+  const from = await page.getByLabel('From month').boundingBox();
+  const to = await page.getByLabel('To month').boundingBox();
+  expect(to!.y).toBeGreaterThan(from!.y + from!.height + 8);
+  await expect(page.getByLabel('From month')).toHaveValue('');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({path:'.audit-results/iphone-ui-history.png',fullPage:true});
 });
