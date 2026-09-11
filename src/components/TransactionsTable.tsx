@@ -1,3 +1,4 @@
+import { AccessibleAmount } from './AccessibleAmount';
 import { useMemo, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useStatementData } from '@/hooks/useStatementData';
@@ -53,7 +54,7 @@ export default function TransactionsTable({ refreshKey, userTier, userId, month 
         <ul aria-label="Transactions" className="divide-y">{visible.map(row => <li key={row.id} className="space-y-2 py-3">
           <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
             <span className="min-w-0 flex-1 basis-28 break-words text-sm font-medium">{row.description}</span>
-            <span className={`shrink-0 text-right text-sm font-semibold tabular-nums ${isCredit(row) ? 'text-primary' : ''}`}>{formatSignedAmount(row)}</span>
+            <span className={`shrink-0 text-right text-sm font-semibold tabular-nums ${isCredit(row) ? 'text-primary' : ''}`}><AccessibleAmount value={formatSignedAmount(row)} label={`${isCredit(row) ? 'Money in' : 'Money out'}: ${formatSignedAmount(row)} for ${row.description}.`} /></span>
           </div>
           <div className="flex items-end justify-between gap-2">
             <div className="min-w-0 text-xs leading-relaxed text-muted-foreground"><time dateTime={row.date}>{new Date(`${row.date}T12:00:00`).toLocaleDateString('en-GB')}</time><p className="break-words">{row.category || t('other')}{!row.direction && ' · Estimated direction'}</p></div>
@@ -65,7 +66,7 @@ export default function TransactionsTable({ refreshKey, userTier, userId, month 
             <TableBody>{visible.map(row => <TableRow key={row.id}>
               <TableCell className="whitespace-nowrap">{new Date(`${row.date}T12:00:00`).toLocaleDateString('en-GB')}</TableCell>
               <TableCell className="min-w-40 max-w-sm whitespace-normal break-words">{row.description}</TableCell>
-              <TableCell className={`whitespace-nowrap text-right font-medium tabular-nums ${isCredit(row) ? 'text-primary' : ''}`}>{formatSignedAmount(row)}</TableCell>
+              <TableCell className={`whitespace-nowrap text-right font-medium tabular-nums ${isCredit(row) ? 'text-primary' : ''}`}><AccessibleAmount value={formatSignedAmount(row)} label={`${isCredit(row) ? 'Money in' : 'Money out'}: ${formatSignedAmount(row)} for ${row.description}.`} /></TableCell>
               <TableCell className="text-muted-foreground">{row.category || t('other')}{!row.direction && <span className="mt-1 block text-xs">Estimated direction</span>}</TableCell>
               <TableCell><Button size="sm" variant="ghost" onClick={() => setSelected(row)} aria-label={`Edit ${row.description}`}>Edit</Button></TableCell>
             </TableRow>)}</TableBody>

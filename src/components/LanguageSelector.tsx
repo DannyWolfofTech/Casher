@@ -24,7 +24,7 @@ export function LanguageSelector() {
   return (
     <Select value={language} onValueChange={handleLanguageChange}>
       <SelectTrigger aria-label="Language" className="w-[120px] sm:w-[140px]">
-        <SelectValue />
+        <SelectValue>{languageOptions.find(option => option.code === language)?.name || 'English'}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         {languageOptions.map((lang) => (

@@ -25,7 +25,7 @@ A P.O. Box accepted in Apple's field does not by itself prove adequate legal not
 - Account has a distinct statement reset. It requires recent authentication, exact CLEAR confirmation and an idempotent request ID persisted before the request. It removes imported transactions, subscriptions, correction history, upload history and legacy spending history. Login, savings goals, billing identifiers, plan and monthly upload use remain.
 - The database locks the same profile used by atomic imports. It blocks reset during account closure, limits excessive resets, denies anonymous access and retains private reset receipts. Lost-response retries return the original receipt instead of deleting newer imports. Deleted record IDs support exact reconciliation after restore; receipt responses expose counts only.
 - Help and support is available at `/support` and linked from Account. It explains file limits, GBP-only support, retry behavior, recovery, data rights and the existing support mailbox.
-- The Apple association source uses `WGUU2353D6.com.trycasher.app`, verified from the signed app and provisioning profile. Only `/auth` is associated. Publication and actual device email-link acceptance must be verified independently.
+- The Apple association source uses `WGUU2353D6.com.trycasher.app`, verified from the signed app and provisioning profile. Only `/auth` is associated. Published successfully on 11 September; the live endpoint returns HTTP 200, JSON and no redirect, and Apple’s CDN holds the identical file. Valid physical-device email-link acceptance remains separate.
 - The iOS manifest describes account email/ID, financial information, purchase history, user content, customer support, operational product interaction and redacted diagnostics. No tracking, ads or session recording. The app's File Timestamp reason C617.1 covers app-cache export cleanup. This manifest is not a submitted App Store privacy label.
 - `tools/mobile/inspect-signed-ios-release.py` verifies a signed device bundle, associated-domain/profile match, production configuration and privacy metadata. `--for-store` rejects development/ad-hoc signing.
 
@@ -68,10 +68,14 @@ Native encryption uses operating-system HTTPS, Web Crypto for authentication has
 ## Remaining release gates
 
 1. Apple eligibility/individual enrollment decision and owner-approved legal operator/public contact details; EU DSA verification.
-2. Live AASA HTTP 200 with JSON content type and no redirect, Apple's association cache, and valid cold/warm confirmation/recovery on the signed physical iPhone. A local file or invalid-link test is insufficient.
+2. Valid cold/warm confirmation/recovery on the signed physical iPhone. Live AASA and Apple CDN verification passed; that is not proof of a valid email-to-app round trip.
 3. Final native Files import/export, account reset/deletion using disposable data, reboot/session lifecycle and manual VoiceOver/large-text acceptance. Record iPad behavior for the supported universal app.
 4. App Store record, current age-rating questionnaire, privacy answers, accessibility declarations based on evidence, reviewer access and appropriate screenshots. The release must meet Apple's current SDK requirement: Xcode 26+/iOS 26+; this Mac has Xcode 26.6 and iOS SDK 26.5. [Current SDK rules](https://developer.apple.com/news/upcoming-requirements/).
 5. Distribution archive/export and store validation, followed by separately authorized upload/submission. A development-signed app on the owner's iPhone is not an App Store distribution artifact.
 6. Existing full-service recovery/cutover limitations in `docs/recovery-drill-20260907.md`, notification receipt evidence, and final operator disclosures. CSV-only release does not depend on enabling bank connections or checkout.
 
 Keep source, backend deployment, installed device build and published website versions explicit in the handoff. Tests and local builds must not be described as approval or a public launch.
+
+## Additional iPad findings
+
+The 13-inch iPad Pro simulator exposed bare subscription and transaction currency tokens without useful spoken context. Native labels now combine payment details and identify transaction direction/merchant; History amounts include their month and flow. The subsequent signed Release XCTest passed overview accessibility checks (contrast, clipping and descriptions), History/rotation, Account/reset cancellation and Support. This is simulator evidence, not physical iPad or complete manual VoiceOver certification.
