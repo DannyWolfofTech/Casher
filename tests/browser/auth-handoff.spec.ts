@@ -18,6 +18,14 @@ test('malformed callbacks never become app links', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Open Casher', exact: true })).toHaveCount(0);
 });
 
+test('a failed native connection asks for a fresh link without falsely claiming expiry', async ({ page }) => {
+  await page.goto('/auth?error=connection');
+  await expect(page.getByRole('alert')).toHaveText('Could not connect to Casher to complete this link. Check your connection and request a new link on this device.');
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Forgot password?', exact: true })).toBeVisible();
+  await expect(page.getByText(/invalid or has expired/)).toHaveCount(0);
+});
+
 test('a connection failure leaves the auth form ready for a clear manual retry', async ({ page }) => {
   await page.route('**/auth/v1/token?grant_type=password', route => route.abort('failed'));
   await page.goto('/auth');

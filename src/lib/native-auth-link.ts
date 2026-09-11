@@ -1,4 +1,13 @@
+import { isAuthRetryableFetchError } from '@supabase/supabase-js';
+
 export type NativeAuthLink = { code: string; recovery: boolean } | { error: true };
+
+export function nativeAuthFailurePath(error: unknown): string {
+  // The SDK removes the PKCE verifier after a failed exchange, including a
+  // network failure. Ask for a fresh link; do not replay or restore credentials.
+  return isAuthRetryableFetchError(error) ? '/auth?error=connection' : '/auth?error=callback';
+}
+
 export function parseNativeAuthLink(value: string): NativeAuthLink | null {
   if (value.length > 4096) return null;
   try {

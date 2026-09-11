@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { isNativeApp, nativeLifecycle } from '@/lib/mobile-platform';
-import { parseNativeAuthLink } from '@/lib/native-auth-link';
+import { nativeAuthFailurePath, parseNativeAuthLink } from '@/lib/native-auth-link';
 import { supabase } from '@/integrations/supabase/client';
 import { clearExpiredExports } from '@/lib/save-file';
 
@@ -67,7 +67,7 @@ export default function MobileRuntime() {
       navigate(link.recovery?'/auth?mode=recovery':'/auth',{replace:true});
       const result=await supabase.auth.exchangeCodeForSession(link.code);
       if (disposed) return;
-      if(result.error) { navigate('/auth?error=callback',{replace:true}); return; }
+      if(result.error) { navigate(nativeAuthFailurePath(result.error),{replace:true}); return; }
       cache.clear(); navigate(link.recovery?'/auth?mode=recovery':'/dashboard',{replace:true});
     };
     void nativeLifecycle({

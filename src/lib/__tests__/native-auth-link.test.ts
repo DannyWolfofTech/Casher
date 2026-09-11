@@ -1,6 +1,12 @@
 import { describe,expect,it } from 'vitest';
-import { nativeAuthHandoff, parseNativeAuthLink } from '../native-auth-link';
+import { AuthApiError, AuthRetryableFetchError } from '@supabase/supabase-js';
+import { nativeAuthFailurePath, nativeAuthHandoff, parseNativeAuthLink } from '../native-auth-link';
 describe('verified native auth callbacks',()=>{
+  it('distinguishes an unavailable auth server from a rejected one-use code', () => {
+    expect(nativeAuthFailurePath(new AuthRetryableFetchError('Load failed', 0))).toBe('/auth?error=connection');
+    expect(nativeAuthFailurePath(new AuthRetryableFetchError('Service unavailable', 503))).toBe('/auth?error=connection');
+    expect(nativeAuthFailurePath(new AuthApiError('Code expired', 400, 'flow_state_expired'))).toBe('/auth?error=callback');
+  });
   it('accepts only canonical HTTPS auth codes',()=>{
     expect(parseNativeAuthLink('https://trycasher.com/auth?code=pkce-code&mode=recovery')).toEqual({code:'pkce-code',recovery:true});
     expect(parseNativeAuthLink('https://trycasher.com/auth?error=access_denied')).toEqual({error:true});

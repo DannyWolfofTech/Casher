@@ -18,6 +18,7 @@ export default function Auth() {
   const handoff = native ? null : nativeAuthHandoff(window.location.search, window.location.hash);
   const recoveryLink = new URLSearchParams(window.location.search).get('mode') === 'recovery' || /type=recovery/.test(window.location.hash);
   const linkFailed = [window.location.search, window.location.hash.replace(/^#/, '?')].some(value => new URLSearchParams(value).has('error'));
+  const callbackConnectionFailed = new URLSearchParams(window.location.search).get('error') === 'connection';
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [mode, setMode] = useState<Mode>(recoveryLink ? 'recovery' : 'signin');
   const [email, setEmail] = useState('');
@@ -42,11 +43,13 @@ export default function Auth() {
         setRecoveryReady(!!session && !error && !linkFailed);
         if (!session || error || linkFailed) setError('This reset link is invalid or has expired. Request a new link to reset your password.');
         else setError('');
-      } else if (linkFailed && mode === 'signin') setError('This sign-in link is invalid or has expired. Sign in with your password or request a new reset link.');
+      } else if (linkFailed && mode === 'signin') setError(callbackConnectionFailed
+        ? 'Could not connect to Casher to complete this link. Check your connection and request a new link on this device.'
+        : 'This sign-in link is invalid or has expired. Sign in with your password or request a new reset link.');
       if (session && !recoveryLink && mode !== 'recovery' && new URLSearchParams(window.location.search).get('mode') !== 'recovery') navigate('/dashboard', { replace: true });
     }).catch(() => { if (active) setError('We could not check this link. Please reload and try again.'); });
     return () => { active = false; subscription.unsubscribe(); };
-  }, [navigate, recoveryLink, mode, linkFailed, handoff]);
+  }, [navigate, recoveryLink, mode, linkFailed, callbackConnectionFailed, handoff]);
   const switchMode = (value: Mode) => { setMode(value); setMessage(''); setError(''); setPassword(''); setConfirmPassword(''); };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); if (busy) return;
