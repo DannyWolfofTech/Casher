@@ -17,3 +17,24 @@ test('malformed callbacks never become app links', async ({ page }) => {
   await page.goto('/auth?code=a&code=b');
   await expect(page.getByRole('link', { name: 'Open Casher', exact: true })).toHaveCount(0);
 });
+
+test('a connection failure leaves the auth form ready for a clear manual retry', async ({ page }) => {
+  await page.route('**/auth/v1/token?grant_type=password', route => route.abort('failed'));
+  await page.goto('/auth');
+  await page.getByLabel('Email', { exact: true }).fill('audit@example.test');
+  await page.getByLabel('Password', { exact: true }).fill('synthetic-only');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText('Could not connect to Casher. Check your connection and try again.');
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeEnabled();
+});
+
+test('email throttling explains the limit without claiming that a message was sent', async ({ page }) => {
+  await page.route('**/auth/v1/signup**', route => route.fulfill({ status: 429, contentType: 'application/json', headers: { 'x-supabase-api-version': '2024-01-01' }, body: JSON.stringify({ code: 'over_email_send_rate_limit', msg: 'email rate limit exceeded' }) }));
+  await page.goto('/auth');
+  await page.getByRole('button', { name: 'Create an account', exact: true }).click();
+  await page.getByLabel('Email', { exact: true }).fill('audit@example.test');
+  await page.getByLabel('Password', { exact: true }).fill('synthetic-only');
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Email requests are temporarily limited.');
+  await expect(page.getByText('Check your email to confirm your account before signing in.')).toHaveCount(0);
+});

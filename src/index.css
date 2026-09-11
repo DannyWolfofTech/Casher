@@ -13,6 +13,9 @@
 /* WebKit native selects ignore min-height when calculating their touch bounds. */
 .native-app select { height: max(48px, 3rem); min-height: 48px; }
 .native-app input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { min-height: 44px; }
+/* iOS date controls otherwise impose an intrinsic width beyond narrow forms. */
+.native-app input[type="date"] { display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; appearance: none; }
+.native-app input[type="date"]::-webkit-date-and-time-value { min-height: 1.5em; text-align: left; }
 .native-app .app-sheet {
   padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
   padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));

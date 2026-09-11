@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/
 import SEO from '@/components/SEO';
 import { isNativeApp, authEmailReturnUrl } from '@/lib/mobile-platform';
 import { nativeAuthHandoff } from '@/lib/native-auth-link';
+import { isAuthApiError, isAuthRetryableFetchError } from '@supabase/supabase-js';
 
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 export default function Auth() {
@@ -74,7 +75,11 @@ export default function Auth() {
         if (error) throw error;
         navigate('/dashboard', { replace: true });
       }
-    } catch (err) { setError(err instanceof Error ? err.message : 'We could not connect. Please try again.'); }
+    } catch (err) {
+      if (isAuthApiError(err) && err.code === 'over_email_send_rate_limit') setError('Email requests are temporarily limited. Please wait before requesting another link. If your account is already confirmed, you can still sign in with your password.');
+      else if (isAuthRetryableFetchError(err) || err instanceof TypeError) setError('Could not connect to Casher. Check your connection and try again.');
+      else setError(err instanceof Error ? err.message : 'We could not connect. Please try again.');
+    }
     finally { setBusy(false); }
   };
   const signInWithGoogle = async () => {
