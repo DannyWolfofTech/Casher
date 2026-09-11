@@ -57,7 +57,7 @@ Description:
 >
 > Sign in with email and password. Casher requires an internet connection to authenticate and save data. The mobile app has no purchase flow.
 
-Review notes draft: describe the free companion model and exact available features; provide a dedicated reviewer login privately in App Store Connect with synthetic data and sufficient access for review. Keep that identity active throughout review. The disposable engineering account used here is cleaned up and must never be submitted as reviewer credentials. Supply `docs/mobile-acceptance-statement.csv` and explain its expected totals. Point to Account for export, statement reset and complete account deletion. Explain that merchant cancellation opens an official provider page and does not cancel anything automatically. Do not advertise bank connections, EUR/multi-account support or AI processing.
+Review notes draft: describe the free companion model and exact available features; provide a dedicated reviewer login privately in App Store Connect with synthetic data and sufficient access for review. Keep that identity active throughout review. The disposable engineering account was removed after engineering tests and must never be submitted as reviewer credentials. Supply `docs/mobile-acceptance-statement.csv` and explain its expected totals. Point to Account for export, statement reset and complete account deletion. Explain that merchant cancellation opens an official provider page and does not cancel anything automatically. Do not advertise bank connections, EUR/multi-account support or AI processing.
 
 ## Privacy answers to reconcile in App Store Connect
 
@@ -79,3 +79,13 @@ Keep source, backend deployment, installed device build and published website ve
 ## Additional iPad findings
 
 The 13-inch iPad Pro simulator exposed bare subscription and transaction currency tokens without useful spoken context. Native labels now combine payment details and identify transaction direction/merchant; History amounts include their month and flow. The subsequent signed Release XCTest passed overview accessibility checks (contrast, clipping and descriptions), History/rotation, Account/reset cancellation and Support. This is simulator evidence, not physical iPad or complete manual VoiceOver certification.
+
+## Final iPhone simulator reset acceptance
+
+The 6.9-inch iPhone Pro Max simulator passed the overview audit and screen/rotation review. Reset initially dismissed when an attempted tap outside the keyboard-constrained dialog reached the backdrop. The reset dialog now rejects outside dismissal; explicit Cancel/Close remain available while idle. With a normal upward swipe inside the dialog, password verification, CLEAR entry, submission and the empty dashboard passed in 14.4 seconds. The backend confirmed five transactions and one subscription/import removed, one savings goal and free-plan upload usage preserved, and exact deleted IDs retained privately for recovery reconciliation. A subsequent UI data export contained zero imported records and the retained goal.
+
+These tests use an isolated disposable account on the real backend. They do not authorize changing the owner's financial records and are not evidence of physical-device destructive testing.
+
+Native export presented the iOS share sheet successfully; local dismissal restored the export control. Exact DELETE confirmation then removed the disposable account, displayed the deletion confirmation and stayed signed out after process relaunch (19.9-second acceptance test). Database verification found zero identity, profile, transaction, subscription, goal, import, correction and reset-receipt rows. Temporary credentials were removed. The owner's physical iPhone session was untouched.
+
+Five unedited, synthetic-data screenshot drafts are prepared locally under `release-artifacts/ios/app-store-draft-screenshots`: three 1320×2868 iPhone images and two 2064×2752 iPad images, all PNG without alpha channels. They were visually inspected and have not been uploaded. Refresh from the final distribution build before submission; a full marketing screenshot set and owner approval remain outstanding.

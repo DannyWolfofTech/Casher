@@ -70,7 +70,7 @@ export default function ClearStatementData({ disabled, onBusyChange }: { disable
     <Button variant="outline" disabled={disabled || busy} onClick={() => { setOpen(true); setError(''); }}>Clear statement data</Button>
     {message && <p role="status" className="rounded-lg bg-muted p-3 text-sm">{message}</p>}
     <Dialog open={open} onOpenChange={next => { if (!busy) { setOpen(next); setPassword(''); } }}>
-      <DialogContent><DialogHeader><DialogTitle>Clear imported statement data?</DialogTitle><DialogDescription>All imported records and their corrections will be permanently removed. Your login, savings goals, plan and monthly upload usage remain. This does not cancel any subscription or service.</DialogDescription></DialogHeader>
+      <DialogContent onInteractOutside={event => event.preventDefault()}><DialogHeader><DialogTitle>Clear imported statement data?</DialogTitle><DialogDescription>All imported records and their corrections will be permanently removed. Your login, savings goals, plan and monthly upload usage remain. This does not cancel any subscription or service.</DialogDescription></DialogHeader>
         <p className="text-sm text-muted-foreground">If you have used this month's allowance, clearing data will not grant another upload. Finish uploads on other devices before continuing.</p>
         <p className="text-sm text-muted-foreground">Sign in within the last 10 minutes, or verify your current password below.</p>
         <form onSubmit={clear} className="space-y-4">

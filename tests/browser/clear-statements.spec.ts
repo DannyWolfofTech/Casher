@@ -23,6 +23,8 @@ test('clear requires confirmation and explains retained data at large text sizes
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const result = await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
   expect(result.violations.map(v => v.id)).toEqual([]);
+  await page.mouse.click(1, 1);
+  await expect(dialog).toBeVisible();
   await page.getByRole('button', { name: 'Keep my data', exact: true }).click();
   await expect(dialog).toHaveCount(0);
 });
