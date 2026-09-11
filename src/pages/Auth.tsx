@@ -9,10 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import SEO from '@/components/SEO';
 import { isNativeApp, authEmailReturnUrl } from '@/lib/mobile-platform';
+import { nativeAuthHandoff } from '@/lib/native-auth-link';
 
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 export default function Auth() {
   const native = isNativeApp();
+  const handoff = native ? null : nativeAuthHandoff(window.location.search, window.location.hash);
   const recoveryLink = new URLSearchParams(window.location.search).get('mode') === 'recovery' || /type=recovery/.test(window.location.hash);
   const linkFailed = [window.location.search, window.location.hash.replace(/^#/, '?')].some(value => new URLSearchParams(value).has('error'));
   const [recoveryReady, setRecoveryReady] = useState(false);
@@ -28,11 +30,13 @@ export default function Auth() {
   useEffect(() => {
     let active = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (handoff) return;
       if (event === 'PASSWORD_RECOVERY') { setMode('recovery'); setRecoveryReady(true); setError(''); return; }
       if (session && !recoveryLink && mode !== 'recovery' && new URLSearchParams(window.location.search).get('mode') !== 'recovery') navigate('/dashboard', { replace: true });
     });
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!active) return;
+      if (handoff) return;
       if (mode === 'recovery') {
         setRecoveryReady(!!session && !error && !linkFailed);
         if (!session || error || linkFailed) setError('This reset link is invalid or has expired. Request a new link to reset your password.');
@@ -41,7 +45,7 @@ export default function Auth() {
       if (session && !recoveryLink && mode !== 'recovery' && new URLSearchParams(window.location.search).get('mode') !== 'recovery') navigate('/dashboard', { replace: true });
     }).catch(() => { if (active) setError('We could not check this link. Please reload and try again.'); });
     return () => { active = false; subscription.unsubscribe(); };
-  }, [navigate, recoveryLink, mode, linkFailed]);
+  }, [navigate, recoveryLink, mode, linkFailed, handoff]);
   const switchMode = (value: Mode) => { setMode(value); setMessage(''); setError(''); setPassword(''); setConfirmPassword(''); };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); if (busy) return;
@@ -83,6 +87,16 @@ export default function Auth() {
     finally { setBusy(false); }
   };
   const heading = { signin: 'Welcome back', signup: 'Create your account', forgot: 'Reset your password', recovery: 'Choose a new password' }[mode];
+  if (handoff) return <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+    <SEO title="Continue in Casher" description="Return to Casher to complete your email link." path="/auth" noindex />
+    <span className="font-serif text-4xl italic">Casher</span>
+    <main className="w-full max-w-md"><Card><CardHeader><h1 className="text-2xl font-semibold">Continue in Casher</h1><CardDescription>Open the app on the device where you requested this email to finish {recoveryLink ? 'resetting your password' : 'confirming your account'}.</CardDescription></CardHeader>
+      <CardContent className="space-y-4"><Button asChild className="w-full"><a href={handoff} rel="noreferrer">Open Casher</a></Button>
+        <p className="text-sm text-muted-foreground">If the app does not open, check that Casher is installed on this device. If the link has expired, request a new one in the app.</p>
+        <p className="text-sm text-muted-foreground">Opened this email on another device? Return to the device where you started. After confirming your email, you can also sign in using your password.</p>
+        <Link to="/auth" replace onClick={() => switchMode('signin')} className="inline-flex min-h-11 items-center text-sm underline">Back to website sign in</Link>
+      </CardContent></Card></main>
+  </div>;
   return <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
     <SEO title={`${heading} — Casher`} description="Access your Casher account." path="/auth" noindex />
     <Link to="/" className="font-serif text-4xl italic">Casher</Link>
@@ -99,7 +113,7 @@ export default function Auth() {
       {(mode === 'signin' || mode === 'signup') && <><div className="my-5 border-t" />{!native && <Button variant="outline" className="w-full" disabled={busy} onClick={signInWithGoogle}>Continue with Google</Button>}<p className="mt-5 text-center text-sm">{mode === 'signin' ? 'New to Casher?' : 'Already have an account?'} <button className="underline underline-offset-4" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} disabled={busy}>{mode === 'signin' ? 'Create an account' : 'Sign in'}</button></p></>}
       {mode === 'forgot' && <Button variant="link" onClick={() => switchMode('signin')} disabled={busy}>Back to sign in</Button>}
       {mode === 'recovery' && !recoveryReady && <Button variant="link" onClick={() => switchMode('forgot')} disabled={busy}>Request a new reset link</Button>}
-      {native && <p className="mt-5 text-xs text-muted-foreground">Sign in with email and password. Your session is stored in your device's secure storage. Open confirmation and password-reset links on this device. Verified links return to Casher when supported, with the website as a fallback.</p>}<p className="mt-5 text-xs text-muted-foreground">Read our <Link to="/terms" className="underline">Terms of Service</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>
+      {native && <p className="mt-5 text-xs text-muted-foreground">Sign in with email and password. Your session is stored in your device's secure storage. Open confirmation and password-reset links on this device. If your browser opens, tap Open Casher to return to the app.</p>}<p className="mt-5 text-xs text-muted-foreground">Read our <Link to="/terms" className="underline">Terms of Service</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>
     </CardContent></Card></main>
   </div>;
 }

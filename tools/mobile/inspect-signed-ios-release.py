@@ -13,6 +13,7 @@ app = args.app.resolve()
 info = plistlib.loads((app / 'Info.plist').read_bytes())
 assert info['CFBundleIdentifier'] == 'com.trycasher.app'
 assert info['CFBundleDisplayName'] == 'Casher'
+assert any('com.trycasher.app' in entry.get('CFBundleURLSchemes', []) for entry in info.get('CFBundleURLTypes', [])), 'Missing browser-to-app authentication fallback'
 assert info['CFBundleSupportedPlatforms'] == ['iPhoneOS']
 assert int(info['DTSDKName'].removeprefix('iphoneos').split('.')[0]) >= 26
 subprocess.run(['codesign','--verify','--deep','--strict',str(app)], check=True, capture_output=True)
