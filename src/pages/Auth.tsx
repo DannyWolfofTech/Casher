@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
@@ -15,27 +15,42 @@ import { isAuthApiError, isAuthRetryableFetchError } from '@supabase/supabase-js
 type Mode = 'signin' | 'signup' | 'forgot' | 'recovery';
 export default function Auth() {
   const native = isNativeApp();
+  const location = useLocation();
+  const nativeAuthPending = native && location.state?.nativeAuthPending === true;
   const handoff = native ? null : nativeAuthHandoff(window.location.search, window.location.hash);
   const recoveryLink = new URLSearchParams(window.location.search).get('mode') === 'recovery' || /type=recovery/.test(window.location.hash);
   const linkFailed = [window.location.search, window.location.hash.replace(/^#/, '?')].some(value => new URLSearchParams(value).has('error'));
-  const callbackConnectionFailed = new URLSearchParams(window.location.search).get('error') === 'connection';
+  const callbackError = new URLSearchParams(window.location.search).get('error');
+  const callbackFailureMessage = callbackError === 'connection'
+    ? 'Could not connect to Casher to complete this link. Check your connection and request a new link on this device.'
+    : callbackError === 'device'
+      ? 'This link could not be completed on this device. Close and reopen Casher, then request a new link.'
+      : 'This sign-in link is invalid or has expired. Sign in with your password or request a new reset link.';
   const [recoveryReady, setRecoveryReady] = useState(false);
-  const [mode, setMode] = useState<Mode>(recoveryLink ? 'recovery' : 'signin');
+  const [mode, setMode] = useState<Mode>(!linkFailed && recoveryLink ? 'recovery' : 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const formBusy = busy || nativeAuthPending;
   const [message, setMessage] = useState(() => new URLSearchParams(window.location.search).get('deleted') === '1' ? 'Your Casher account has been deleted.' : '');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  useEffect(() => { if (recoveryLink) setMode('recovery'); }, [recoveryLink]);
+  useEffect(() => {
+    if (linkFailed) { setMode('signin'); setRecoveryReady(false); }
+    else if (recoveryLink) setMode('recovery');
+  }, [recoveryLink, linkFailed]);
   useEffect(() => {
     let active = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (handoff) return;
+      if (handoff || nativeAuthPending) return;
       if (event === 'PASSWORD_RECOVERY') { setMode('recovery'); setRecoveryReady(true); setError(''); return; }
       if (session && !recoveryLink && mode !== 'recovery' && new URLSearchParams(window.location.search).get('mode') !== 'recovery') navigate('/dashboard', { replace: true });
     });
+    if (nativeAuthPending) {
+      setRecoveryReady(false); setError(''); setMessage(''); setPassword(''); setConfirmPassword('');
+      return () => { active = false; subscription.unsubscribe(); };
+    }
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!active) return;
       if (handoff) return;
@@ -43,16 +58,14 @@ export default function Auth() {
         setRecoveryReady(!!session && !error && !linkFailed);
         if (!session || error || linkFailed) setError('This reset link is invalid or has expired. Request a new link to reset your password.');
         else setError('');
-      } else if (linkFailed && mode === 'signin') setError(callbackConnectionFailed
-        ? 'Could not connect to Casher to complete this link. Check your connection and request a new link on this device.'
-        : 'This sign-in link is invalid or has expired. Sign in with your password or request a new reset link.');
+      } else if (linkFailed && mode === 'signin') setError(callbackFailureMessage);
       if (session && !recoveryLink && mode !== 'recovery' && new URLSearchParams(window.location.search).get('mode') !== 'recovery') navigate('/dashboard', { replace: true });
     }).catch(() => { if (active) setError('We could not check this link. Please reload and try again.'); });
     return () => { active = false; subscription.unsubscribe(); };
-  }, [navigate, recoveryLink, mode, linkFailed, callbackConnectionFailed, handoff]);
+  }, [navigate, recoveryLink, mode, linkFailed, callbackFailureMessage, handoff, nativeAuthPending]);
   const switchMode = (value: Mode) => { setMode(value); setMessage(''); setError(''); setPassword(''); setConfirmPassword(''); };
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault(); if (busy) return;
+    event.preventDefault(); if (formBusy) return;
     if (mode === 'recovery' && !recoveryReady) return;
     setError(''); setMessage('');
     if (mode !== 'recovery' && !z.string().email().safeParse(email.trim()).success) { setError('Enter a valid email address.'); return; }
@@ -110,17 +123,18 @@ export default function Auth() {
     <Link to="/" className="font-serif text-4xl italic">Casher</Link>
     <main className="w-full max-w-md"><Card><CardHeader><h1 className="text-2xl font-semibold">{heading}</h1><CardDescription>{mode === 'signin' ? 'Sign in to review your statements and subscriptions.' : mode === 'signup' ? 'Start with one free CSV upload each month.' : 'Use your email to securely regain access to your account.'}</CardDescription></CardHeader>
       <CardContent><form onSubmit={submit} className="space-y-4">
-        {mode !== 'recovery' && <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={busy} /></div>}
-        {mode !== 'forgot' && <div className="space-y-2"><Label htmlFor="password">{mode === 'recovery' ? 'New password' : 'Password'}</Label><Input id="password" type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={mode === 'signin' ? 1 : 8} value={password} onChange={e => setPassword(e.target.value)} required disabled={busy} />{mode === 'signup' && <p className="text-xs text-muted-foreground">At least 8 characters.</p>}</div>}
-        {mode === 'recovery' && <div className="space-y-2"><Label htmlFor="confirm-password">Confirm new password</Label><Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required disabled={busy} /></div>}
+        {mode !== 'recovery' && <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={formBusy} /></div>}
+        {mode !== 'forgot' && <div className="space-y-2"><Label htmlFor="password">{mode === 'recovery' ? 'New password' : 'Password'}</Label><Input id="password" type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={mode === 'signin' ? 1 : 8} value={password} onChange={e => setPassword(e.target.value)} required disabled={formBusy} />{mode === 'signup' && <p className="text-xs text-muted-foreground">At least 8 characters.</p>}</div>}
+        {mode === 'recovery' && <div className="space-y-2"><Label htmlFor="confirm-password">Confirm new password</Label><Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required disabled={formBusy} /></div>}
+        {nativeAuthPending && <p role="status" className="text-sm text-muted-foreground">Checking your email link…</p>}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         {message && <p role="status" className="rounded-md bg-muted p-3 text-sm">{message}</p>}
-        <Button type="submit" className="w-full" disabled={busy || (mode === 'recovery' && !recoveryReady)}>{busy ? 'Please wait…' : { signin: 'Sign in', signup: 'Create account', forgot: 'Send reset link', recovery: 'Save new password' }[mode]}</Button>
+        <Button type="submit" className="w-full" disabled={formBusy || (mode === 'recovery' && !recoveryReady)}>{busy ? 'Please wait…' : { signin: 'Sign in', signup: 'Create account', forgot: 'Send reset link', recovery: 'Save new password' }[mode]}</Button>
       </form>
-      {mode === 'signin' && <Button variant="link" className="mt-2 px-0" onClick={() => switchMode('forgot')} disabled={busy}>Forgot password?</Button>}
-      {(mode === 'signin' || mode === 'signup') && <><div className="my-5 border-t" />{!native && <Button variant="outline" className="w-full" disabled={busy} onClick={signInWithGoogle}>Continue with Google</Button>}<p className="mt-5 text-center text-sm">{mode === 'signin' ? 'New to Casher?' : 'Already have an account?'} <button className="underline underline-offset-4" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} disabled={busy}>{mode === 'signin' ? 'Create an account' : 'Sign in'}</button></p></>}
-      {mode === 'forgot' && <Button variant="link" onClick={() => switchMode('signin')} disabled={busy}>Back to sign in</Button>}
-      {mode === 'recovery' && !recoveryReady && <Button variant="link" onClick={() => switchMode('forgot')} disabled={busy}>Request a new reset link</Button>}
+      {mode === 'signin' && <Button variant="link" className="mt-2 px-0" onClick={() => switchMode('forgot')} disabled={formBusy}>Forgot password?</Button>}
+      {(mode === 'signin' || mode === 'signup') && <><div className="my-5 border-t" />{!native && <Button variant="outline" className="w-full" disabled={formBusy} onClick={signInWithGoogle}>Continue with Google</Button>}<p className="mt-5 text-center text-sm">{mode === 'signin' ? 'New to Casher?' : 'Already have an account?'} <button className="underline underline-offset-4" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} disabled={formBusy}>{mode === 'signin' ? 'Create an account' : 'Sign in'}</button></p></>}
+      {mode === 'forgot' && <Button variant="link" onClick={() => switchMode('signin')} disabled={formBusy}>Back to sign in</Button>}
+      {mode === 'recovery' && !recoveryReady && !nativeAuthPending && <Button variant="link" onClick={() => switchMode('forgot')} disabled={formBusy}>Request a new reset link</Button>}
       {native && <p className="mt-5 text-xs text-muted-foreground">Sign in with email and password. Your session is stored in your device's secure storage. Open confirmation and password-reset links on this device. If your browser opens, tap Open Casher to return to the app.</p>}<p className="mt-5 text-xs text-muted-foreground">Read our <Link to="/terms" className="underline">Terms of Service</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>
     </CardContent></Card></main>
   </div>;

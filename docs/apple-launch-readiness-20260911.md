@@ -68,11 +68,10 @@ Native encryption uses operating-system HTTPS, Web Crypto for authentication has
 ## Remaining release gates
 
 1. Apple eligibility/individual enrollment decision and owner-approved legal operator/public contact details; EU DSA verification.
-2. Valid cold/warm confirmation/recovery on the signed physical iPhone. Live AASA and Apple CDN verification passed; that is not proof of a valid email-to-app round trip.
-3. Final native Files import/export, account reset/deletion using disposable data, reboot/session lifecycle and manual VoiceOver/large-text acceptance. Record iPad behavior for the supported universal app.
-4. App Store record, current age-rating questionnaire, privacy answers, accessibility declarations based on evidence, reviewer access and appropriate screenshots. The release must meet Apple's current SDK requirement: Xcode 26+/iOS 26+; this Mac has Xcode 26.6 and iOS SDK 26.5. [Current SDK rules](https://developer.apple.com/news/upcoming-requirements/).
-5. Distribution archive/export and store validation, followed by separately authorized upload/submission. A development-signed app on the owner's iPhone is not an App Store distribution artifact.
-6. Existing full-service recovery/cutover limitations in `docs/recovery-drill-20260907.md`, notification receipt evidence, and final operator disclosures. CSV-only release does not depend on enabling bank connections or checkout.
+2. Device reboot/session lifecycle and manual VoiceOver/large-text acceptance; physical iPad coverage for the supported universal app. Physical email confirmation/recovery and native Files import/export/reset/deletion now have dated acceptance evidence below.
+3. App Store record, current age-rating questionnaire, privacy answers, accessibility declarations based on evidence, reviewer access and appropriate screenshots. The release must meet Apple's current SDK requirement: Xcode 26+/iOS 26+; this Mac has Xcode 26.6 and iOS SDK 26.5. [Current SDK rules](https://developer.apple.com/news/upcoming-requirements/).
+4. Distribution archive/export and store validation, followed by separately authorized upload/submission. A development-signed app on the owner's iPhone is not an App Store distribution artifact.
+5. Existing full-service recovery/cutover limitations in `docs/recovery-drill-20260907.md`, notification receipt evidence, and final operator disclosures. CSV-only release does not depend on enabling bank connections or checkout.
 
 Keep source, backend deployment, installed device build and published website versions explicit in the handoff. Tests and local builds must not be described as approval or a public launch.
 
@@ -117,3 +116,16 @@ The first native password sign-in returned a connection error; the visible retry
 Evidence: `.audit-results/physical-launch-20260911/RESULTS.md`. Validation includes 262 unit tests, the complete 56-case Chromium suite, focused Chromium/WebKit callback and failure tests, physical native scenarios and strict signed-bundle inspection. Remaining acceptance includes a successful fresh confirmation retest/warm callback after the email quota is resolved, device reboot/manual VoiceOver checks, distribution validation and the unchanged Apple/legal/full-service-recovery gates. This remains a development-signed app, not an App Store-ready submission.
 
 Clean post-test device archive: `release-artifacts/ios/Casher-Device-20260911-Physical.zip`, SHA-256 `4358f8ec53903055696713f23ed8eb7a9ddf1e29a9caf89ad6add6b8a584d19f`. Strict signing/configuration/privacy inspection passed, and fixture passwords were checked absent from the bundle. Temporary plaintext test credentials/source were removed. Final focused callback/network/rate-limit checks passed four Chromium and four WebKit cases. Installation/deployment status is recorded in the private results and any later checkpoint.
+
+
+## 11 September, 23:35 BST: fresh physical callbacks and cleanup passed
+
+The fresh confirmation/warm-recovery gate is now passed. After a test-runner-only fix for Chrome idle waits, Codex operated actual Mail and Chrome taps without owner intervention. Warm recovery reached an enabled native password form and a backend-confirmed session (29.1-second native test). Fresh signup confirmed through Mail and opened Casher from a fully terminated state, completed onboarding, and showed the exact test identity on Account (37.8 seconds). Earlier cold recovery/password change and Files acceptance remain separately dated above; this run did not change a password or reimport statements. Inbox arrival was observed for these messages, not guaranteed for all recipients.
+
+The native recovery UI now shows verification progress instead of premature expiry and resets its form after callback failure. API failures and thrown device-store exceptions exit verification with usable guidance. Conflicting form actions are disabled during exchange. Authentication security, device-secure verifier storage and email protections are unchanged. Eleven Chromium and eleven WebKit auth regressions cover delayed success, network/API errors, store exceptions, throttling and browser handoff; 263 unit tests, typecheck/build and lint (zero errors/seven existing warnings) also passed.
+
+Both disposable identities were removed through native Account deletion after exact identity/data/billing guards. Each stayed signed out after relaunch and had zero identity, profile, transaction, subscription, goal, upload, review and reset-receipt records. Private credential files were removed and original native test source restored. No reviewer account was created; the owner's existing financial records remain intact.
+
+Clean development-signed archive: `release-artifacts/ios/Casher-Device-20260911-VerifiedAuth.zip`, SHA-256 `a9435b1d406ecc1984d35a79fc1f9620656cb933a714ad84b028cc108285a938`. Strict signed-bundle inspection passed. Private screenshots, result bundles, installed/source/deployment checkpoints and any operational limits are in `.audit-results/email-retry-20260911/RESULTS.md`. Remaining launch gates are the updated list above; no App Store submission readiness is claimed.
+
+Provider cleanup detail: sessions, linked auth identities and refresh tokens were zero after native deletion. Three abandoned authentication-flow rows from the earlier failed links were additionally removed, scoped only to the already-deleted test IDs. Do not infer immediate provider-flow-history erasure from the app deletion test.

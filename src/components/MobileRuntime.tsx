@@ -56,7 +56,7 @@ export default function MobileRuntime() {
     void clearExpiredExports().catch(() => setProblem('Temporary exports could not be cleaned up. Close and reopen Casher.'));
     let disposed=false;
     let remove:(()=>Promise<void>)|undefined;
-    const navigate = (to: string, options?: {replace?:boolean}) => navigateRef.current(to, options);
+    const navigate = (to: string, options?: {replace?:boolean; state?: {nativeAuthPending: boolean}}) => navigateRef.current(to, options);
     const callback=async(value:string)=>{
       const link=parseNativeAuthLink(value);
       if (!link || disposed) return;
@@ -64,14 +64,14 @@ export default function MobileRuntime() {
       if (seen.current.has(link.code)) return;
       seen.current.add(link.code);
       // Establish the recovery route before Auth receives the session event.
-      navigate(link.recovery?'/auth?mode=recovery':'/auth',{replace:true});
+      navigate(link.recovery?'/auth?mode=recovery':'/auth',{replace:true,state:{nativeAuthPending:true}});
       const result=await supabase.auth.exchangeCodeForSession(link.code);
       if (disposed) return;
       if(result.error) { navigate(nativeAuthFailurePath(result.error),{replace:true}); return; }
       cache.clear(); navigate(link.recovery?'/auth?mode=recovery':'/dashboard',{replace:true});
     };
     void nativeLifecycle({
-      onUrl: value=>{void callback(value).catch(()=>setProblem('This sign-in link could not be completed. Request a new link on this device.'));},
+      onUrl: value=>{void callback(value).catch(()=>{if(!disposed) navigate('/auth?error=device',{replace:true});});},
       onState: active=>{
         if(active) {
           supabase.auth.startAutoRefresh();
