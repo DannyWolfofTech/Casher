@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 
 // Initial native distribution is a companion to existing accounts. Keep web billing intact.
 export const isNativeApp = () => Capacitor.isNativePlatform();
+export const isIOSApp = () => Capacitor.getPlatform() === 'ios';
 export const canPurchaseInApp = () => !isNativeApp();
 export const authEmailReturnUrl = (origin: string, recovery = false) =>
   `${isNativeApp() ? 'https://trycasher.com' : origin}/auth${recovery ? '?mode=recovery' : ''}`;

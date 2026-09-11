@@ -45,9 +45,9 @@ const DashboardHeader = ({ userTier, hasUser, onSignOut }: DashboardHeaderProps)
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex max-w-full items-center justify-between gap-2 px-4 py-4 md:py-6">
-        <Link to={hasUser ? "/dashboard" : "/"} className="shrink-0 font-serif text-3xl italic tracking-tight">
-          Casher
+      <div className="container mx-auto flex max-w-full flex-wrap items-center justify-between gap-2 px-4 py-4 md:py-6">
+        <Link to={hasUser ? "/dashboard" : "/"} className="inline-flex min-h-11 shrink-0 items-center font-serif text-3xl italic tracking-tight" aria-label="Casher">
+          <span aria-hidden="true">Casher</span>
         </Link>
 
         {/* Desktop navigation */}
@@ -75,7 +75,7 @@ const DashboardHeader = ({ userTier, hasUser, onSignOut }: DashboardHeaderProps)
         </div>
 
         {/* Mobile / tablet navigation */}
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2 lg:hidden">
           {planBadge}
           <ThemeToggle />
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>

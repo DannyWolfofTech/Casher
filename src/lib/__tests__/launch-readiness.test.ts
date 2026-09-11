@@ -72,7 +72,7 @@ describe("launch copy accuracy", () => {
   it("does not offer a fake bank-connect waitlist action", () => {
     const dashboard = read("src/pages/Dashboard.tsx");
     expect(dashboard).not.toContain('t("joinWaitlist")');
-    expect(dashboard).toContain('t("bankConnectInDevelopment")');
+    expect(dashboard).toContain('Analysis uses the GBP statements you import. No bank connection is required.');
   });
 
   it("renders a branded 404 with a working link home", () => {

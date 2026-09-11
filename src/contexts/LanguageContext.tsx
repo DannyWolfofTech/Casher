@@ -1,3 +1,4 @@
+import { readPreference, writePreference } from '@/lib/preferences';
 import { useState, useEffect } from "react";
 import i18n from "@/i18n/config";
 import { LanguageContext, type Language } from "./language-context";
@@ -917,7 +918,7 @@ const translations: Translations = {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>(() => {
-    const saved = localStorage.getItem("language");
+    const saved = readPreference("language");
     if (saved && ['en', 'fr', 'es', 'ro', 'de', 'it', 'pl'].includes(saved)) return saved as Language;
     
     const browserLang = navigator.language.split("-")[0];
@@ -928,7 +929,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem("language", language);
+    writePreference("language", language);
     document.documentElement.lang = language;
     void i18n.changeLanguage(language);
   }, [language]);

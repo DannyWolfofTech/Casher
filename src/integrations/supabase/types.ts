@@ -569,6 +569,10 @@ export type Database = {
       }
     }
     Functions: {
+      clear_statement_data: {
+        Args: { _confirmation: string; _request_id: string }
+        Returns: Json
+      }
       acquire_account_operation: {
         Args: { _closing?: boolean; _user_id: string }
         Returns: Json

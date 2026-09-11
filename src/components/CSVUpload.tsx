@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { isNativeApp } from '@/lib/mobile-platform';
+import { useState, useCallback, useEffect, useRef } from "react";
 import { captureApiError } from "@/lib/sentry";
 import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Upload, FileText, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
+import { importRequest, ImportUnconfirmedError } from '@/lib/import-request';
 
 export interface UploadResult {
   code?: string;
@@ -29,6 +31,9 @@ export interface UploadResult {
 
 interface CSVUploadProps {
   onUploadComplete: (result?: UploadResult) => void;
+  onProcessingChange?: (processing: boolean) => void;
+  onImportSettled?: () => void;
+  quotaReached?: boolean;
 }
 
 interface StructuredFunctionError {
@@ -62,7 +67,9 @@ async function readStructuredError(error: unknown): Promise<StructuredFunctionEr
 }
 
 
-const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
+const CSVUpload = ({ onUploadComplete, onProcessingChange, onImportSettled, quotaReached }: CSVUploadProps) => {
+  const active = useRef(true);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [fileError, setFileError] = useState('');
@@ -94,6 +101,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
     if (!file || loading) return;
 
     setLoading(true);
+    onProcessingChange?.(true);
     setFileError('');
 
     const reader = new FileReader();
@@ -102,12 +110,14 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         const text = e.target?.result as string;
         
         // Call edge function to process CSV
-        const { data, error } = await supabase.functions.invoke('process-csv', {
-          body: { csv: text }
-        });
+        const { data, error } = await importRequest(signal => supabase.functions.invoke('process-csv', {
+          body: { csv: text }, signal,
+        }));
+        if (!active.current) return;
 
         if (error) {
           const structured = await readStructuredError(error);
+          if (!active.current) return;
           if (structured) {
             setFileError(structured.message);
             captureApiError(error, { operation: 'csvUpload', code: structured.code });
@@ -122,8 +132,10 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
             if (structured.usage) onUploadComplete({ code: structured.code, usage: structured.usage });
             return;
           }
-          throw error;
+          throw new ImportUnconfirmedError();
         }
+
+        if (!data || !['OK', 'REPLAY'].includes(data.code)) throw new ImportUnconfirmedError();
 
         if (data?.replay) {
           toast({
@@ -145,8 +157,9 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
 
         onUploadComplete(data as UploadResult);
       } catch (error: unknown) {
+        if (!active.current) return;
         captureApiError(error, { operation: 'csvUpload' });
-        const message = error instanceof Error ? error.message : t("errorProcessing");
+        const message = error instanceof ImportUnconfirmedError ? error.message : new ImportUnconfirmedError().message;
         setFileError(message);
         toast({
           title: "Error",
@@ -155,11 +168,15 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         });
 
       } finally {
-        setLoading(false);
+        // A request can commit after navigating away. Reconcile the account's
+        // caches, but never deliver its result to an unmounted screen.
+        onImportSettled?.();
+        if (active.current) { setLoading(false); onProcessingChange?.(false); }
       }
     };
 
     reader.onerror = () => {
+      if (!active.current) return;
       setFileError(t('errorReading'));
       toast({
         title: "Error",
@@ -167,6 +184,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         variant: "destructive",
       });
       setLoading(false);
+      onProcessingChange?.(false);
     };
 
     reader.readAsText(file);
@@ -181,6 +199,7 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <input {...getInputProps({ 'aria-label': 'Bank statement CSV' })} />
         <div
           {...getRootProps({ role: 'button', 'aria-label': 'Choose bank statement CSV' })}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -189,41 +208,23 @@ const CSVUpload = ({ onUploadComplete }: CSVUploadProps) => {
               : "border-muted-foreground/25 hover:border-primary/50"
           }`}
         >
-          <input {...getInputProps({ 'aria-label': 'Bank statement CSV' })} />
           <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          {file ? (
-            <div className="flex items-center justify-center gap-2">
-              <FileText className="h-5 w-5" />
-              <span className="min-w-0 break-all">{file.name}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Remove selected CSV"
-                disabled={loading}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFile(null);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <>
-              <p className="text-lg mb-2">
-                {isDragActive
-                  ? t("dropFileHere")
-                  : t("dragDropPrompt")}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t("supportsFormat")}
-              </p>
-            </>
-          )}
+          <p className="text-lg mb-2">
+            {isDragActive ? t("dropFileHere") : file ? "Choose a different CSV" : isNativeApp() ? "Choose CSV from Files" : t("dragDropPrompt")}
+          </p>
+          <p className="text-sm text-muted-foreground">{t("supportsFormat")}</p>
         </div>
+        {file && <div className="flex items-center gap-2 rounded-lg border p-3">
+          <FileText aria-hidden="true" className="h-5 w-5 shrink-0" />
+          <span className="min-w-0 flex-1 break-all">{file.name}</span>
+          <Button variant="ghost" size="icon" aria-label="Remove selected CSV" disabled={loading} onClick={() => setFile(null)}><X className="h-4 w-4" /></Button>
+        </div>}
+
         <p className="text-xs text-muted-foreground">GBP statements only · CSV up to 5 MB · 10,000 rows maximum. Signed amounts: negative for money out, positive for money in; or use separate debit and credit columns.</p>
         <p className="text-xs text-muted-foreground">Use statements from one bank account. Identical transactions across different accounts cannot yet be distinguished.</p>
         {fileError && <p role="alert" className="text-sm text-destructive">{fileError}</p>}
+        {quotaReached && <p className="text-sm text-muted-foreground">No new uploads remain this month. You can retry the same file to check whether it was already imported.</p>}
+        {loading && <p role="status" className="text-sm text-muted-foreground">Importing your statement. Keep this screen open until the result appears.</p>}
 
         {file && (
           <Button onClick={handleUpload} disabled={loading} className="w-full">

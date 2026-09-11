@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "WGUU2353D6.com.trycasher.app"
+        ],
+        "components": [
+          {
+            "/": "/auth",
+            "comment": "Casher email confirmation and password recovery"
+          }
+        ]
+      }
+    ]
+  }
+}

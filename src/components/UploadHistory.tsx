@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from '@tanstack/react-query';
+import { readRequest, retryRead } from '@/lib/read-request';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,40 +22,22 @@ interface UploadRecord {
 }
 
 const UploadHistory = ({ userId, refreshKey = 0 }: UploadHistoryProps) => {
-  const [history, setHistory] = useState<UploadRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
-
-  const fetchHistory = useCallback(async () => {
-    try {
-      setFailed(false);
-      setLoading(true);
-      if (!userId) {
-        setHistory([]);
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('upload_history')
-        .select('*')
-        .eq('user_id', userId)
-        .order('upload_date', { ascending: false })
-        .limit(10);
-
+  const query = useQuery({
+    queryKey: ['upload-history', userId, refreshKey], enabled: !!userId,
+    retry: retryRead, staleTime: 60_000,
+    queryFn: async ({ signal }) => {
+      const { data, error } = await readRequest(readSignal => supabase
+        .from('upload_history').select('*').eq('user_id', userId!)
+        .order('upload_date', { ascending: false }).limit(10)
+        .abortSignal(readSignal).retry(false), signal);
       if (error) throw error;
-      setHistory(data || []);
-    } catch (error) {
-      setFailed(true);
-      console.error('Error fetching upload history:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    fetchHistory();
-    // refreshKey forces a refetch after a new upload.
-  }, [fetchHistory, refreshKey]);
+      return (data || []) as UploadRecord[];
+    },
+  });
+  const history = query.data || [];
+  const loading = !!userId && query.isPending;
+  const failed = query.isError;
+  const fetchHistory = () => { void query.refetch(); };
 
   if (loading) {
     return (

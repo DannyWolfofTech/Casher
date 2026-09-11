@@ -19,6 +19,40 @@ export default function MobileRuntime() {
     window.addEventListener('online',online); window.addEventListener('offline',online);
     if (!isNativeApp()) return ()=>{ window.removeEventListener('online',online); window.removeEventListener('offline',online); };
     document.documentElement.classList.add('native-app');
+    const viewport = window.visualViewport;
+    let focusFrame = 0;
+    let focusTimer: ReturnType<typeof setTimeout> | undefined;
+    const revealFocusedField = () => {
+      cancelAnimationFrame(focusFrame);
+      focusFrame = requestAnimationFrame(() => {
+        const field = document.activeElement;
+        if (!(field instanceof HTMLElement) || !field.matches('input,select,textarea')) return;
+        const dialog = field.closest<HTMLElement>('.app-dialog');
+        if (!dialog) return;
+        // iOS scrolls on focus before its keyboard finishes shrinking the modal.
+        // Recheck after each viewport resize, scrolling only the dialog itself.
+        const box = field.getBoundingClientRect(), bounds = dialog.getBoundingClientRect();
+        const top = bounds.top + 16, bottom = bounds.bottom - 16;
+        if (box.bottom > bottom) dialog.scrollTop += box.bottom - bottom;
+        else if (box.top < top) dialog.scrollTop += box.top - top;
+      });
+    };
+    const settleFocusedField = () => {
+      revealFocusedField();
+      clearTimeout(focusTimer);
+      // WebKit may apply its own focus scroll at the end of the keyboard animation.
+      focusTimer = setTimeout(revealFocusedField, 300);
+    };
+    const resize = () => {
+      document.documentElement.style.setProperty('--app-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
+      document.documentElement.style.setProperty('--app-viewport-top', `${viewport?.offsetTop ?? 0}px`);
+      settleFocusedField();
+    };
+    resize();
+    viewport?.addEventListener('resize', resize);
+    viewport?.addEventListener('scroll', resize);
+    window.addEventListener('resize', resize);
+    document.addEventListener('focusin', settleFocusedField);
     void clearExpiredExports().catch(() => setProblem('Temporary exports could not be cleaned up. Close and reopen Casher.'));
     let disposed=false;
     let remove:(()=>Promise<void>)|undefined;
@@ -56,7 +90,7 @@ export default function MobileRuntime() {
         return false;
       },
     }).then(async cleanup=>{if(disposed) await cleanup(); else remove=cleanup;}).catch(()=>setProblem('Device services could not start. Close and reopen Casher.'));
-    return ()=>{disposed=true; void remove?.(); window.removeEventListener('online',online); window.removeEventListener('offline',online);};
+    return ()=>{disposed=true; clearTimeout(focusTimer); cancelAnimationFrame(focusFrame); document.removeEventListener('focusin',settleFocusedField); viewport?.removeEventListener('resize',resize); viewport?.removeEventListener('scroll',resize); window.removeEventListener('resize',resize); void remove?.(); window.removeEventListener('online',online); window.removeEventListener('offline',online);};
   },[cache]);
   if(!offline&&!problem) return null;
   return <div role="status" className="border-b bg-muted px-4 py-3 text-center text-sm">{offline?'You are offline. Reconnect before importing files or changing your account.':problem}{problem&&!offline&&<button className="ml-3 underline" onClick={()=>setProblem('')}>Dismiss</button>}</div>;

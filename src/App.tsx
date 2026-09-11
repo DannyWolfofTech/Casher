@@ -1,10 +1,10 @@
 import { lazy, Suspense, useLayoutEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { isNativeApp } from './lib/mobile-platform';
+import { AuthProvider } from './hooks/useAuth';
 import MobileRuntime from './components/MobileRuntime';
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -14,6 +14,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const History = lazy(() => import("./pages/History"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const Support = lazy(() => import("./pages/Support"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Account = lazy(() => import("./pages/Account"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
@@ -34,8 +35,8 @@ const App = () => (
       <LanguageProvider>
         <TooltipProvider>
           <Toaster />
-          <Sonner />
           <BrowserRouter>
+            <AuthProvider>
             <RouteScrollReset />
             <MobileRuntime />
             <Suspense fallback={<div role="status" className="p-8 text-muted-foreground">Loading page…</div>}>
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="/dashboard/history" element={<History />} />
               <Route path="/pricing" element={isNativeApp() ? <Navigate to="/dashboard" replace /> : <Pricing />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/support" element={<Support />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/account" element={<Account />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
@@ -55,6 +57,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             </Suspense>
+          </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
       </LanguageProvider>

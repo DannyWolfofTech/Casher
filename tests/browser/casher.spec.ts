@@ -181,6 +181,7 @@ test('savings goals can be created, updated and safely dismissed before deletion
   await expect(page.getByText('£200.00 of £1,000.00', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Update', exact: true }).click(); await page.getByLabel('Already saved (£)').fill('350'); await page.getByRole('button', { name: 'Save goal', exact: true }).click();
   await expect(page.getByText('35% complete', { exact: true })).toBeVisible();
+  await expect(page.getByRole('progressbar', { name: 'Emergency fund: 35% complete' })).toHaveAttribute('aria-valuenow', '35');
   await page.getByRole('button', { name: 'Delete', exact: true }).click(); await page.getByRole('button', { name: 'Keep goal' }).click();
   await expect(page.getByText('Emergency fund', { exact: true })).toBeVisible();
 });
@@ -221,12 +222,12 @@ test('first import is discoverable and invalid files produce an actionable error
 test('dark dashboard and mobile goal dialog remain accessible', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await login(page);
   await page.getByRole('button', { name: 'Switch to dark theme' }).click();
-  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations.map(v => v.id)).toEqual([]);
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => ({target:n.target,summary:n.failureSummary})) }))).toEqual([]);
   await page.screenshot({ path: 'docs/design-audit/assets/after-dark-mobile.png', fullPage: true });
   await page.getByRole('button', { name: 'Add goal', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations.map(v => v.id)).toEqual([]);
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => ({target:n.target,summary:n.failureSummary})) }))).toEqual([]);
   await page.screenshot({ path: 'docs/design-audit/assets/after-goal-dialog-mobile.png' });
 });
 
@@ -236,12 +237,12 @@ test('iPhone chart selection stays inside the donut and month controls have spac
   const monthBox = await page.getByLabel('Statement month').boundingBox();
   expect(monthBox!.width).toBeGreaterThan(250);
   const figure = page.getByRole('figure', {name:/Spending by category/});
-  await figure.getByRole('button', {name:'Rent',exact:true}).click();
-  await expect(figure.getByRole('button', {name:'Rent',exact:true})).toHaveAttribute('aria-pressed','true');
+  await figure.getByRole('button', {name:/^Rent: £950\.00, /}).click();
+  await expect(figure.getByRole('button', {name:/^Rent: £950\.00, /})).toHaveAttribute('aria-pressed','true');
   await expect(figure.locator('.recharts-tooltip-wrapper')).toHaveCount(0);
   await page.getByRole('button', {name:'Cancel Netflix',exact:true}).click();
   await expect(page.getByRole('link', {name:/Continue to Netflix/})).toHaveAttribute('href','https://www.netflix.com/cancelplan');
-  await expect(page.getByLabel('Amount per payment (�)')).not.toBeVisible();
+  await expect(page.getByLabel('Amount per payment (£)')).not.toBeVisible();
   await page.keyboard.press('Escape');
   await page.goto('/dashboard/history');
   const from = await page.getByLabel('From month').boundingBox();
@@ -250,4 +251,39 @@ test('iPhone chart selection stays inside the donut and month controls have spac
   await expect(page.getByLabel('From month')).toHaveValue('');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({path:'.audit-results/iphone-ui-history.png',fullPage:true});
+});
+
+test('same-user navigation reuses loaded account/data; sign-out clears it', async ({ page, request }) => {
+  const accountRequests: string[] = [];
+  page.on('request', req => { if (/\/(get_upload_usage|check-subscription)(\?|$)/.test(req.url())) accountRequests.push(req.url()); });
+  await login(page);
+  await expect(page.getByRole('figure', {name:/Spending by category/})).toBeVisible();
+  await expect.poll(() => accountRequests.length).toBe(3);
+  const initial = accountRequests.length;
+  await page.getByRole('button', {name:'History',exact:true}).click();
+  await expect(page.getByRole('heading', {name:'Monthly spending'})).toBeVisible();
+  await page.getByRole('link', {name:'Back to overview'}).click();
+  await expect(page.getByRole('figure', {name:/Spending by category/})).toBeVisible();
+  expect(accountRequests.length).toBe(initial);
+  await page.getByRole('button', {name:'Sign Out',exact:true}).click();
+  await expect(page).toHaveURL(/auth$/);
+  await request.post(api, {data:{scenario:'empty'}});
+  await login(page);
+  await page.getByRole('dialog', {name:'Welcome to Casher!'}).getByRole('button', {name:'Close',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Start with your first statement'})).toBeVisible();
+  await expect(page.getByRole('cell', {name:'Example rent payment',exact:true})).toHaveCount(0);
+});
+
+test('phone transactions show full amounts and a readable empty search without sideways scrolling', async ({page}) => {
+  await page.setViewportSize({width:390,height:844}); await login(page);
+  const rows=page.getByRole('list',{name:'Transactions',exact:true});
+  await expect(rows).toBeVisible();
+  await expect(rows.getByRole('listitem')).toHaveCount(5);
+  expect(await rows.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await expect(rows.getByRole('button',{name:/Edit/}).first()).toBeVisible();
+  await page.getByRole('textbox',{name:'Search transactions'}).fill('no-such-payment');
+  const empty=page.getByText('No transactions match your search.');
+  await expect(empty).toBeVisible();
+  const bounds=await empty.boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0); expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(390);
 });

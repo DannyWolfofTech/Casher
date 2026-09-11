@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Casher',
   webDir: 'dist',
   loggingBehavior: 'none',
+  plugins: { StatusBar: { overlaysWebView: false, style: 'LIGHT', backgroundColor: '#f5f2eb' } },
   android: { webContentsDebuggingEnabled: false },
   server: {
     cleartext: false

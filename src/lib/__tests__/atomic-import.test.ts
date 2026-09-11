@@ -12,8 +12,8 @@ beforeAll(async () => {
   await db.exec(`
     CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
     CREATE SCHEMA auth;
-    CREATE TABLE auth.users(id uuid PRIMARY KEY);
-    INSERT INTO auth.users VALUES ('${uid}'), ('00000000-0000-4000-8000-000000000002');
+    CREATE TABLE auth.users(id uuid PRIMARY KEY, last_sign_in_at timestamptz default now());
+    INSERT INTO auth.users(id) VALUES ('${uid}'), ('00000000-0000-4000-8000-000000000002');
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
     GRANT USAGE ON SCHEMA auth TO authenticated, anon;
     CREATE FUNCTION public.current_request_role() RETURNS text LANGUAGE sql AS $$ SELECT coalesce(current_setting('request.jwt.claim.role', true), '') $$;
@@ -22,6 +22,9 @@ beforeAll(async () => {
     CREATE TABLE public.detected_subscriptions(id uuid default gen_random_uuid(), user_id uuid, service_name text, amount numeric(10,2), frequency text, last_charged date, estimated_annual_cost numeric(10,2), status text);
     CREATE TABLE public.upload_history(id uuid default gen_random_uuid(), user_id uuid, csv_hash text, total_spending numeric, total_credits numeric, subscriptions_count integer, potential_savings numeric, transaction_count integer);
     CREATE TABLE public.savings_goals(title text, target_amount numeric, current_amount numeric);
+    ALTER TABLE profiles ADD COLUMN monthly_spending_history jsonb default '[]';
+    CREATE SCHEMA app_private;
+    CREATE TABLE app_private.account_operations(user_id uuid primary key, closing boolean default false);
   `);
   const quota = readFileSync('supabase/migrations/20260904131024_b8b43d04-c9b0-4de6-be86-89d1894dd792.sql', 'utf8');
   await db.exec(quota.slice(0, quota.indexOf('DO $$')));
@@ -29,6 +32,8 @@ beforeAll(async () => {
   await db.exec(readFileSync('supabase/migrations/20260904220000_atomic_statement_import.sql', 'utf8'));
   await db.exec(readFileSync('supabase/migrations/20260904230000_statement_corrections.sql', 'utf8'));
   await db.exec(readFileSync('supabase/migrations/20260906220000_review_conflict_status.sql', 'utf8'));
+  await db.exec(readFileSync('supabase/migrations/20260911140000_clear_statement_data.sql', 'utf8'));
+  await db.exec(readFileSync('supabase/migrations/20260911150000_statement_reset_recovery.sql', 'utf8'));
   await db.exec(`ALTER TABLE transactions ENABLE ROW LEVEL SECURITY; ALTER TABLE detected_subscriptions ENABLE ROW LEVEL SECURITY;
     GRANT SELECT, UPDATE ON transactions, detected_subscriptions TO authenticated;
     CREATE POLICY own_transactions ON transactions FOR SELECT TO authenticated USING (user_id = auth.uid());
@@ -37,7 +42,8 @@ beforeAll(async () => {
 beforeEach(async () => {
   await db.exec(`RESET ROLE; SELECT set_config('request.jwt.claim.role', 'service_role', false);
     SELECT set_config('request.jwt.claim.sub', '${uid}', false);
-    TRUNCATE public.profiles, public.transactions, public.detected_subscriptions, public.upload_history, public.statement_reviews;
+    TRUNCATE public.profiles, public.transactions, public.detected_subscriptions, public.upload_history, public.statement_reviews, public.savings_goals, app_private.statement_reset_receipts, app_private.account_operations;
+    UPDATE auth.users SET last_sign_in_at=now();
     INSERT INTO profiles(user_id, uploads_reset_date) VALUES ('${uid}', date_trunc('month', now())::date);
     SELECT set_config('request.jwt.claim.role', 'service_role', false);`);
 });
@@ -134,5 +140,82 @@ describe('real PostgreSQL atomic import', () => {
     await db.exec("UPDATE transactions SET direction_override = 'credit'; UPDATE detected_subscriptions SET status = 'cancelled'");
     expect((await db.query('SELECT direction_override FROM transactions')).rows[0]).toEqual({ direction_override: null });
     expect((await db.query('SELECT status FROM detected_subscriptions')).rows[0]).toEqual({ status: 'active' });
+  });
+});
+
+const requestId = '00000000-0000-4000-8000-100000000001';
+const clearStatements = (confirmation = 'CLEAR', id: string | null = requestId) => db.query<{result: Record<string, unknown>}>('SELECT public.clear_statement_data($1,$2) AS result', [confirmation, id]).then(r => r.rows[0].result);
+const asOwner = () => db.exec("SELECT set_config('request.jwt.claim.role','authenticated',false); SET ROLE authenticated");
+describe('real PostgreSQL statement reset', () => {
+  it('clears only owner imports and corrections, preserving goals, identity, plan and quota', async () => {
+    await run();
+    await db.exec(`INSERT INTO transactions(user_id,date,description,amount) VALUES ('00000000-0000-4000-8000-000000000002','2026-09-01','Other owner',-9);
+      INSERT INTO savings_goals VALUES ('Keep my goal',100,20);
+      UPDATE profiles SET monthly_spending_history='[{"month":"2026-09","spending":12}]';`);
+    const removedIds = (await db.query('SELECT id FROM transactions WHERE user_id=auth.uid()')).rows;
+    const profile = (await db.query('SELECT subscription_tier,monthly_uploads_used,uploads_reset_date,stripe_customer_id,subscription_status FROM profiles')).rows;
+    await asOwner();
+    await db.exec("SELECT review_transaction(id,'debit','Streaming',NULL) FROM transactions");
+    expect(await clearStatements()).toMatchObject({cleared:true, transactions:1, subscriptions:1, reviews:1, imports:1});
+    await db.exec('RESET ROLE');
+    expect((await db.query('SELECT description FROM transactions')).rows).toEqual([{description:'Other owner'}]);
+    const receipt=(await db.query<{deleted_record_ids:{transactions:string[]}}>('SELECT deleted_record_ids FROM app_private.statement_reset_receipts')).rows[0];
+    expect(receipt.deleted_record_ids.transactions.map(id=>({id}))).toEqual(removedIds);
+    for (const table of ['detected_subscriptions','statement_reviews','upload_history']) expect((await db.query(`SELECT * FROM ${table}`)).rows).toEqual([]);
+    expect((await db.query('SELECT subscription_tier,monthly_uploads_used,uploads_reset_date,stripe_customer_id,subscription_status FROM profiles')).rows).toEqual(profile);
+    expect((await db.query('SELECT monthly_spending_history FROM profiles')).rows).toEqual([{monthly_spending_history:[]}]);
+    expect((await db.query('SELECT title FROM savings_goals')).rows).toEqual([{title:'Keep my goal'}]);
+    expect((await db.query<{n:number}>('SELECT count(*)::int AS n FROM auth.users')).rows[0].n).toBe(2);
+  });
+  it('does not grant extra free uploads after clearing', async () => {
+    await run(); await asOwner(); await clearStatements();
+    await db.exec("RESET ROLE; SELECT set_config('request.jwt.claim.role','service_role',false)");
+    expect(await run()).toMatchObject({code:'QUOTA_EXCEEDED'});
+    expect((await db.query('SELECT * FROM transactions')).rows).toEqual([]);
+  });
+  it('allows a fresh import with allowance and keeps it safe from replayed resets', async () => {
+    await db.exec("UPDATE profiles SET subscription_tier='pro'");
+    await run(); await asOwner(); const receipt = await clearStatements();
+    await db.exec("RESET ROLE; SELECT set_config('request.jwt.claim.role','service_role',false)");
+    expect(await run()).toMatchObject({code:'OK',transactionsCount:1});
+    await asOwner(); expect(await clearStatements()).toEqual(receipt);
+    expect((await db.query<{n:number}>('SELECT count(*)::int AS n FROM transactions')).rows[0].n).toBe(1);
+  });
+  it('requires exact confirmation, a request ID, recent actual sign-in and an owner profile', async () => {
+    await run(); await asOwner();
+    await expect(clearStatements('clear')).rejects.toThrow('Type CLEAR');
+    await expect(clearStatements('CLEAR',null)).rejects.toThrow('Type CLEAR');
+    await db.exec("RESET ROLE; UPDATE auth.users SET last_sign_in_at=now()-interval '11 minutes'");
+    await asOwner(); await expect(clearStatements()).rejects.toThrow('Sign in again');
+    await db.exec("RESET ROLE; UPDATE auth.users SET last_sign_in_at=now(); SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000002',false)");
+    await asOwner(); await expect(clearStatements()).rejects.toThrow('profile unavailable');
+    await db.exec("RESET ROLE; SELECT set_config('request.jwt.claim.sub','',false)");
+    await asOwner(); await expect(clearStatements()).rejects.toThrow('Please sign in');
+    await db.exec('RESET ROLE');
+    expect((await db.query<{n:number}>('SELECT count(*)::int AS n FROM transactions')).rows[0].n).toBe(1);
+  });
+  it('denies anonymous reset and direct receipt access', async () => {
+    await run(); await db.exec('SET ROLE anon');
+    await expect(clearStatements()).rejects.toThrow('permission denied');
+    await db.exec('RESET ROLE'); await asOwner();
+    await clearStatements();
+    await expect(db.exec('SELECT * FROM app_private.statement_reset_receipts')).rejects.toThrow('permission denied');
+    await expect(db.exec('DELETE FROM app_private.statement_reset_receipts')).rejects.toThrow('permission denied');
+  });
+  it('rejects resets while account closure is in progress', async () => {
+    await run(); await db.query('INSERT INTO app_private.account_operations VALUES ($1,true)',[uid]); await asOwner();
+    await expect(clearStatements()).rejects.toThrow('deletion is already in progress');
+    expect((await db.query<{n:number}>('SELECT count(*)::int AS n FROM transactions')).rows[0].n).toBe(1);
+  });
+  it('rolls back all deletion if a later database operation fails', async () => {
+    await run();
+    await db.exec(`CREATE FUNCTION fail_test_reset() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected failure'; END $$;
+      CREATE TRIGGER fail_reset BEFORE DELETE ON upload_history FOR EACH ROW EXECUTE FUNCTION fail_test_reset();`);
+    try {
+      await asOwner(); await expect(clearStatements()).rejects.toThrow('injected failure');
+      await db.exec('RESET ROLE');
+      for (const table of ['transactions','detected_subscriptions','upload_history']) expect((await db.query<{n:number}>(`SELECT count(*)::int AS n FROM ${table}`)).rows[0].n).toBe(1);
+      expect((await db.query('SELECT * FROM app_private.statement_reset_receipts')).rows).toEqual([]);
+    } finally { await db.exec('RESET ROLE; DROP TRIGGER fail_reset ON upload_history; DROP FUNCTION fail_test_reset()'); }
   });
 });

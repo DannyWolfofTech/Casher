@@ -12,6 +12,8 @@ PODS:
     - IONFilesystemLib (~> 1.1.1)
   - CapacitorShare (8.0.1):
     - Capacitor
+  - CapacitorStatusBar (8.0.3):
+    - Capacitor
   - IONFilesystemLib (1.1.3)
   - KeychainSwift (21.0.0)
 
@@ -22,6 +24,7 @@ DEPENDENCIES:
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
+  - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
 
 SPEC REPOS:
   trunk:
@@ -41,6 +44,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/filesystem"
   CapacitorShare:
     :path: "../../node_modules/@capacitor/share"
+  CapacitorStatusBar:
+    :path: "../../node_modules/@capacitor/status-bar"
 
 SPEC CHECKSUMS:
   AparajitaCapacitorSecureStorage: 8128d05cafcb13b00448e20fb388a0edccd44b12
@@ -49,9 +54,10 @@ SPEC CHECKSUMS:
   CapacitorCordova: eb79411a3a0ed517eeb4c6dcf5933ce4bcbb5c9e
   CapacitorFilesystem: b2bbd84bb91c177906c9dbc252864cb71ab9957b
   CapacitorShare: 0c58305114538568059bfc07111f22dcb9cb2a82
+  CapacitorStatusBar: eca7bc2b58d9f886f1ef9edb66e57a9b29c121af
   IONFilesystemLib: f9e7653bb6388ba70fd38319b9c85c2a396e9213
   KeychainSwift: 4a71a45c802fd9e73906457c2dcbdbdc06c9419d
 
-PODFILE CHECKSUM: 1c8fcd630faafec218231501be454b8bc9d84336
+PODFILE CHECKSUM: 711d3fce62d05cc8da54719b31d35aaf18f77de4
 
 COCOAPODS: 1.17.0

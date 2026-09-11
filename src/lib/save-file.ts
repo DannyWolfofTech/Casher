@@ -21,7 +21,12 @@ export async function saveFile(contents: string, filename: string, mimeType: str
     await clearExpiredExports();
     const file = await Filesystem.writeFile({ path: `exports/${filename}`, data: contents,
       directory: Directory.Cache, encoding: Encoding.UTF8, recursive: true });
-    await Share.share({ title: 'Casher data export', files: [file.uri], dialogTitle: 'Save or share your Casher export' });
+    try {
+      await Share.share({ title: 'Casher data export', files: [file.uri], dialogTitle: 'Save or share your Casher export' });
+    } catch (error) {
+      // The iOS plugin rejects a normal dismissal. It is not an export failure.
+      if (!(error instanceof Error) || error.message !== 'Share canceled') throw error;
+    }
     // Do not delete immediately: a selected app may still be reading the file.
     return;
   }

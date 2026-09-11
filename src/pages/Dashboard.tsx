@@ -1,5 +1,6 @@
-import { canPurchaseInApp } from '@/lib/mobile-platform';
+import { canPurchaseInApp, isNativeApp } from '@/lib/mobile-platform';
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,50 +22,65 @@ import SEO from '@/components/SEO';
 
 export default function Dashboard() {
   const [showUpload, setShowUpload] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadStarted, setUploadStarted] = useState(false);
+  const queryClient = useQueryClient();
   const [refreshKey, setRefreshKey] = useState(0);
   const [lastUpload, setLastUpload] = useState<UploadResult | null>(null);
   const { t } = useTranslation();
-  const { user, loading, userTier, uploadsUsed, canUpload, accountError, refreshingAccount, refreshAccount, showOnboarding, setShowOnboarding, setUploadsUsed, setCanUpload, handleSignOut } = useAuth();
+  const { user, loading, userTier, uploadsUsed, canUpload, allowanceReady, accountError, refreshingAccount, refreshAccount, refreshUploadAllowance, showOnboarding, setShowOnboarding, setUploadsUsed, setCanUpload, handleSignOut } = useAuth();
   const data = useDashboardData(user?.id, refreshKey);
-  const refresh = () => setRefreshKey(key => key + 1);
+  const invalidateStatements = () => {
+    // History also uses these records with its own refresh key. Mark every
+    // cached view of this account stale after an import or correction.
+    void queryClient.invalidateQueries({ queryKey: ['transactions', user?.id] });
+    void queryClient.invalidateQueries({ queryKey: ['subscriptions', user?.id] });
+    void queryClient.invalidateQueries({ queryKey: ['upload-history', user?.id] });
+  };
+  const refresh = () => {
+    invalidateStatements();
+    setRefreshKey(key => key + 1);
+  };
+  const reconcileImport = () => { invalidateStatements(); refreshUploadAllowance(); };
   const handleUploadComplete = (result?: UploadResult) => {
     if (result?.usage) { setUploadsUsed(result.usage.uploadsUsed); setCanUpload(result.usage.canUpload); }
     if (result?.code && result.code !== 'OK' && result.code !== 'REPLAY') return;
-    setLastUpload(result || null); setShowUpload(false); data.setSelectedMonth(null); refresh();
+    setLastUpload(result || null); setShowUpload(false); setUploadStarted(false); data.setSelectedMonth(null); refresh();
   };
   if (loading || !user) return <div role="status" className="min-h-screen flex items-center justify-center gap-2"><Loader2 className="h-6 w-6 animate-spin" />Loading your account…</div>;
   const period = monthLabel(data.month);
+  const legacyNote = `${data.legacyTransactionsCount} older transactions in this month have no recorded payment direction. These totals use estimated classifications. Compare them with your original statement before relying on them.`;
   return <div className="min-h-screen bg-background">
     <SEO title="Dashboard — Casher" description="Review your statement spending and recurring subscriptions." path="/dashboard" noindex />
     <OnboardingModal open={showOnboarding} onClose={() => setShowOnboarding(false)} />
     <DashboardHeader userTier={userTier} hasUser onSignOut={handleSignOut} />
     <main id="main-content" className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="mb-1 text-sm text-muted-foreground">Your statements, made clearer</p><h1 className="text-3xl font-semibold tracking-tight">Overview</h1></div>
+        <div><h1 className="text-3xl font-semibold tracking-tight">Overview</h1></div>
         <div className="flex w-full flex-wrap items-end gap-3 sm:w-auto">
-          <label className="min-w-0 basis-full text-xs text-muted-foreground sm:basis-auto sm:flex-none">Statement month
+          <label className="min-w-0 basis-full text-xs text-muted-foreground sm:basis-auto sm:flex-none"><span aria-hidden="true">Statement month</span>
             <select aria-label="Statement month" value={data.month} onChange={event => data.setSelectedMonth(event.target.value)} className="mt-1 block h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground sm:w-56">
               {[...new Set([currentMonth(), ...data.months])].sort().reverse().map(month => <option key={month} value={month}>{monthLabel(month)}</option>)}
             </select>
           </label>
-          <Button onClick={() => setShowUpload(value => !value)} variant={showUpload ? 'outline' : 'default'}><Upload className="mr-2 h-4 w-4" />{showUpload ? 'Close upload' : 'Upload statement'}</Button>
+          <Button disabled={uploading} onClick={() => { setShowUpload(value => !value); setUploadStarted(false); }} variant={showUpload ? 'outline' : 'default'}><Upload className="mr-2 h-4 w-4" />{showUpload ? 'Close upload' : 'Upload statement'}</Button>
         </div>
       </div>
       {accountError && <div role="alert" className="space-y-3 rounded-lg border p-4 text-sm"><p>{accountError}</p><Button variant="outline" disabled={refreshingAccount} onClick={refreshAccount}>{refreshingAccount ? 'Checking account…' : 'Retry account check'}</Button></div>}
-      {showUpload && (canUpload ? <CSVUpload onUploadComplete={handleUploadComplete} /> : !accountError && <Card><CardContent className="space-y-3 p-5"><p>{t('uploadLimitReached')} · {uploadsUsed} used this month.</p>{canPurchaseInApp() && <Button asChild><Link to="/pricing">View plans</Link></Button>}</CardContent></Card>)}
+      {showUpload && (uploadStarted || (allowanceReady && canUpload) ? <CSVUpload quotaReached={allowanceReady && !canUpload} onUploadComplete={handleUploadComplete} onProcessingChange={busy => { setUploading(busy); if (busy) setUploadStarted(true); }} onImportSettled={reconcileImport} /> : !allowanceReady ? (!accountError && <p role="status">Checking upload allowance…</p>) : !accountError && <Card><CardContent className="space-y-3 p-5"><p>{t('uploadLimitReached')} · {uploadsUsed} used this month.</p>{canPurchaseInApp() && <Button asChild><Link to="/pricing">View plans</Link></Button>}</CardContent></Card>)}
       {lastUpload && <div role="status" className="rounded-lg border bg-muted/40 p-4 text-sm">{lastUpload.replay ? 'This statement was already imported.' : `${lastUpload.transactionsCount || 0} transactions imported.`}{!!lastUpload.skippedRows && <p className="mt-1">{lastUpload.skippedRows} rows could not be read. Review your statement before relying on these totals.</p>}</div>}
       {data.error ? <Card><CardContent role="alert" className="space-y-3 p-6"><h2 className="font-semibold">Your overview could not be loaded</h2><p className="text-sm text-muted-foreground">We could not retrieve all the data needed to calculate reliable totals.</p><Button variant="outline" onClick={data.retry}>Try again</Button></CardContent></Card>
         : data.loading ? <div role="status" className="rounded-lg border p-8 text-sm text-muted-foreground">Loading your statement totals…</div>
         : <>
           <DashboardSummaryCards spending={data.spending} income={data.income} subscriptionCount={data.subscriptionCount} annualCost={data.annualCost} period={period} />
-          {data.legacyTransactionsCount > 0 && <p role="note" className="rounded-lg border border-amber-600/40 bg-amber-500/5 p-4 text-sm">{data.legacyTransactionsCount} older transactions in this month have no recorded payment direction. These totals use estimated classifications. Compare them with your original statement before relying on them.</p>}
+          {data.legacyTransactionsCount > 0 && <p role="note" aria-label={isNativeApp() ? legacyNote : undefined} className="rounded-lg border border-amber-600/40 bg-amber-500/5 p-4 text-sm"><span aria-hidden={isNativeApp() || undefined}>{legacyNote}</span></p>}
           <p className="text-xs leading-relaxed text-muted-foreground">Totals cover imported transactions only, in GBP. They are not your bank balance.{data.month !== currentMonth() && ' Showing your most recent statement month unless you select another.'}</p>
           {!data.hasTransactions && !showUpload && <Card><CardHeader><CardTitle>Start with your first statement</CardTitle><CardDescription>Export a CSV from your bank, then upload it to see spending and possible recurring payments.</CardDescription></CardHeader><CardContent><Button onClick={() => setShowUpload(true)}>Upload a CSV</Button><p className="mt-3 text-sm text-muted-foreground">Up to 5 MB · date, description and amount columns · no bank login required</p></CardContent></Card>}
           <div className="grid min-w-0 items-start gap-6 lg:grid-cols-2"><SpendingChart data={data.categories} period={period} /><SubscriptionsList refreshKey={refreshKey} userId={user.id} onDataChanged={refresh} /></div>
         </>}
       <TransactionsTable refreshKey={refreshKey} userTier={userTier} userId={user.id} month={data.month} onDataChanged={refresh} />
       <div className="grid min-w-0 items-start gap-6 lg:grid-cols-2"><UploadHistory userId={user.id} refreshKey={refreshKey} /><SavingsGoals userId={user.id} /></div>
-      <p className="border-t pt-4 text-xs text-muted-foreground">Bank connections: {t("bankConnectInDevelopment")}. CSV uploads are available today.</p>
+      <p className="border-t pt-4 text-xs text-muted-foreground">Analysis uses the GBP statements you import. No bank connection is required.</p>
     </main>
   </div>;
 }

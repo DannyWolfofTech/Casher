@@ -14,27 +14,33 @@ export default function CategoryChart({ data, label }: { data: CategoryAmount[];
   if (total === 0) return <p className="py-12 text-center text-sm text-muted-foreground">No spending recorded for this period.</p>;
   return (
     <figure aria-label={label} className="min-w-0 space-y-4">
-      <div className="relative mx-auto h-[228px] w-full max-w-[320px] [&_*]:outline-none [-webkit-tap-highlight-color:transparent]" aria-hidden="true">
+      <div className="relative mx-auto h-[228px] overflow-hidden w-full max-w-[320px] [&_*]:outline-none [-webkit-tap-highlight-color:transparent]" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <PieChart accessibilityLayer={false}>
-            <Pie rootTabIndex={-1} onClick={row => setSelected(previous => previous === row.name ? null : row.name)} data={valid} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={76} outerRadius={104} startAngle={90} endAngle={-270} stroke="hsl(var(--card))" strokeWidth={1} isAnimationActive={false} label={false} labelLine={false}>
+            <Pie rootTabIndex={-1} onClick={row => setSelected(previous => previous === row.name ? null : row.name)} data={valid} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius="66%" outerRadius="90%" startAngle={90} endAngle={-270} stroke="hsl(var(--card))" strokeWidth={1} isAnimationActive={false} label={false} labelLine={false}>
               {valid.map(row => <Cell key={row.name} fill={color(row.name)} />)}
             </Pie>
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="max-w-32 text-center text-xs text-muted-foreground">{active?.name || 'Total'}</span>
-          <span className="text-xl font-semibold tabular-nums">{money(active?.value ?? total)}</span>
+          <span className="max-w-[min(60%,8rem)] line-clamp-2 break-words text-center text-xs text-muted-foreground">{active?.name || 'Total'}</span>
+          <span className="max-w-[min(64%,9rem)] break-all text-center text-lg font-semibold tabular-nums">{money(active?.value ?? total)}</span>
         </div>
       </div>
-      <figcaption className="sr-only" aria-live="polite">{active ? `${active.name}: ${money(active.value)}. ` : ''}{label}. Total {money(total)}. Values listed below.</figcaption>
+      <figcaption className="sr-only" aria-live="polite">{`${active ? `${active.name}: ${money(active.value)}. ` : ''}${label}. Total ${money(total)}. Values listed below.`}</figcaption>
       <ul className="divide-y" aria-label="Category amounts">
-        {valid.map(row => <li key={row.name} className="flex items-center gap-3 py-2 text-sm">
-          <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: color(row.name) }} />
-          <button type="button" aria-pressed={active?.name === row.name} onClick={() => setSelected(previous => previous === row.name ? null : row.name)} className="min-w-0 flex-1 rounded py-2 text-left break-words focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{row.name}</button>
-          <span className="shrink-0 tabular-nums font-medium">{money(row.value)}</span>
-          <span className="w-12 shrink-0 text-right tabular-nums text-muted-foreground">{(row.value / total * 100).toFixed(1)}%</span>
-        </li>)}
+        {valid.map(row => {
+          const percentage = `${(row.value / total * 100).toFixed(1)}%`;
+          return <li key={row.name}>
+            <button type="button" aria-label={`${row.name}: ${money(row.value)}, ${percentage}`} aria-pressed={active?.name === row.name} onClick={() => setSelected(previous => previous === row.name ? null : row.name)} className="min-h-11 w-full rounded py-3 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+              <span aria-hidden="true" className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: color(row.name) }} />
+                <span className="min-w-0 flex-1 basis-20 break-words">{row.name}</span>
+                <span className="ml-auto flex max-w-full flex-wrap justify-end gap-x-3 tabular-nums"><span className="break-all font-medium">{money(row.value)}</span><span className="text-right text-muted-foreground">{percentage}</span></span>
+              </span>
+            </button>
+          </li>;
+        })}
       </ul>
     </figure>
   );
