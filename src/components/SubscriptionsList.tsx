@@ -1,26 +1,27 @@
-import { isNativeApp } from '@/lib/mobile-platform';
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ChevronDown, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useStatementData } from '@/hooks/useStatementData';
-import { annualSubscriptionCost, money, currentMonth, monthLabel } from '@/lib/analytics';
+import { annualSubscriptionCost, money, monthLabel } from '@/lib/analytics';
 import { nextRenewal, cancellationProvider } from '@/lib/subscription-renewals';
 import { Tables } from '@/integrations/supabase/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useQueryClient } from '@tanstack/react-query';
+import MerchantMark from './MerchantMark';
+import { resolveMerchant } from '@/lib/merchant-identity';
 
 interface Props { refreshKey?: number; userId?: string; onDataChanged?: () => void; }
 export default function SubscriptionsList({ refreshKey = 0, userId, onDataChanged }: Props) {
   const { subscriptions: query } = useStatementData(userId, refreshKey);
-  const native = isNativeApp();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [confirmStatus, setConfirmStatus] = useState<'cancelled' | 'dismissed' | null>(null);
   const [editingDetails, setEditingDetails] = useState(false);
   const [selected, setSelected] = useState<Tables<'detected_subscriptions'> | null>(null);
-  const [renewalMonth, setRenewalMonth] = useState(currentMonth());
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [amount, setAmount] = useState('');
@@ -29,7 +30,7 @@ export default function SubscriptionsList({ refreshKey = 0, userId, onDataChange
   const client = useQueryClient();
   const { toast, dismiss } = useToast();
   const subscriptions = (query.data || []).filter(sub => showInactive ? sub.status !== 'active' : sub.status === 'active').sort((a, b) => annualSubscriptionCost(b) - annualSubscriptionCost(a));
-  const openReview = (sub: Tables<'detected_subscriptions'>) => { dismiss(); setEditingDetails(false); setSelected(sub); setAmount(String(sub.amount)); setFrequency(sub.frequency === 'yearly' ? 'annual' : sub.frequency); setError(''); };
+  const openReview = (sub: Tables<'detected_subscriptions'>) => { dismiss(); setConfirmStatus(null); setEditingDetails(false); setSelected(sub); setAmount(String(sub.amount)); setFrequency(sub.frequency === 'yearly' ? 'annual' : sub.frequency); setError(''); };
   const save = async (status: string, editDetails = false) => {
     if (!selected || saving) return;
     setSaving(true); setError('');
@@ -44,34 +45,29 @@ export default function SubscriptionsList({ refreshKey = 0, userId, onDataChange
     finally { setSaving(false); }
   };
   const provider = selected ? cancellationProvider(selected.service_name) : null;
-  const upcoming = subscriptions.map(sub => ({ sub, due: nextRenewal(sub) })).filter(row => row.due?.startsWith(renewalMonth)).sort((a, b) => a.due!.localeCompare(b.due!));
-  const renewalMonths = [...new Set([currentMonth(), ...subscriptions.map(nextRenewal).filter((date): date is string => !!date).map(date => date.slice(0, 7))])].sort().reverse();
-  return <Card className="min-w-0">
-    <CardHeader><CardTitle>Subscriptions & renewals</CardTitle><CardDescription>Merchant and amount come from your statements. Expected dates are based on the last payment and billing frequency.</CardDescription></CardHeader>
-    <CardContent>
-      {!showInactive && !query.isPending && !query.isError && <section className="mb-6 space-y-3 rounded-lg border p-3" aria-label="Expected renewals">
-        <h3 className="text-sm font-semibold">Expected renewals</h3>
-        <label className="block text-xs"><span aria-hidden="true">Renewal month</span><select aria-label="Renewal month" value={renewalMonth} onChange={event => setRenewalMonth(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-md border bg-background px-3 text-base">{renewalMonths.map(month => <option key={month} value={month}>{monthLabel(month)}</option>)}</select></label>
-        {upcoming.length ? <ul className="divide-y">{upcoming.map(({sub, due}) => {
-          const name = cancellationProvider(sub.service_name)?.name || sub.service_name;
-          const date = new Date(`${due}T12:00:00`).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
-          return <li key={sub.id} role={native ? 'group' : undefined} tabIndex={native ? 0 : undefined} aria-label={native ? `${name}: ${money(Number(sub.amount))}, expected ${date}.` : undefined} className="min-h-11 py-2 text-sm">
-            <div aria-hidden={native || undefined} className="flex flex-wrap justify-between gap-2"><span className="min-w-0 flex-1 basis-36 break-words">{name}<span className="block text-xs text-muted-foreground">{`Expected ${date}`}</span></span><span className="max-w-full break-all">{money(Number(sub.amount))}</span></div>
-          </li>;
-        })}</ul> : <p className="text-sm text-muted-foreground">No renewals can be estimated for this month from your latest payments. Upload a recent statement to update them.</p>}
-
-        <p className="text-xs text-muted-foreground">Estimates, not confirmed bills. Older statements cannot confirm whether a subscription is still running.</p>
-      </section>}
-      <div className="mb-4 flex flex-wrap gap-2"><Button variant={!showInactive ? 'secondary' : 'ghost'} size="sm" aria-pressed={!showInactive} onClick={() => setShowInactive(false)}>Active</Button><Button variant={showInactive ? 'secondary' : 'ghost'} size="sm" aria-pressed={showInactive} onClick={() => setShowInactive(true)}>Cancelled & dismissed</Button></div>
-      {query.isPending ? <p role="status">Loading subscriptions…</p> : query.isError ? <div role="alert"><p>Subscriptions could not be loaded.</p><Button variant="outline" onClick={() => query.refetch()}>Try again</Button></div> : subscriptions.length === 0 ? <p className="py-8 text-sm text-muted-foreground">{showInactive ? 'No cancelled or dismissed subscriptions.' : 'No active subscriptions detected. New statement uploads may reveal more.'}</p> :
-        <ul className="divide-y">{subscriptions.map(sub => <li key={sub.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0">
-          <div className="min-w-0 flex-1 basis-36" role={native ? 'group' : undefined} tabIndex={native ? 0 : undefined} aria-label={native ? `${cancellationProvider(sub.service_name)?.name || sub.service_name}: ${money(Number(sub.amount))}, ${sub.frequency}. Estimated ${money(annualSubscriptionCost(sub))} per year.` : undefined}><div aria-hidden={native || undefined}><h3 className="break-words text-sm font-semibold">{cancellationProvider(sub.service_name)?.name || sub.service_name}</h3><p className="mt-1 text-sm text-muted-foreground">{`${money(Number(sub.amount))} · ${sub.frequency}`}</p><p className="mt-1 text-xs text-muted-foreground">{`${money(annualSubscriptionCost(sub))} estimated per year`}</p></div></div>
-          {showInactive && <span className="text-xs text-muted-foreground">{sub.status === 'dismissed' ? 'Not a subscription' : 'Cancelled'}</span>}
-          <Button variant="outline" size="sm" onClick={() => openReview(sub)}>{showInactive ? 'Manage' : 'Cancel'}<span className="sr-only"> {sub.service_name}</span></Button>
-        </li>)}</ul>}
-    </CardContent>
+  const selectedMerchant = selected ? resolveMerchant(selected.service_name) : null;
+  useEffect(() => {
+    const id = searchParams.get('renewal');
+    const sub = query.data?.find(row => row.id === id);
+    if (sub) { setSelected(sub); setAmount(String(sub.amount)); setFrequency(sub.frequency === 'yearly' ? 'annual' : sub.frequency); setEditingDetails(false); setConfirmStatus(null); setError(''); setSearchParams({}, {replace:true}); }
+  }, [query.data, searchParams, setSearchParams]);
+  const active = (query.data || []).filter(sub => sub.status === 'active');
+  const annual = active.reduce((sum, sub) => sum + annualSubscriptionCost(sub), 0);
+  const ordered = subscriptions.map(sub => ({sub, due: nextRenewal(sub)})).sort((a,b) => (a.due || '9999').localeCompare(b.due || '9999'));
+  const groups = [...new Set(ordered.map(item => item.due?.slice(0,7) || 'unknown'))];
+  return <div className="min-w-0 space-y-6">
+    <div className="space-y-4"><h1 className="app-title">Subscriptions</h1><p className="text-[.9375rem] text-muted-foreground">Upcoming recurring payments</p></div>
+    {!query.isPending && !query.isError && <dl className="summary-pair rounded-2xl bg-card p-4"><div><dt>Monthly estimate</dt><dd>{money(annual / 12)}</dd></div><div><dt>Annual estimate</dt><dd>{money(annual)}</dd></div></dl>}
+    <div className="segmented-control"><Button variant={!showInactive ? 'soft' : 'ghost'} size="sm" aria-pressed={!showInactive} onClick={() => setShowInactive(false)}>Active</Button><Button variant={showInactive ? 'soft' : 'ghost'} size="sm" aria-pressed={showInactive} onClick={() => setShowInactive(true)}>Cancelled &amp; dismissed</Button></div>
+    {query.isPending ? <p role="status">Loading subscriptions…</p> : query.isError ? <div role="alert"><p>Subscriptions could not be loaded.</p><Button variant="outline" onClick={() => query.refetch()}>Try again</Button></div> : subscriptions.length === 0 ? <p className="py-8 text-muted-foreground">{showInactive ? 'No cancelled or dismissed subscriptions.' : 'No active subscriptions detected. New statement uploads may reveal more.'}</p> : <section aria-label="Expected renewals" className="space-y-5"><h2 className="app-section-title">{showInactive ? 'Past detections' : 'Next payments'}</h2>{groups.map(group => <section key={group}><h3 className="text-[.9375rem] text-muted-foreground">{group === 'unknown' ? 'Date not available' : monthLabel(group)} · {ordered.filter(item => (item.due?.slice(0,7) || 'unknown') === group).length} {showInactive ? 'records' : 'expected'}</h3><ul className="divide-y">{ordered.filter(item => (item.due?.slice(0,7) || 'unknown') === group).map(({sub,due}) => {
+      const merchant = resolveMerchant(sub.service_name); const name = merchant?.name || sub.service_name;
+      return <li key={sub.id}><button type="button" className="merchant-row rounded" onClick={() => openReview(sub)} aria-label={`Manage ${name}`} aria-describedby={`renewal-summary-${sub.id}`}><span id={`renewal-summary-${sub.id}`} className="sr-only">{money(Number(sub.amount))}, {sub.frequency}. {showInactive ? sub.status : `Estimated next payment ${due || "date unavailable"}` }.</span><MerchantMark merchant={merchant} category="Subscription" /><span className="merchant-row-label">{name}<span className="merchant-row-detail">{showInactive ? sub.status === 'cancelled' ? 'Cancelled' : 'Not a subscription' : due ? new Date(`${due}T12:00:00`).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : 'No date'} · {sub.frequency}</span></span><span className="merchant-row-amount">{money(Number(sub.amount))}</span><ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0" /></button></li>;
+    })}</ul></section>)}</section>}
+    <p className="app-caption">Expected dates come from past payments. Casher does not schedule these charges. Estimates, not confirmed bills. Older statements cannot confirm whether a subscription is still running.</p>
     <Dialog open={!!selected} onOpenChange={open => { if (!open && !saving) setSelected(null); }}>
-      <DialogContent><DialogHeader><DialogTitle>{`${selected?.status === 'active' ? 'Cancel' : 'Manage'} ${provider?.name || selected?.service_name || 'subscription'}`}</DialogTitle><DialogDescription>Casher cannot cancel payments for you. Cancel with the provider first, then update your record here.</DialogDescription></DialogHeader>
+      <DialogContent><DialogHeader><DialogTitle>{selectedMerchant?.name || selected?.service_name || 'Renewal details'}</DialogTitle><DialogDescription>Casher cannot cancel payments for you. Cancel with the provider first, then update your record here.</DialogDescription></DialogHeader>
+        {selected && <div className="flex min-w-0 items-center gap-3"><MerchantMark merchant={selectedMerchant} category="Subscription" /><p className="min-w-0 break-words text-sm"><span className="block text-xs text-muted-foreground">Statement description</span>{selected.service_name}</p></div>}
+        {selected && <dl className="space-y-3"><div><dt className="app-caption">Estimated payment</dt><dd className="app-amount">{money(Number(selected.amount))}</dd></div><div className="flex flex-wrap justify-between gap-2"><dt>Frequency</dt><dd>{selected.frequency}</dd></div><div className="flex flex-wrap justify-between gap-2"><dt>Next expected</dt><dd>{nextRenewal(selected) || 'Date unavailable'}</dd></div></dl>}
         <p className="text-sm text-muted-foreground">Check your contract, renewal date and any notice period. Keep the provider's cancellation confirmation.</p>
         {provider && <Button asChild><a href={provider!.url} target="_blank" rel="noopener noreferrer">Continue to {provider?.name} cancellation<ExternalLink className="ml-2 h-4 w-4" /></a></Button>}
         {!provider && <p className="text-sm">We haven't verified a cancellation link for this merchant. Use the provider's official app or the contact details on your bill. Do not cancel a direct debit as a substitute for ending your contract.</p>}
@@ -82,8 +78,9 @@ export default function SubscriptionsList({ refreshKey = 0, userId, onDataChange
           <Button type="submit" variant="outline" disabled={saving}>Save payment details</Button>
         </form>}</div>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        {selected?.status === 'active' ? <><Button variant="outline" disabled={saving} onClick={() => save('cancelled')}>{saving ? 'Saving…' : 'I cancelled with the provider'}</Button><Button variant="outline" disabled={saving} onClick={() => save('dismissed')}>This is not a subscription</Button></> : <Button disabled={saving} onClick={() => save('active')}>Restore as active subscription</Button>}
+        {selected?.status === 'active' ? <><Button variant="outline" disabled={saving} onClick={() => setConfirmStatus('cancelled')}>{saving ? 'Saving…' : 'I cancelled with the provider'}</Button><Button variant="outline" disabled={saving} onClick={() => setConfirmStatus('dismissed')}>This is not a subscription</Button></> : <Button disabled={saving} onClick={() => save('active')}>Restore as active subscription</Button>}
       </DialogContent>
     </Dialog>
-  </Card>;
+    <Dialog open={!!confirmStatus} onOpenChange={open => { if (!open && !saving) setConfirmStatus(null); }}><DialogContent><DialogHeader><DialogTitle>{confirmStatus === 'cancelled' ? 'Mark as cancelled?' : 'Dismiss this detection?'}</DialogTitle><DialogDescription>{confirmStatus === 'cancelled' ? 'Only continue after cancelling with the provider. This changes your Casher record; it does not stop a payment.' : 'This removes the detection from active subscriptions. Your recorded transactions stay unchanged.'}</DialogDescription></DialogHeader>{error && <p role="alert" className="text-destructive">{error}</p>}<Button variant="soft" onClick={() => setConfirmStatus(null)} disabled={saving}>Keep current record</Button><Button disabled={saving} onClick={async () => { if (confirmStatus) await save(confirmStatus); setConfirmStatus(null); }}>{saving ? 'Saving…' : confirmStatus === 'cancelled' ? 'Mark as cancelled' : 'Dismiss detection'}</Button></DialogContent></Dialog>
+  </div>;
 }

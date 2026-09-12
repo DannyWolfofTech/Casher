@@ -1,0 +1,328 @@
+{
+  "date": "2026-09-12",
+  "figmaFile": "HFA81FN7TV8hqVpSXXMmh1",
+  "figmaBoard": "50:636",
+  "simpleIconsRevision": "b054428646591252023b9599defb56f6e0b32f10",
+  "assets": [
+    {
+      "id": "deliveroo",
+      "asset": "deliveroo-fbed1d9a15.png",
+      "figmaImageHash": "fbed1d9a15fa78e00601955deef2b2f00d9e2ef0",
+      "sha256": "cd2dc5b3754eb99b9dfc821c5580ca4129e16b7869393b17ee71016ab05d20b5",
+      "bytes": 4468,
+      "source": "https://deliveroo.com",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "justeat",
+      "asset": "justeat-4280dcaa26.png",
+      "figmaImageHash": "4280dcaa269194fb5c0af47b8de51805339ebde9",
+      "sha256": "162506fc0acd9ddc1b02a9ca3156b640c259431e469202a1c6b244c24c8c90a3",
+      "bytes": 4811,
+      "source": "https://brand-box.marketing.just-eat.com",
+      "guidelines": "https://brand-box.marketing.just-eat.com",
+      "license": null
+    },
+    {
+      "id": "mcdonalds",
+      "asset": "mcdonalds-caa8b47857.png",
+      "figmaImageHash": "caa8b47857e3f7e3c7c9fd2439dc18b35842fd59",
+      "sha256": "2963aa9efbb7efbe19788e3cea374bbe0d7e905ed6a8940572193b5928330fbe",
+      "bytes": 5968,
+      "source": "https://www.mcdonalds.com/gb/en-gb/newsroom.html",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "starbucks",
+      "asset": "starbucks-25aaa35492.png",
+      "figmaImageHash": "25aaa35492d0cbfc9a580754d33e61ea39bd0526",
+      "sha256": "cf5257321f586629b43bffb72b2c2b3a8f64555f1a9a79311318af6c7e830c18",
+      "bytes": 13619,
+      "source": "https://starbucks.com",
+      "guidelines": "https://creative.starbucks.com",
+      "license": null
+    },
+    {
+      "id": "ubereats",
+      "asset": "ubereats-174e80247a.png",
+      "figmaImageHash": "174e80247a9e47e6b59b5216a7096b3f6527ab2b",
+      "sha256": "8e9e2e2efec14a5b3a5e63f82d902fe7508f8224e86a87665a816bd1d734b8c4",
+      "bytes": 6564,
+      "source": "https://assets.uber.com/d/k4nuxdZ8MC7E/logos/collection/150",
+      "guidelines": "https://assets.uber.com/d/k4nuxdZ8MC7E/user-guide#/user-guide/terms-of-use",
+      "license": null
+    },
+    {
+      "id": "puregym",
+      "asset": "puregym-3b12502c2d.png",
+      "figmaImageHash": "3b12502c2dcfa865844647cb9711c37ce53173c7",
+      "sha256": "64025d09617ec165376121a80090766665571455fbc91d26362fcc02db9d8e56",
+      "bytes": 5676,
+      "source": "https://www.puregym.com/about-us/ (embedded official logo)",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "asda",
+      "asset": "asda-b4544bbce8.png",
+      "figmaImageHash": "b4544bbce8f94d58e021fd8344462eb80433149b",
+      "sha256": "0f325dc80f9fb435ad43c0b16f2e76c4221c0b6745fd70cf5a963faf4e733f06",
+      "bytes": 4622,
+      "source": "https://www.asda.com",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "aldinord",
+      "asset": "aldinord-ef3de839a2.png",
+      "figmaImageHash": "ef3de839a2f04e131fe9910d4ca85c5edff328e8",
+      "sha256": "1b8a7c1084d10a919ff963ab942ca2b540807cab8fe658b1d2d2d0aea1269922",
+      "bytes": 5444,
+      "source": "https://commons.wikimedia.org/wiki/File:Aldi_Nord_201x_logo.svg",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "aldisud",
+      "asset": "aldisud-a4283c148b.png",
+      "figmaImageHash": "a4283c148b0b645b10f58794e803609f4f0e34ca",
+      "sha256": "6d2cacabc54c591bf301d944f9ae2de934e0a63ba685e18d1804b0b030b6e0fd",
+      "bytes": 5194,
+      "source": "https://www.aldi-sued.de",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "auchan",
+      "asset": "auchan-6d8d8f098c.png",
+      "figmaImageHash": "6d8d8f098cdb47875891f56296ec5b80df9d00da",
+      "sha256": "9cc879cd201ef854647ff20af1141ea4dcc96ba3f5723c8debc4588ad38384d0",
+      "bytes": 6403,
+      "source": "https://www.auchan.fr",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "carrefour",
+      "asset": "carrefour-ad1753d890.png",
+      "figmaImageHash": "ad1753d890b564de624e51ca8d911201310abfb4",
+      "sha256": "2c4eb2ec1a1baefa8bbd22902b4b2f00738ef601626cc38c2199d391aa4a239e",
+      "bytes": 4821,
+      "source": "https://en.wikipedia.org/wiki/File:Carrefour_logo_no_tag.svg",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "lidl",
+      "asset": "lidl-2c80ed79a5.png",
+      "figmaImageHash": "2c80ed79a5414568a8ff1427b588337d5d9eae55",
+      "sha256": "528aebceb7942631b939950265313e79ea026d2e5e8408dda9274f599ca22034",
+      "bytes": 6899,
+      "source": "https://www.lidl.de",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "morrisons",
+      "asset": "morrisons-c202c52f54.png",
+      "figmaImageHash": "c202c52f54308348d1199ace0cff31ca6e672e8b",
+      "sha256": "35dd764530e4b54556584b957c40029cb9c2b38377a59f5ac026dadd817b2665",
+      "bytes": 5558,
+      "source": "https://groceries.morrisons.com",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "tesco",
+      "asset": "tesco-1e989c23ec.png",
+      "figmaImageHash": "1e989c23ecd1d4fba0bcf9be37b00ead8c068301",
+      "sha256": "01a56783e9027184a5e3a79b60b273cb7a637a1a5af1a7db23e496afa728d4e2",
+      "bytes": 5394,
+      "source": "https://www.tescoplc.com/media/svnf5ixc/tesco-logo.svg",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "apple",
+      "asset": "apple-146a84b345.png",
+      "figmaImageHash": "146a84b345764d1d9fc1ce05b50c0532f6f04bf2",
+      "sha256": "632ca6136933079769567d7307acf0378fda0dbf6ff1763b7c7bd096707735e9",
+      "bytes": 3975,
+      "source": "https://www.apple.com",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "argos",
+      "asset": "argos-bbe73d9d7b.png",
+      "figmaImageHash": "bbe73d9d7b6fc6620aa00abed4426955fc84c7fd",
+      "sha256": "67f0b5f4d413bb868b01a7b44d2d2b22e5dde5fe8b75e380b4e4332977346077",
+      "bytes": 5711,
+      "source": "https://www.argos.co.uk",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "boots",
+      "asset": "boots-aebed3014a.png",
+      "figmaImageHash": "aebed3014adeb80e4ad8c22d06cbc5ac2a3ca1a2",
+      "sha256": "f438fb66e48878a54e5bd777b9c1fe9bd8379dadc0ab2000a193704f07fcf598",
+      "bytes": 7169,
+      "source": "https://www.boots-uk.com",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "handm",
+      "asset": "handm-66dd21790a.png",
+      "figmaImageHash": "66dd21790a5fd58832db626d8f9638a09b9ce3b6",
+      "sha256": "6e46acb7be2f4972ec87296f327b9d49656861293e5517e7600eddf49072afbc",
+      "bytes": 6433,
+      "source": "https://www2.hm.com/en_gb/index.html",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "ikea",
+      "asset": "ikea-02a9ff4fbd.png",
+      "figmaImageHash": "02a9ff4fbd538bb6fde3565e3a3311c7a53419a3",
+      "sha256": "d07784e50b925509f1898adf16c1d990e58ab127cb52879de9b3ba3190609ef4",
+      "bytes": 4258,
+      "source": "https://www.ikea.com",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "zalando",
+      "asset": "zalando-35f4cc9149.png",
+      "figmaImageHash": "35f4cc914906dfee3f2b175452d076412d7e7961",
+      "sha256": "76c45ed65ab1fe6ec6f9f91ddcd5427a48af8c7547e979de11cd07f640bfa5f4",
+      "bytes": 3781,
+      "source": "https://www.zalando.co.uk",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "applemusic",
+      "asset": "applemusic-99c69bb8eb.png",
+      "figmaImageHash": "99c69bb8ebbe24bd82679fe5ee288099e0b5fa79",
+      "sha256": "2cac3ae82203fc1212d4ed4ce7a9b5a6ed2283edf2aca881810f1b387c93e718",
+      "bytes": 4280,
+      "source": "https://www.apple.com/itunes/marketing-on-music/identity-guidelines.html#apple-music-icon",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "dropbox",
+      "asset": "dropbox-7428711314.png",
+      "figmaImageHash": "7428711314949f9825802b5be7fbd6e91ac98a39",
+      "sha256": "e4b343d5509a2882fc15cc2bdeb1d1db7553b108d78bdcc311db17a69c28213a",
+      "bytes": 3815,
+      "source": "https://www.dropbox.com/branding",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "netflix",
+      "asset": "netflix-867e51e9b4.png",
+      "figmaImageHash": "867e51e9b4a474c19da52d6454076c007a9d01f2",
+      "sha256": "7341f7b8b0ae3c0da4aea559efc31f0b53d9db9dd291664fdcf7d618fd95ed8a",
+      "bytes": 1755,
+      "source": "https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.png",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "spotify",
+      "asset": "spotify-c0aaa59408.png",
+      "figmaImageHash": "c0aaa5940895bce22a2e50f8844fc2eddf2cfbcc",
+      "sha256": "0c3f4928756a08a69f114542df2fd0246b5dc838ae4d8910aaa48dfb3b1af903",
+      "bytes": 9883,
+      "source": "https://developer.spotify.com/documentation/general/design-and-branding/#using-our-logo",
+      "guidelines": "https://developer.spotify.com/documentation/general/design-and-branding/#using-our-logo",
+      "license": null
+    },
+    {
+      "id": "youtube",
+      "asset": "youtube-ce77bbc61a.png",
+      "figmaImageHash": "ce77bbc61ae0608d2cac7a1ce653e240a246cf41",
+      "sha256": "1d67ea8c9a69802d0ec556715fbb6c87031fe736901a70e4ad09c099b5eadfe7",
+      "bytes": 3261,
+      "source": "https://www.youtube.com/howyoutubeworks/resources/brand-resources/#logos-icons-and-colors",
+      "guidelines": "https://www.youtube.com/howyoutubeworks/resources/brand-resources/#logos-icons-and-colors",
+      "license": null
+    },
+    {
+      "id": "uber",
+      "asset": "uber-cfdccd581e.png",
+      "figmaImageHash": "cfdccd581e0df41734f55270a8bc2d37fdd042b3",
+      "sha256": "78f12a089cfcfba4b67bb15240f7cf5d668b07ddaa78bfc96118871b4c30c87b",
+      "bytes": 3671,
+      "source": "https://assets.uber.com/d/k4nuxdZ8MC7E/logos/collection/151",
+      "guidelines": "https://assets.uber.com/d/k4nuxdZ8MC7E/user-guide#/user-guide/terms-of-use",
+      "license": null
+    },
+    {
+      "id": "airbnb",
+      "asset": "airbnb-94b536ae72.png",
+      "figmaImageHash": "94b536ae724b0968b561b76927ea4def3794b78a",
+      "sha256": "f65e533392ee61acc7da462b3e5cf05ba4a9b8fcc7782d3592cdd271dc33c816",
+      "bytes": 6093,
+      "source": "https://www.airbnb.com",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "bookingdotcom",
+      "asset": "bookingdotcom-d05a369e16.png",
+      "figmaImageHash": "d05a369e16c2e33bb1779f811e7cef6815426a19",
+      "sha256": "223e41ab39097ded4fbdf06563972632b010acd9644a1bd70871c0eb93bf490e",
+      "bytes": 3326,
+      "source": "https://www.bookingholdings.com/media-room",
+      "guidelines": "https://www.bookingholdings.com/media-room",
+      "license": null
+    },
+    {
+      "id": "ryanair",
+      "asset": "ryanair-41f1f97f45.png",
+      "figmaImageHash": "41f1f97f45d260e05cdb6c256bad528b59a0c260",
+      "sha256": "53939653beb01b40bc84715b47dd44731cd8e033a4981e687eb96cfaffe875c9",
+      "bytes": 6981,
+      "source": "https://corporate.ryanair.com/media-centre/stock-images-gallery/#album-container-3",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "easyjet",
+      "asset": "easyjet-b3eb63b530.png",
+      "figmaImageHash": "b3eb63b5307a8f3f8a586f4f676bb8e6a7e6f675",
+      "sha256": "68d9db4355bea9ba54aecbef08a53b6040093b04364ff2313507b76f5cbb3ab6",
+      "bytes": 4449,
+      "source": "https://www.easyjet.com",
+      "guidelines": null,
+      "license": null
+    },
+    {
+      "id": "o2",
+      "asset": "o2-86518288fc.png",
+      "figmaImageHash": "86518288fc761c3d1160554b6f518c5991f1d108",
+      "sha256": "b6729277917317c514923f94c9770ef6f088317e8b059d288345bf2f6b2f14a0",
+      "bytes": 5026,
+      "source": "https://www.telefonica.de/presse/fotos/logos.html",
+      "guidelines": "https://www.telefonica.de/presse/fotos/logos.html",
+      "license": null
+    },
+    {
+      "id": "vodafone",
+      "asset": "vodafone-8f6d08567d.png",
+      "figmaImageHash": "8f6d08567dc6dac24fe52742e3debf700cd68c92",
+      "sha256": "891262cf002261e57c1ed92a1cbaedc3cc16569176f758bd09d3b4eaa78b1f57",
+      "bytes": 5232,
+      "source": "https://web.vodafone.com.eg",
+      "guidelines": null,
+      "license": null
+    }
+  ]
+}

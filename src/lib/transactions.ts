@@ -76,6 +76,6 @@ export function sumCredits(rows: DirectionalTransaction[]): number {
 
 /** Signed display string, e.g. "-£12.99" / "+£500.00". */
 export function formatSignedAmount(t: DirectionalTransaction): string {
-  const magnitude = Math.abs(Number(t.amount) || 0).toFixed(2);
+  const magnitude = Math.abs(Number(t.amount) || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   return isCredit(t) ? `+£${magnitude}` : `-£${magnitude}`;
 }

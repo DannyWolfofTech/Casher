@@ -11,7 +11,6 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const History = lazy(() => import("./pages/History"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Support = lazy(() => import("./pages/Support"));
@@ -43,13 +42,12 @@ const App = () => (
             <Routes>
               <Route path="/" element={isNativeApp() ? <Navigate to="/auth" replace /> : <Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/history" element={<History />} />
+              <Route path="/dashboard/*" element={<Dashboard />} />
               <Route path="/pricing" element={isNativeApp() ? <Navigate to="/dashboard" replace /> : <Pricing />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/support" element={<Support />} />
               <Route path="/terms" element={<Terms />} />
-              <Route path="/account" element={<Account />} />
+              <Route path="/account/*" element={<Account />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/about" element={<About />} />
               <Route path="/admin" element={<Navigate to="/dashboard" replace />} />

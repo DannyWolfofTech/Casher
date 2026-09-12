@@ -20,12 +20,12 @@ for (const dark of [false, true]) {
     await page.addInitScript(dark => localStorage.setItem('theme', dark ? 'dark' : 'light'), dark);
     await login(page);
     await page.evaluate(() => { document.documentElement.style.fontSize = '24px'; });
-    await page.getByRole('button', { name: 'Cancel Fitness membership with a long service name', exact: true }).click();
+    await page.goto('/dashboard/subscriptions'); await page.getByRole('button', { name: 'Manage Fitness membership with a long service name', exact: true }).click();
     const button = page.getByRole('button', { name: 'I cancelled with the provider' });
     expect(await button.evaluate(e => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight)).toBe(true);
     await accessible(page);
     await page.getByRole('button', { name: 'Close', exact: true }).click();
-    await page.goto('/account');
+    await page.goto('/account'); await page.getByRole('button',{name:'Delete account',exact:true}).click();
     await page.evaluate(() => { document.documentElement.style.fontSize = '24px'; });
     // Enable the synthetic account control to audit its active contrast; never submit.
     await page.getByLabel('Type DELETE to confirm').fill('DELETE');
@@ -45,7 +45,7 @@ test('CSV selection offers a separate accessible remove control', async ({ page 
   await expect(page.getByRole('button', { name: 'Remove selected CSV' })).toBeVisible();
   await accessible(page);
   await page.getByRole('button', { name: 'Remove selected CSV' }).click();
-  await expect(page.getByRole('button', { name: 'Analyze Transactions', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Confirm import', exact: true })).toHaveCount(0);
 });
 
 for (const mode of ['invalid-theme', 'restricted-preferences']) {
@@ -64,7 +64,7 @@ for (const mode of ['invalid-theme', 'restricted-preferences']) {
     }, mode);
     await login(page);
     await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Switch to dark theme' }).click();
+    await page.getByRole('link',{name:'Account',exact:true}).click(); await page.getByRole('button',{name:/Appearance: Original light/}).click();
     await expect(page.locator('html')).toHaveClass(/dark/);
     expect(errors).toEqual([]);
   });
@@ -79,11 +79,11 @@ test('a stalled statement request gives a retry and never presents incomplete to
   await expect.poll(() => calls).toBe(1);
   await page.clock.fastForward(15_100);
   await expect(page.getByRole('heading', { name: 'Your overview could not be loaded' })).toBeVisible();
-  await expect(page.getByRole('figure', { name: /Spending by category/ })).toHaveCount(0);
+  await expect(page.getByRole('list', {name:'Money out by category'})).toHaveCount(0);
   expect(calls).toBe(1);
   await page.unroute(stalled);
   await page.getByRole('alert').filter({ has: page.getByRole('heading', { name: 'Your overview could not be loaded' }) }).getByRole('button', { name: 'Try again', exact: true }).click();
-  await expect(page.getByRole('figure', { name: /Spending by category/ })).toBeVisible();
+  await expect(page.getByRole('list', {name:'Money out by category'})).toBeVisible();
 });
 
 test('a stalled allowance check fails closed and can be retried', async ({ page }) => {
@@ -120,15 +120,15 @@ test('long merchant names and large amounts fit a small phone with enlarged text
     })) });
   });
   await login(page);
-  await expect(page.getByRole('figure')).toBeVisible();
+  await expect(page.getByRole('list', {name:'Money out by category'})).toBeVisible();
   await page.evaluate(() => { document.documentElement.style.fontSize = '24px'; });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await expect(page.getByRole('region', { name: 'Expected renewals' })).toContainText(merchant);
-  await page.goto('/dashboard/history');
+  await page.goto('/dashboard/subscriptions'); await expect(page.getByRole('region', { name: 'Expected renewals' })).toContainText(merchant);
+  await page.goto('/dashboard/history'); await page.getByRole('button',{name:'Over time',exact:true}).click();
   await expect(page.getByRole('heading', { name: 'Monthly spending' })).toBeVisible();
   await page.evaluate(() => { document.documentElement.style.fontSize = '24px'; });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await expect(page.getByRole('list', { name: 'Imported spending by transaction month' })).toContainText('£899,999,999.91');
+  await expect(page.getByRole('region',{name:/Monthly spending chart/})).toContainText('£899,999,999.91');
 });
 
 test('an import cannot be hidden while processing and a stalled response offers a safe same-file retry', async ({ page }) => {
@@ -138,12 +138,12 @@ test('an import cannot be hidden while processing and a stalled response offers 
   await login(page);
   await page.getByRole('button', { name: 'Upload statement', exact: true }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'retry-same-file.csv', mimeType: 'text/csv', buffer: Buffer.from('Date,Description,Amount\n2026-09-01,Test,-1') });
-  await page.getByRole('button', { name: 'Analyze Transactions', exact: true }).click();
+  await page.getByRole('button', { name: 'Review statement', exact: true }).click(); await page.getByRole('button', {name:'Confirm import',exact:true}).click();
   await expect.poll(() => attempts).toBe(1);
-  await expect(page.getByRole('button', { name: 'Close upload', exact: true })).toBeDisabled();
+  await page.keyboard.press('Escape'); await expect(page.getByRole('dialog',{name:'Import statement',exact:true})).toBeVisible();
   await page.clock.fastForward(60_100);
   await expect(page.getByRole('alert').filter({ hasText: 'retry the same file' }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Analyze Transactions', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Confirm import', exact: true })).toBeEnabled();
   await expect(page.getByText('retry-same-file.csv', { exact: true })).toBeVisible();
   expect(attempts).toBe(1); // An uncertain write must never retry itself.
 });
@@ -160,16 +160,16 @@ test('History refreshes immediately after an import instead of reusing its pre-i
     return route.fulfill({ json: { code: 'OK', transactionsCount: 1, subscriptionsCount: 0, usage: { uploadsUsed: 3, uploadLimit: null, tier: 'pro', canUpload: true } } });
   });
   await login(page);
-  await page.getByRole('button', { name: 'History', exact: true }).click();
+  await page.getByRole('link', { name: 'Charts & insights', exact: true }).click(); await page.getByRole('button',{name:'Over time',exact:true}).click();
   await expect(page.getByRole('heading', { name: 'Monthly spending' })).toBeVisible();
   await page.getByRole('link', { name: 'Back to overview', exact: true }).click();
   await page.getByRole('button', { name: 'Upload statement', exact: true }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'refresh.csv', mimeType: 'text/csv', buffer: Buffer.from('Date,Description,Amount\n2026-09-01,Test,-1') });
-  await page.getByRole('button', { name: 'Analyze Transactions', exact: true }).click();
+  await page.getByRole('button', { name: 'Review statement', exact: true }).click(); await page.getByRole('button', {name:'Confirm import',exact:true}).click();
   await expect(page.getByText('1 transactions imported.', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'History', exact: true }).click();
-  await expect(page.getByRole('table')).toContainText('£9.00');
-  await expect(page.getByRole('table')).not.toContainText('£1,281.98');
+  await page.getByRole('link', { name: 'Charts & insights', exact: true }).click(); await page.getByRole('button',{name:'Over time',exact:true}).click();
+  await expect(page.getByRole('region',{name:/Monthly spending chart/})).toContainText('£9.00');
+  await expect(page.getByRole('region',{name:/Monthly spending chart/})).not.toContainText('£1,281.98');
 });
 
 test('an uncertain last free import retains the file when the server reports an exhausted allowance', async ({ page }) => {
@@ -187,12 +187,12 @@ test('an uncertain last free import retains the file when the server reports an 
   if (await page.getByRole('dialog').isVisible()) await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
   await page.getByRole('button', { name: 'Upload statement', exact: true }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'already-committed.csv', mimeType: 'text/csv', buffer: Buffer.from('Date,Description,Amount\n2026-09-01,Test,-1') });
-  await page.getByRole('button', { name: 'Analyze Transactions', exact: true }).click();
+  await page.getByRole('button', { name: 'Review statement', exact: true }).click(); await page.getByRole('button', {name:'Confirm import',exact:true}).click();
   await expect.poll(() => committed).toBe(true);
   await page.clock.fastForward(60_100);
   await expect(page.getByText('No new uploads remain this month.', { exact: false })).toBeVisible();
   await expect(page.getByText('already-committed.csv', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Analyze Transactions', exact: true }).click();
+  await page.getByRole('button', {name:'Confirm import',exact:true}).click();
   await expect(page.getByRole('status').filter({ hasText: 'This statement was already imported.' }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Upload statement', exact: true })).toBeEnabled();
 });
@@ -203,7 +203,7 @@ test('Recent imports stops waiting on a stalled request and can recover', async 
   const route = '**/rest/v1/upload_history?*';
   await page.route(route, () => { started = true; });
   await login(page);
-  await expect.poll(() => started).toBe(true);
+  await page.goto('/account/data'); await expect.poll(() => started).toBe(true);
   await page.clock.fastForward(15_100);
   await expect(page.getByText('Import history could not be loaded.', { exact: true })).toBeVisible();
   await page.unroute(route);
@@ -215,7 +215,7 @@ test('Recent imports stops waiting on a stalled request and can recover', async 
 test('successful account deletion keeps its confirmation after signing out', async ({ page }) => {
   await page.route('**/functions/v1/delete-account', route => route.fulfill({ json: { deleted: true } }));
   await login(page);
-  await page.getByRole('button', { name: 'Account', exact: true }).click();
+  await page.getByRole('link', { name: 'Account', exact: true }).click(); await page.getByRole('button',{name:'Delete account',exact:true}).click();
   await page.getByLabel('Type DELETE to confirm').fill('DELETE');
   await page.getByRole('button', { name: 'Delete account and cancel Casher' }).click();
   await expect(page).toHaveURL(/auth\?deleted=1$/);
@@ -228,9 +228,9 @@ test('an unreadable success response never claims an import succeeded', async ({
   await login(page);
   await page.getByRole('button', { name: 'Upload statement', exact: true }).click();
   await page.locator('input[type=file]').setInputFiles({ name: 'unconfirmed.csv', mimeType: 'text/csv', buffer: Buffer.from('Date,Description,Amount\n2026-09-01,Test,-1') });
-  await page.getByRole('button', { name: 'Analyze Transactions', exact: true }).click();
+  await page.getByRole('button', { name: 'Review statement', exact: true }).click(); await page.getByRole('button', {name:'Confirm import',exact:true}).click();
   await expect(page.getByRole('alert').filter({ hasText: 'We could not confirm the import result.' }).first()).toBeVisible();
   await expect(page.getByText('unconfirmed.csv', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Analyze Transactions', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Confirm import', exact: true })).toBeEnabled();
   await expect(page.getByText('0 transactions imported.', { exact: true })).toHaveCount(0);
 });

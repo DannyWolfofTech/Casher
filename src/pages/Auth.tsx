@@ -108,21 +108,21 @@ export default function Auth() {
     finally { setBusy(false); }
   };
   const heading = { signin: 'Welcome back', signup: 'Create your account', forgot: 'Reset your password', recovery: 'Choose a new password' }[mode];
-  if (handoff) return <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+  if (handoff) return <div className="auth-page">
     <SEO title="Continue in Casher" description="Return to Casher to complete your email link." path="/auth" noindex />
-    <span className="font-serif text-4xl italic">Casher</span>
-    <main className="w-full max-w-md"><Card><CardHeader><h1 className="text-2xl font-semibold">Continue in Casher</h1><CardDescription>Open the app on the device where you requested this email to finish {recoveryLink ? 'resetting your password' : 'confirming your account'}.</CardDescription></CardHeader>
-      <CardContent className="space-y-4"><Button asChild className="w-full"><a href={handoff} rel="noreferrer">Open Casher</a></Button>
+    <header><span className="app-wordmark">casher</span></header>
+    <main><Card className="auth-card"><CardHeader className="auth-header"><h1 className="app-title">Continue in Casher</h1><CardDescription className="text-base leading-relaxed">Open the app on the device where you requested this email to finish {recoveryLink ? 'resetting your password' : 'confirming your account'}.</CardDescription></CardHeader>
+      <CardContent className="auth-body space-y-4"><Button asChild className="w-full"><a href={handoff} rel="noreferrer">Open Casher</a></Button>
         <p className="text-sm text-muted-foreground">If the app does not open, check that Casher is installed on this device. If the link has expired, request a new one in the app.</p>
         <p className="text-sm text-muted-foreground">Opened this email on another device? Return to the device where you started. After confirming your email, you can also sign in using your password.</p>
         <Link to="/auth" replace onClick={() => switchMode('signin')} className="inline-flex min-h-11 items-center text-sm underline">Back to website sign in</Link>
       </CardContent></Card></main>
   </div>;
-  return <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+  return <div className="auth-page">
     <SEO title={`${heading} — Casher`} description="Access your Casher account." path="/auth" noindex />
-    <Link to="/" className="font-serif text-4xl italic">Casher</Link>
-    <main className="w-full max-w-md"><Card><CardHeader><h1 className="text-2xl font-semibold">{heading}</h1><CardDescription>{mode === 'signin' ? 'Sign in to review your statements and subscriptions.' : mode === 'signup' ? 'Start with one free CSV upload each month.' : 'Use your email to securely regain access to your account.'}</CardDescription></CardHeader>
-      <CardContent><form onSubmit={submit} className="space-y-4">
+    <header><Link to="/" className="app-wordmark" aria-label="Casher">casher</Link></header>
+    <main><Card className="auth-card"><CardHeader className="auth-header"><h1 className="app-title">{heading}</h1><CardDescription className="text-[1.0625rem] leading-6">{mode === 'signin' ? 'Sign in to review your statements and subscriptions.' : mode === 'signup' ? 'A clearer picture of your money, starting with one statement.' : mode === 'recovery' ? 'Use at least 8 characters to keep your account protected.' : 'Enter your email and we’ll send you a link to regain access.'}</CardDescription></CardHeader>
+      <CardContent className="auth-body"><form onSubmit={submit}>
         {mode !== 'recovery' && <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={formBusy} /></div>}
         {mode !== 'forgot' && <div className="space-y-2"><Label htmlFor="password">{mode === 'recovery' ? 'New password' : 'Password'}</Label><Input id="password" type="password" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} minLength={mode === 'signin' ? 1 : 8} value={password} onChange={e => setPassword(e.target.value)} required disabled={formBusy} />{mode === 'signup' && <p className="text-xs text-muted-foreground">At least 8 characters.</p>}</div>}
         {mode === 'recovery' && <div className="space-y-2"><Label htmlFor="confirm-password">Confirm new password</Label><Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required disabled={formBusy} /></div>}
@@ -131,9 +131,9 @@ export default function Auth() {
         {message && <p role="status" className="rounded-md bg-muted p-3 text-sm">{message}</p>}
         <Button type="submit" className="w-full" disabled={formBusy || (mode === 'recovery' && !recoveryReady)}>{busy ? 'Please wait…' : { signin: 'Sign in', signup: 'Create account', forgot: 'Send reset link', recovery: 'Save new password' }[mode]}</Button>
       </form>
-      {mode === 'signin' && <Button variant="link" className="mt-2 px-0" onClick={() => switchMode('forgot')} disabled={formBusy}>Forgot password?</Button>}
-      {(mode === 'signin' || mode === 'signup') && <><div className="my-5 border-t" />{!native && <Button variant="outline" className="w-full" disabled={formBusy} onClick={signInWithGoogle}>Continue with Google</Button>}<p className="mt-5 text-center text-sm">{mode === 'signin' ? 'New to Casher?' : 'Already have an account?'} <button className="underline underline-offset-4" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} disabled={formBusy}>{mode === 'signin' ? 'Create an account' : 'Sign in'}</button></p></>}
-      {mode === 'forgot' && <Button variant="link" onClick={() => switchMode('signin')} disabled={formBusy}>Back to sign in</Button>}
+      {mode === 'signin' && <Button variant="link" className="mt-4 w-full" onClick={() => switchMode('forgot')} disabled={formBusy}>Forgot password?</Button>}
+      {(mode === 'signin' || mode === 'signup') && <><div className="my-5 border-t" />{!native && <Button variant="outline" className="w-full" disabled={formBusy} onClick={signInWithGoogle}>Continue with Google</Button>}<p className="mt-5 text-center text-sm">{mode === 'signin' ? 'New to Casher?' : 'Already have an account?'}</p><Button variant="soft" className="mt-3 w-full" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} disabled={formBusy}>{mode === 'signin' ? 'Create an account' : 'Sign in'}</Button></>}
+      {mode === 'forgot' && <Button variant="link" className="mt-4 w-full" onClick={() => switchMode('signin')} disabled={formBusy}>Back to sign in</Button>}
       {mode === 'recovery' && !recoveryReady && !nativeAuthPending && <Button variant="link" onClick={() => switchMode('forgot')} disabled={formBusy}>Request a new reset link</Button>}
       {native && <p className="mt-5 text-xs text-muted-foreground">Sign in with email and password. Your session is stored in your device's secure storage. Open confirmation and password-reset links on this device. If your browser opens, tap Open Casher to return to the app.</p>}<p className="mt-5 text-xs text-muted-foreground">Read our <Link to="/terms" className="underline">Terms of Service</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>
     </CardContent></Card></main>

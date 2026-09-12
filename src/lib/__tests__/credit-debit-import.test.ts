@@ -81,7 +81,7 @@ describe("credit/debit import fixture", () => {
 
   it("presents the credit as positive money in", () => {
     const salary = asLegacyRows().find((r) => r.category === INCOME_CATEGORY)!;
-    expect(formatSignedAmount(salary)).toBe("+£2500.00");
+    expect(formatSignedAmount(salary)).toBe("+£2,500.00");
     const debit = asLegacyRows().find((r) => r.category === "Subscription")!;
     expect(formatSignedAmount(debit).startsWith("-")).toBe(true);
   });

@@ -1,0 +1,680 @@
+{
+  "screens": [
+    {
+      "id": "7:2",
+      "name": "01 Overview",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "9:35",
+      "name": "02 Activity",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "10:108",
+      "name": "03 Subscriptions",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "10:195",
+      "name": "04 Goals",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "11:175",
+      "name": "05 Account",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "11:272",
+      "name": "06 First use",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "12:250",
+      "name": "07 Import statement",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "13:252",
+      "name": "08 Review import",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "13:296",
+      "name": "09 Import complete",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "13:329",
+      "name": "10 Transaction detail",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "13:386",
+      "name": "11 Renewal detail",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "13:445",
+      "name": "12 Goal form",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "13:488",
+      "name": "13 Statements and data",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "13:560",
+      "name": "14 Clear imports confirmation",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "13:593",
+      "name": "15 Import error",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "13:625",
+      "name": "16 Checking statement",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "14:332",
+      "name": "17 Spending insights",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "14:413",
+      "name": "18 Edit transaction",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "14:460",
+      "name": "19 Provider cancellation",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "14:490",
+      "name": "20 Mark cancelled confirmation",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "15:351",
+      "name": "21 Offline with saved data",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "15:455",
+      "name": "22 Example overview",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "15:558",
+      "name": "23 Add goal",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "15:601",
+      "name": "24 Goal added",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "15:671",
+      "name": "25 Imports cleared",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "16:456",
+      "name": "26 CSV help",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "17:472",
+      "name": "27 Select month",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "17:518",
+      "name": "28 August overview",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "18:504",
+      "name": "29 Subscription marked cancelled",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "18:592",
+      "name": "30 Delete account confirmation",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "18:625",
+      "name": "31 Account deleted",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "28:546",
+      "name": "32 Verify statement reset",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "28:589",
+      "name": "33 Verify account deletion",
+      "w": 393,
+      "h": 852
+    },
+    {
+      "id": "35:550",
+      "name": "34 Monthly insights",
+      "w": 393,
+      "h": 852
+    }
+  ],
+  "issues": [],
+  "fonts": [
+    "Inter",
+    "Instrument Serif"
+  ],
+  "interactiveCount": 196,
+  "activityAmounts": [
+    {
+      "id": "9:87",
+      "name": "Row/Tesco",
+      "amount": "\u2212\u00a343.20",
+      "hasImage": true
+    },
+    {
+      "id": "9:97",
+      "name": "Row/Netflix",
+      "amount": "\u2212\u00a312.99",
+      "hasImage": true
+    },
+    {
+      "id": "9:107",
+      "name": "Row/Spotify",
+      "amount": "\u2212\u00a311.99",
+      "hasImage": true
+    },
+    {
+      "id": "9:118",
+      "name": "Row/Salary",
+      "amount": "+\u00a33,200.00",
+      "hasImage": true
+    },
+    {
+      "id": "9:128",
+      "name": "Row/Rent",
+      "amount": "\u2212\u00a3950.00",
+      "hasImage": true
+    },
+    {
+      "id": "9:138",
+      "name": "Row/Energy supplier",
+      "amount": "\u2212\u00a3113.00",
+      "hasImage": true
+    },
+    {
+      "id": "9:148",
+      "name": "Row/PureGym",
+      "amount": "\u2212\u00a335.00",
+      "hasImage": true
+    }
+  ],
+  "accountIcons": [
+    {
+      "id": "11:219",
+      "name": "Action/Data",
+      "initial": "",
+      "hasImage": true
+    },
+    {
+      "id": "11:229",
+      "name": "Action/Appearance",
+      "initial": "",
+      "hasImage": true
+    },
+    {
+      "id": "11:239",
+      "name": "Action/Language",
+      "initial": "",
+      "hasImage": true
+    },
+    {
+      "id": "11:249",
+      "name": "Action/Help",
+      "initial": "",
+      "hasImage": true
+    },
+    {
+      "id": "11:259",
+      "name": "Action/Privacy",
+      "initial": "",
+      "hasImage": true
+    }
+  ],
+  "components": [
+    {
+      "id": "5:14",
+      "name": "Casher/Button"
+    },
+    {
+      "id": "6:11",
+      "name": "Casher/Row"
+    },
+    {
+      "id": "6:84",
+      "name": "Casher/Tab bar"
+    },
+    {
+      "id": "40:574",
+      "name": "Casher/Category chart"
+    },
+    {
+      "id": "41:619",
+      "name": "Casher/Monthly chart"
+    }
+  ],
+  "flows": [
+    {
+      "nodeId": "7:2",
+      "name": "1 \u00b7 Everyday use"
+    },
+    {
+      "nodeId": "11:272",
+      "name": "2 \u00b7 First statement"
+    },
+    {
+      "nodeId": "15:351",
+      "name": "3 \u00b7 Offline recovery"
+    },
+    {
+      "nodeId": "13:593",
+      "name": "4 \u00b7 Invalid file"
+    },
+    {
+      "nodeId": "18:592",
+      "name": "5 \u00b7 Account deletion"
+    },
+    {
+      "nodeId": "14:332",
+      "name": "6 \u00b7 Charts & insights"
+    }
+  ],
+  "variables": [
+    {
+      "id": "VariableID:4:3",
+      "name": "palette/cream",
+      "type": "COLOR",
+      "scopes": []
+    },
+    {
+      "id": "VariableID:4:4",
+      "name": "palette/navy",
+      "type": "COLOR",
+      "scopes": []
+    },
+    {
+      "id": "VariableID:4:5",
+      "name": "palette/green",
+      "type": "COLOR",
+      "scopes": []
+    },
+    {
+      "id": "VariableID:4:6",
+      "name": "palette/surface",
+      "type": "COLOR",
+      "scopes": []
+    },
+    {
+      "id": "VariableID:4:7",
+      "name": "palette/muted",
+      "type": "COLOR",
+      "scopes": []
+    },
+    {
+      "id": "VariableID:4:8",
+      "name": "palette/secondary",
+      "type": "COLOR",
+      "scopes": []
+    },
+    {
+      "id": "VariableID:4:9",
+      "name": "palette/border",
+      "type": "COLOR",
+      "scopes": []
+    },
+    {
+      "id": "VariableID:4:10",
+      "name": "palette/white",
+      "type": "COLOR",
+      "scopes": []
+    },
+    {
+      "id": "VariableID:4:11",
+      "name": "palette/red",
+      "type": "COLOR",
+      "scopes": []
+    },
+    {
+      "id": "VariableID:4:13",
+      "name": "background",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ]
+    },
+    {
+      "id": "VariableID:4:14",
+      "name": "foreground",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ]
+    },
+    {
+      "id": "VariableID:4:15",
+      "name": "primary",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ]
+    },
+    {
+      "id": "VariableID:4:16",
+      "name": "card",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ]
+    },
+    {
+      "id": "VariableID:4:17",
+      "name": "muted",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ]
+    },
+    {
+      "id": "VariableID:4:18",
+      "name": "muted-foreground",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ]
+    },
+    {
+      "id": "VariableID:4:19",
+      "name": "border",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ]
+    },
+    {
+      "id": "VariableID:4:20",
+      "name": "primary-foreground",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ]
+    },
+    {
+      "id": "VariableID:4:21",
+      "name": "destructive",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ]
+    },
+    {
+      "id": "VariableID:4:23",
+      "name": "space/4",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:4:24",
+      "name": "space/8",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:4:25",
+      "name": "space/12",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:4:26",
+      "name": "space/16",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:4:27",
+      "name": "space/20",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:4:28",
+      "name": "space/24",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:4:29",
+      "name": "space/32",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:4:30",
+      "name": "space/44",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:4:31",
+      "name": "space/48",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:4:32",
+      "name": "space/56",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP"
+      ]
+    },
+    {
+      "id": "VariableID:17:620",
+      "name": "category",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    },
+    {
+      "id": "VariableID:17:621",
+      "name": "selected/Groceries",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    },
+    {
+      "id": "VariableID:17:623",
+      "name": "selected/Dining",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    },
+    {
+      "id": "VariableID:17:625",
+      "name": "selected/Shopping",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    },
+    {
+      "id": "VariableID:17:627",
+      "name": "selected/Other",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    },
+    {
+      "id": "VariableID:22:548",
+      "name": "name",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    },
+    {
+      "id": "VariableID:22:549",
+      "name": "target",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    },
+    {
+      "id": "VariableID:22:550",
+      "name": "progress",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    },
+    {
+      "id": "VariableID:22:551",
+      "name": "date",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    },
+    {
+      "id": "VariableID:23:546",
+      "name": "draft-category",
+      "type": "STRING",
+      "scopes": [
+        "TEXT_CONTENT"
+      ]
+    }
+  ],
+  "textStyles": [
+    {
+      "id": "S:dd33e75025ea8d1bb45d51b3ac30b97bdd45168b,",
+      "name": "Casher/Display"
+    },
+    {
+      "id": "S:48afca812ff7e8cb018e90a7c773749acec65a66,",
+      "name": "Casher/Title"
+    },
+    {
+      "id": "S:c18e673f917e1907022117d24aa60e936f267be2,",
+      "name": "Casher/Heading"
+    },
+    {
+      "id": "S:3a127b2e9c315bf0f2834538634c78e49c773994,",
+      "name": "Casher/Body"
+    },
+    {
+      "id": "S:1e3ed070db23de060d9a796a9d72cd0d281cd5ec,",
+      "name": "Casher/Label"
+    },
+    {
+      "id": "S:a24a1b7cc193d3a4b1ba110738baf1b3c9dc89d8,",
+      "name": "Casher/Secondary"
+    },
+    {
+      "id": "S:6c8db673de1d2fafa4f28f7241a517c17999d082,",
+      "name": "Casher/Caption"
+    },
+    {
+      "id": "S:a96760ddfeb0097c02dfdd6021122bb146a74de2,",
+      "name": "Casher/Tab"
+    },
+    {
+      "id": "S:a528c15787d6c8a1299cdbbee1e4e97cee4a444f,",
+      "name": "Casher/Wordmark"
+    }
+  ]
+}

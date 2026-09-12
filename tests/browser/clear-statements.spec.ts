@@ -6,7 +6,7 @@ async function account(page: Page) {
   await page.getByLabel('Password', { exact: true }).fill('synthetic-only');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL(/dashboard$/);
-  await page.goto('/account');
+  await page.goto('/account/data');
   await page.getByRole('button', { name: 'Clear statement data', exact: true }).click();
 }
 test.beforeEach(async ({ request }) => { await request.post('http://127.0.0.1:54329/__audit/state', { data: { scenario: 'populated' } }); });
@@ -49,8 +49,8 @@ test('unconfirmed clear never auto-retries and retains its request ID across a r
   await page.getByRole('button', { name: 'Permanently clear statement data', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Your imported statement data has been cleared');
   expect(requests).toHaveLength(2); expect(requests[1]._request_id).toBe(requests[0]._request_id);
-  await expect(page).toHaveURL(/account$/);
-  await expect(page.getByText(/Signed in as/)).toBeVisible();
+  await expect(page).toHaveURL(/account\/data$/);
+  await expect(page.getByRole('heading',{name:'Statements & data',exact:true})).toBeVisible();
 });
 test('malformed reset response cannot claim success or discard retry progress', async ({ page }) => {
   await page.route('**/rest/v1/rpc/clear_statement_data', route => route.fulfill({json:{message:'unexpected'}}));

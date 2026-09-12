@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { annualSubscriptionCost, summarizeTransactions, transactionTrend, safeExternalUrl } from '../analytics';
+import { annualSubscriptionCost, summarizeTransactions, transactionTrend, safeExternalUrl, statementCoverage, currentMonth } from '../analytics';
 import { readAllPages } from '../pagination';
 
 describe('statement analytics', () => {
+  it('does not claim complete coverage from first and last transaction dates', () => {
+    const rows = [{ id: 'a', date: '2020-01-01', amount: -10 }, { id: 'b', date: '2020-01-31', amount: -20 }];
+    expect(statementCoverage(rows, '2020-01')).toBe('Recorded 1 Jan–31 Jan · Coverage unconfirmed');
+    expect(statementCoverage(rows, '2020-02')).toBe('No transactions imported for this month');
+    expect(statementCoverage([{ id: 'c', date: `${currentMonth()}-01`, amount: -10 }], currentMonth())).toContain('Partial month');
+  });
   it('reconciles categories to money out, excludes credits, and preserves pence', () => {
     const rows = [{ id: 'a', date: '2026-08-01', amount: -0.1, direction: 'debit' as const, category: 'Food' }, { id: 'b', date: '2026-08-02', amount: -0.2, direction: 'debit' as const, category: 'Food' }, { id: 'c', date: '2026-08-02', amount: 900, direction: 'credit' as const, category: 'Income' }];
     expect(summarizeTransactions(rows)).toEqual({ spending: 0.3, income: 900, categories: [{ name: 'Food', value: 0.3 }] });

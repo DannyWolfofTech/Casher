@@ -1,0 +1,162 @@
+{
+  "deliveroo": {
+    "name": "Deliveroo",
+    "category": "Dining",
+    "asset": "deliveroo-fbed1d9a15.png"
+  },
+  "justeat": {
+    "name": "Just Eat",
+    "category": "Dining",
+    "asset": "justeat-4280dcaa26.png"
+  },
+  "mcdonalds": {
+    "name": "McDonald's",
+    "category": "Dining",
+    "asset": "mcdonalds-caa8b47857.png"
+  },
+  "starbucks": {
+    "name": "Starbucks",
+    "category": "Dining",
+    "asset": "starbucks-25aaa35492.png"
+  },
+  "ubereats": {
+    "name": "Uber Eats",
+    "category": "Dining",
+    "asset": "ubereats-174e80247a.png"
+  },
+  "puregym": {
+    "name": "PureGym",
+    "category": "Fitness",
+    "asset": "puregym-3b12502c2d.png"
+  },
+  "asda": {
+    "name": "ASDA",
+    "category": "Groceries",
+    "asset": "asda-b4544bbce8.png"
+  },
+  "aldinord": {
+    "name": "Aldi Nord",
+    "category": "Groceries",
+    "asset": "aldinord-ef3de839a2.png"
+  },
+  "aldisud": {
+    "name": "Aldi Süd",
+    "category": "Groceries",
+    "asset": "aldisud-a4283c148b.png"
+  },
+  "auchan": {
+    "name": "Auchan",
+    "category": "Groceries",
+    "asset": "auchan-6d8d8f098c.png"
+  },
+  "carrefour": {
+    "name": "Carrefour",
+    "category": "Groceries",
+    "asset": "carrefour-ad1753d890.png"
+  },
+  "lidl": {
+    "name": "Lidl",
+    "category": "Groceries",
+    "asset": "lidl-2c80ed79a5.png"
+  },
+  "morrisons": {
+    "name": "Morrisons",
+    "category": "Groceries",
+    "asset": "morrisons-c202c52f54.png"
+  },
+  "tesco": {
+    "name": "Tesco",
+    "category": "Groceries",
+    "asset": "tesco-1e989c23ec.png"
+  },
+  "apple": {
+    "name": "Apple",
+    "category": "Shopping",
+    "asset": "apple-146a84b345.png"
+  },
+  "argos": {
+    "name": "Argos",
+    "category": "Shopping",
+    "asset": "argos-bbe73d9d7b.png"
+  },
+  "boots": {
+    "name": "Boots",
+    "category": "Shopping",
+    "asset": "boots-aebed3014a.png"
+  },
+  "handm": {
+    "name": "H&M",
+    "category": "Shopping",
+    "asset": "handm-66dd21790a.png"
+  },
+  "ikea": {
+    "name": "IKEA",
+    "category": "Shopping",
+    "asset": "ikea-02a9ff4fbd.png"
+  },
+  "zalando": {
+    "name": "Zalando",
+    "category": "Shopping",
+    "asset": "zalando-35f4cc9149.png"
+  },
+  "applemusic": {
+    "name": "Apple Music",
+    "category": "Subscription",
+    "asset": "applemusic-99c69bb8eb.png"
+  },
+  "dropbox": {
+    "name": "Dropbox",
+    "category": "Subscription",
+    "asset": "dropbox-7428711314.png"
+  },
+  "netflix": {
+    "name": "Netflix",
+    "category": "Subscription",
+    "asset": "netflix-867e51e9b4.png"
+  },
+  "spotify": {
+    "name": "Spotify",
+    "category": "Subscription",
+    "asset": "spotify-c0aaa59408.png"
+  },
+  "youtube": {
+    "name": "YouTube",
+    "category": "Subscription",
+    "asset": "youtube-ce77bbc61a.png"
+  },
+  "uber": {
+    "name": "Uber",
+    "category": "Transport",
+    "asset": "uber-cfdccd581e.png"
+  },
+  "airbnb": {
+    "name": "Airbnb",
+    "category": "Travel",
+    "asset": "airbnb-94b536ae72.png"
+  },
+  "bookingdotcom": {
+    "name": "Booking.com",
+    "category": "Travel",
+    "asset": "bookingdotcom-d05a369e16.png"
+  },
+  "ryanair": {
+    "name": "Ryanair",
+    "category": "Travel",
+    "asset": "ryanair-41f1f97f45.png"
+  },
+  "easyjet": {
+    "name": "easyJet",
+    "category": "Travel",
+    "asset": "easyjet-b3eb63b530.png"
+  },
+  "o2": {
+    "name": "O2",
+    "category": "Utilities",
+    "asset": "o2-86518288fc.png"
+  },
+  "vodafone": {
+    "name": "Vodafone",
+    "category": "Utilities",
+    "asset": "vodafone-8f6d08567d.png"
+  }
+}

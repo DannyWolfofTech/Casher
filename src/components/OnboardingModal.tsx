@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, PieChart, TrendingDown, Check } from "lucide-react";
+import { Upload, ChartNoAxesColumn, Repeat2 } from "lucide-react";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -21,17 +21,17 @@ export const OnboardingModal = ({ open, onClose }: OnboardingModalProps) => {
     {
       icon: Upload,
       title: "Upload Your Bank Statement",
-      description: "Export a CSV from your bank (HSBC, NatWest, Barclays) and upload it to get started. It's secure and private.",
+      description: "Export a CSV from your bank (HSBC, NatWest, Barclays) and upload it to get started. No bank login is needed.",
     },
     {
-      icon: PieChart,
+      icon: ChartNoAxesColumn,
       title: "See Your Spending Breakdown",
       description: "Casher automatically categorizes your transactions so you can see exactly where your money goes.",
     },
     {
-      icon: TrendingDown,
-      title: "Spot Hidden Subscriptions",
-      description: "We'll detect recurring payments like Netflix, Spotify, or forgotten subscriptions you can cancel to save money.",
+      icon: Repeat2,
+      title: "Review recurring payments",
+      description: "See possible subscriptions and expected renewal dates. Check them against your statements before making changes.",
     },
   ];
 

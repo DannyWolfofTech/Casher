@@ -36,3 +36,10 @@ export function annualSubscriptionCost(sub: { amount: number | string; frequency
 export function safeExternalUrl(value: string | null | undefined): string | null {
   try { const url = new URL(value || ''); return url.protocol === 'https:' && !url.username && !url.password ? url.href : null; } catch { return null; }
 }
+
+export function statementCoverage(rows: StatementTransaction[], month: string) {
+  const dates = rows.filter(row => row.date.startsWith(month)).map(row => row.date).sort();
+  if (!dates.length) return 'No transactions imported for this month';
+  const format = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return `Recorded ${format(dates[0])}–${format(dates[dates.length - 1])} · ${month >= currentMonth() ? 'Partial month' : 'Coverage unconfirmed'}`;
+}

@@ -20,7 +20,7 @@ describe("legacy income fallback", () => {
     expect(isSpending(t)).toBe(false);
     expect(spendingAmount(t)).toBe(0);
     expect(creditAmount(t)).toBeCloseTo(2500);
-    expect(formatSignedAmount(t)).toBe("+£2500.00");
+    expect(formatSignedAmount(t)).toBe("+£2,500.00");
   });
 
   it("fixes the mixed dashboard total (£3,869.00 -> £1,369.00)", () => {
