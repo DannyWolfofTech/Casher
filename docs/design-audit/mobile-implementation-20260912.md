@@ -44,3 +44,13 @@ The owner explicitly authorized redeployment to the existing `trycasher.com` Lov
 - [Monthly charts, synthetic account](assets/mobile-implementation/monthly.png)
 
 Final development archive: `release-artifacts/ios/Casher-MobileRedesign-20260912.zip`, SHA-256 `5a5af82d3fa7e3d0d5ab846dedfed07c40e3ff26670ab7530c2fe026f2247ecb`. All 32 merchant image bytes match the signed bundle. The final post-test build installed successfully. The preceding launch attempt at 03:27 BST was refused because the iPhone had locked; the preceding physical auth acceptance remains valid evidence for those tested screens, not a claim of a later unlocked launch.
+
+## Published verification
+
+Application source `3eaafb9f42534f54855e22597f77deb0b9a1b956` is saved on GitHub/main and published to [trycasher.com](https://trycasher.com). Lovable confirmed that exact synced source before publication; deployment request `0a656cb6-6646-4f18-b793-31825a761961`. The connector initially returned pending; subsequent independent live asset and browser checks establish the delivered revision.
+
+Production now serves `/assets/index-B9QObV9M.js`. Its Auth, Dashboard and Account modules match the final local production build byte for byte, as do all 32 merchant images. A fresh signed-out mobile/desktop browser verified the redesigned login, signup and reset views, original palette, protected app routes and no JavaScript exceptions. The mobile sign-in was ready in 1,188 ms in this single headless run; this is not a general performance guarantee. No authentication form was submitted and no customer data changed. All four existing read-only production health checks passed.
+
+The CLI lacked Git author identity and push authentication. The existing authenticated GitHub connector saved the staged files as immutable blobs/tree/commit, with each image SHA and the complete resulting tree checked against the local Git index before a non-forced main update. Local main was fast-forwarded while preserving the separate Android work. No credentials were extracted or Git identity settings changed.
+
+Final acceptance: 316 unit tests, 78 Chromium + 78 WebKit browser cases, three affected first-use cases in each engine after the last layout refinement, both typechecks, zero lint errors/seven existing warnings, production build, signed iPhone inspection/installation, physical signed-out auth/keyboard acceptance and live publication verification. Final iPhone install completed at 03:32 BST. Unlock the phone and open Casher to sign in; authenticated physical redesign acceptance remains distinct from the completed synthetic browser cases.
